@@ -122,8 +122,8 @@
       "gauges": { "amitie": 0, "amour": 0 }
     },
     {
-      "id": "ezequiel",
-      "name": "Ezequiel",
+      "id": "liam",
+      "name": "Liam",
       "tagline": "L'homme que personne ne connaît vraiment.",
       "age": 21,
       "field": "L2 com",
@@ -136,8 +136,8 @@
       "passion": "La littérature, les vieux appareils photo argentiques, l'histoire et les promenades matinales.",
       "flaw": "Il porte toutes les responsabilités seul et refuse de montrer la moindre faiblesse.",
       "favoritePlace": "Le hall principal du campus, ou la bibliothèque tôt le matin.",
-      "sprite": "assets/Personnages/Crushs/PNG/Ezequiel.png",
-      "portraits": { "default": "assets/Personnages/Crushs/PNG/Ezequiel.png" },
+      "sprite": "assets/Personnages/Crushs/PNG/Liam.png",
+      "portraits": { "default": "assets/Personnages/Crushs/PNG/Liam.png" },
       "gauges": { "amitie": 0, "amour": 0 },
       "stagePosition": "center"
     }

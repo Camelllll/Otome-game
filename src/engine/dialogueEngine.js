@@ -71,7 +71,9 @@ export class DialogueEngine {
         : null,
       affectedCharacters: noeud.type === "choice" ? this.obtenirPersonnagesAffectes(noeud) : [],
       reponseSucrette,
-      nextEpisode: noeud.nextEpisode || null
+      nextEpisode: noeud.nextEpisode || null,
+      // Mise en scène explicite définie dans l'admin (remplace la gestion automatique quand elle est présente).
+      onScreen: Array.isArray(noeud.onScreen) ? noeud.onScreen : null
     };
   }
 

@@ -18,6 +18,7 @@ const files = {
     "assets/Décors/Voiture (scène 2).png",
     "assets/Décors/Entrée campus.png",
     "assets/Décors/Cour Campus.jpg",
+    "assets/Décors/Cour campus nuit.png",
     "assets/Décors/Couloir chambres campus.png",
     "assets/Décors/Chambre sucrette campus.png",
     "assets/Décors/Cafétéria campus.png",
@@ -25,18 +26,53 @@ const files = {
   ],
   illustrations: [
     "",
-    "assets/Illustrations/Épisode 1/Illustration 1 - Ezequiel.png",
+    "assets/Illustrations/Épisode 1/Illustration 1 - Liam.png",
     "assets/Illustrations/Episode 2/Illustration 1 - Sasha et Mehdi.png",
     "assets/Illustrations/Episode 2/Illustration 2 - Camel.png",
+    "assets/Illustrations/Episode 2/Illustration 3 - Camel + sucrette.png",
+    "assets/Illustrations/Episode 2/Illustration 3 - Mehdi + sucrette.jpg",
+    "assets/Illustrations/Épisode 3/Illustration 1 - Isaac.png",
+    "assets/Illustrations/Épisode 3/Illustration 2 - Stella.png",
+    "assets/Illustrations/Épisode 3/Illustration 3 - Mehdi + sucrette.JPG",
+    "assets/Illustrations/Épisode 3/Illustration 4 - Camel + sucrette.png",
+    "assets/Illustrations/Épisode 3/Illustration 5 - Sasha + sucrette.JPG",
+    "assets/Illustrations/Épisode 3/Illustration 6 - Aaron.png",
+    "assets/Illustrations/Épisode 4/Illustration 1 - Stella + sucrette.png",
+    "assets/Illustrations/Épisode 4/Illustration 2 - Sasha + sucrette.png",
+    "assets/Illustrations/Épisode 4/Illustration 3 - Aaron + sucrette.png",
+    "assets/Illustrations/Épisode 4/Illustration 4 - Camel + sucrette.png",
+    "assets/Illustrations/Épisode 4/Illustration 4 - Mehdi + sucrette.png",
   ],
   music: ["", "Romantique doux", "Piano émotion", "Soirée campus", "Tension romantique"],
 };
 
+// Dossiers scannés au démarrage pour découvrir automatiquement les nouveaux fichiers ajoutés sur le disque
+// (fonctionne avec le listing de dossier fourni par `python3 -m http.server` ; ignoré silencieusement sinon).
+const MEDIA_FOLDERS = {
+  backgrounds: ["assets/Décors/"],
+  illustrations: [
+    "assets/Illustrations/Épisode 1/",
+    "assets/Illustrations/Episode 2/",
+    "assets/Illustrations/Épisode 3/",
+    "assets/Illustrations/Épisode 4/",
+  ],
+};
+
+// Snapshot des entrées d'origine : sert à distinguer ce qui est supprimable (ajouté depuis l'admin).
+let BASE_FILES = copy(files);
+let mediaLabels = {};
+
 let people = [];
+let extraPeople = [];
 let episodes = {};
 let episodeId = "";
-let sceneId = "";
-let nodeId = "";
+let shop = { currency: { name: "Gemmes", id: "gemmes" }, items: [] };
+let activeTab = "episodes";
+
+const WARDROBE_SLOTS = ["haut", "bas", "coiffure", "accessoire", "chaussures"];
+const SHOP_STORE = "otome-admin-shop-v1";
+const MEDIA_STORE = "otome-admin-media-v1";
+const PEOPLE_STORE = "otome-admin-people-v1";
 
 const currentEpisode = () => episodes[episodeId];
 
@@ -58,25 +94,8 @@ function nodeIdsForEpisode(episode) {
   return Object.keys(episode.nodes || {});
 }
 
-function nodeLabel(episode, scene, id) {
-  const node = episode.nodes[id];
-  const sceneIndex = episode.scenes.findIndex((item) => item.id === scene.id) + 1;
-  const kind = node.type === "choice" ? "Choix" : "Dialogue";
-  return `${sceneIndex}. ${scene.title || "Scène"} - ${kind}`;
-}
-
 function sceneLabel(scene, index) {
   return `${index + 1}. ${scene.title || "Scène"}`;
-}
-
-function describeNode(node) {
-  if (!node) return "Contenu vide";
-  if (node.type === "choice") {
-    const text = (node.text || "Choix sans question").replaceAll("\n", " ");
-    return `${text.slice(0, 30)} · ${node.options.length} réponse(s)`;
-  }
-  const text = (node.text || "Dialogue vide").replaceAll("\n", " ");
-  return text.slice(0, 42);
 }
 
 function buildChoiceEffects(choice) {
@@ -196,26 +215,135 @@ function peopleOptions(current) {
   ].join("");
 }
 
-function nodeOptions(episode, current, emptyLabel = "— Fin —", excludeId = "") {
-  const ids = nodeIdsForEpisode(episode).filter((id) => id !== excludeId);
-  return [
-    `<option value="">${emptyLabel}</option>`,
-    ...ids.map((id) => {
-      const node = episode.nodes[id];
-      const scene = episode.scenes.find((item) => item.nodeIds.includes(id)) || episode.scenes[0];
-      return `<option value="${esc(id)}" ${id === current ? "selected" : ""}>${esc(nodeLabel(episode, scene, id))}</option>`;
-    }),
-  ].join("");
+function slugify(value) {
+  return (
+    value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "personnage"
+  );
 }
 
-function sceneOptions(current, emptyLabel = "— Aucune scène —") {
-  return [
-    `<option value="">${emptyLabel}</option>`,
-    ...currentEpisode().scenes.map((scene, index) => {
-      const selected = scene.id === current ? "selected" : "";
-      return `<option value="${esc(scene.id)}" ${selected}>${esc(sceneLabel(scene, index))}</option>`;
-    }),
-  ].join("");
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+// Lit le listing HTML d'un dossier (fourni par ex. par `python3 -m http.server`) pour trouver les fichiers ajoutés.
+async function discoverFolder(folderPath) {
+  try {
+    const response = await fetch(folderPath);
+    if (!response.ok) return [];
+    const html = await response.text();
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return [...doc.querySelectorAll("a[href]")]
+      .map((link) => decodeURIComponent(link.getAttribute("href")))
+      .filter((name) => !name.includes("/") && /\.(png|jpe?g|webp|gif)$/i.test(name))
+      .map((name) => `${folderPath}${name}`);
+  } catch {
+    // Pas de listing de dossier disponible (hébergement statique sans autoindex) : on garde la liste connue.
+    return [];
+  }
+}
+
+async function discoverMedia() {
+  for (const [category, folders] of Object.entries(MEDIA_FOLDERS)) {
+    const found = (await Promise.all(folders.map(discoverFolder))).flat();
+    found.forEach((path) => {
+      if (!files[category].includes(path)) files[category].push(path);
+    });
+  }
+}
+
+function loadMediaExtras() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(MEDIA_STORE) || "null");
+    if (!saved) return;
+    ensureArray(saved.backgrounds).forEach((value) => {
+      if (value && !files.backgrounds.includes(value)) files.backgrounds.push(value);
+    });
+    ensureArray(saved.illustrations).forEach((value) => {
+      if (value && !files.illustrations.includes(value)) files.illustrations.push(value);
+    });
+    ensureArray(saved.music).forEach((value) => {
+      if (value && !files.music.includes(value)) files.music.push(value);
+    });
+    mediaLabels = saved.labels && typeof saved.labels === "object" ? saved.labels : {};
+  } catch {
+    // Un brouillon média invalide ne doit jamais empêcher l'accès à l'admin.
+  }
+}
+
+function saveMediaExtras() {
+  localStorage.setItem(
+    MEDIA_STORE,
+    JSON.stringify({
+      backgrounds: files.backgrounds.filter((item) => !BASE_FILES.backgrounds.includes(item)),
+      illustrations: files.illustrations.filter((item) => !BASE_FILES.illustrations.includes(item)),
+      music: files.music.filter((item) => !BASE_FILES.music.includes(item)),
+      labels: mediaLabels,
+    })
+  );
+}
+
+function addMediaItem(category, value, label = "") {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return;
+  if (!files[category].includes(trimmed)) files[category].push(trimmed);
+  if (label) mediaLabels[trimmed] = label;
+  saveMediaExtras();
+  renderMedia();
+  renderSceneFlow();
+}
+
+function removeMediaItem(category, value) {
+  if (BASE_FILES[category].includes(value)) return;
+  files[category] = files[category].filter((item) => item !== value);
+  delete mediaLabels[value];
+  saveMediaExtras();
+  renderMedia();
+  renderSceneFlow();
+}
+
+function loadPeopleExtras() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PEOPLE_STORE) || "null");
+    extraPeople = ensureArray(saved?.people).filter((person) => person && person.id && person.name);
+  } catch {
+    extraPeople = [];
+  }
+}
+
+function savePeopleExtras() {
+  localStorage.setItem(PEOPLE_STORE, JSON.stringify({ people: extraPeople }));
+}
+
+function addPerson(name, sprite) {
+  const trimmedName = (name || "").trim();
+  if (!trimmedName) return;
+  const existingIds = new Set(people.map((person) => person.id));
+  const id = uniqueId(slugify(trimmedName), existingIds);
+  const person = { id, name: trimmedName, sprite: sprite || "" };
+  people.push(person);
+  extraPeople.push(person);
+  savePeopleExtras();
+  renderMedia();
+  renderSceneFlow();
+}
+
+function removePerson(id) {
+  if (!extraPeople.some((person) => person.id === id)) return;
+  people = people.filter((person) => person.id !== id);
+  extraPeople = extraPeople.filter((person) => person.id !== id);
+  savePeopleExtras();
+  renderMedia();
+  renderSceneFlow();
 }
 
 function save() {
@@ -237,328 +365,491 @@ function saveFile(data, fileName) {
   URL.revokeObjectURL(link.href);
 }
 
-function findSceneForNode(id) {
-  return currentEpisode().scenes.find((scene) => scene.nodeIds.includes(id)) || currentEpisode().scenes[0];
+function mediaLabel(path) {
+  if (!path) return "";
+  if (path.startsWith("data:")) return mediaLabels[path] || "Image importée";
+  return path.split("/").pop();
 }
 
-function setSceneForNode(scene, node) {
-  if (!scene || !node) return;
-  scene.nodeIds.forEach((id) => {
-    const current = currentEpisode().nodes[id];
-    if (!current) return;
-    current.background = scene.background || "";
-    current.music = scene.music || "";
+function renderMediaAddRow(category, { placeholder, withFile = true, accept = "" } = {}) {
+  return `
+    <div class="media-add-row" data-category="${esc(category)}">
+      <input type="text" class="media-add-path" placeholder="${esc(placeholder)}" />
+      ${
+        withFile
+          ? `<label class="btn btn-light media-file-label">Choisir un fichier<input type="file" class="media-add-file" accept="${esc(accept)}" hidden /></label>`
+          : ""
+      }
+      <button type="button" class="primary-action media-add-btn">+ Ajouter</button>
+    </div>
+  `;
+}
+
+function renderMedia() {
+  const backgrounds = files.backgrounds.filter(Boolean);
+  const illustrations = files.illustrations.filter(Boolean);
+  const music = files.music.filter(Boolean);
+
+  const mediaCard = (category, path) => `
+    <div class="media-card">
+      <img src="${esc(path)}" alt="${esc(mediaLabel(path))}" loading="lazy" />
+      <div class="media-name">${esc(mediaLabel(path))}</div>
+      ${
+        BASE_FILES[category].includes(path)
+          ? ""
+          : `<button class="delete media-remove" data-remove-media="${esc(category)}" data-value="${esc(path)}">Supprimer</button>`
+      }
+    </div>`;
+
+  $("#media-content").innerHTML = `
+    <p class="branch-help">Ajoute ici tes décors, illustrations, musiques et personnages : ils apparaîtront ensuite dans les menus de l'onglet Épisodes. Pour une image, choisis un fichier ou indique son chemin dans <code>assets/</code>.</p>
+    <section class="media-section">
+      <h2>Décors (${backgrounds.length})</h2>
+      ${renderMediaAddRow("backgrounds", { placeholder: "assets/Décors/mon-decor.png", accept: "image/*" })}
+      <div class="media-grid">
+        ${backgrounds.map((path) => mediaCard("backgrounds", path)).join("")}
+      </div>
+    </section>
+    <section class="media-section">
+      <h2>Illustrations (${illustrations.length})</h2>
+      ${renderMediaAddRow("illustrations", { placeholder: "assets/Illustrations/mon-illustration.png", accept: "image/*" })}
+      <div class="media-grid">
+        ${illustrations.map((path) => mediaCard("illustrations", path)).join("")}
+      </div>
+    </section>
+    <section class="media-section">
+      <h2>Musiques (${music.length})</h2>
+      ${renderMediaAddRow("music", { placeholder: "Nom du morceau", withFile: false })}
+      <ul class="media-list">
+        ${music
+          .map(
+            (name) => `
+          <li>
+            <span>🎵 ${esc(name)}</span>
+            ${
+              BASE_FILES.music.includes(name)
+                ? ""
+                : `<button class="delete media-remove" data-remove-media="music" data-value="${esc(name)}">Supprimer</button>`
+            }
+          </li>`
+          )
+          .join("")}
+      </ul>
+    </section>
+    <section class="media-section">
+      <h2>Personnages (${people.length})</h2>
+      <div class="media-add-row" data-category="people">
+        <input type="text" class="media-add-path" placeholder="Nom du personnage" />
+        <label class="btn btn-light media-file-label">Choisir un sprite<input type="file" class="media-add-file" accept="image/*" hidden /></label>
+        <button type="button" class="primary-action media-add-btn">+ Ajouter</button>
+      </div>
+      <div class="media-grid">
+        ${people
+          .map(
+            (person) => `
+          <div class="media-card">
+            ${person.sprite ? `<img src="${esc(person.sprite)}" alt="${esc(person.name)}" loading="lazy" />` : `<img alt="" />`}
+            <div class="media-name">${esc(person.name)}</div>
+            ${
+              extraPeople.some((extra) => extra.id === person.id)
+                ? `<button class="delete media-remove" data-remove-person="${esc(person.id)}">Supprimer</button>`
+                : ""
+            }
+          </div>`
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+
+  bindMedia();
+}
+
+function bindMedia() {
+  document.querySelectorAll("#media-content .media-add-row").forEach((row) => {
+    const category = row.dataset.category;
+    const pathInput = row.querySelector(".media-add-path");
+    const fileInput = row.querySelector(".media-add-file");
+    const addBtn = row.querySelector(".media-add-btn");
+
+    if (fileInput) {
+      fileInput.onchange = async () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+        const dataUrl = await readFileAsDataUrl(file);
+        if (category === "people") {
+          addPerson(pathInput.value.trim() || file.name, dataUrl);
+        } else {
+          addMediaItem(category, dataUrl, file.name);
+        }
+        fileInput.value = "";
+        pathInput.value = "";
+      };
+    }
+
+    addBtn.onclick = () => {
+      if (category === "people") {
+        addPerson(pathInput.value.trim(), "");
+      } else {
+        addMediaItem(category, pathInput.value.trim());
+      }
+      pathInput.value = "";
+    };
   });
+
+  document.querySelectorAll("[data-remove-media]").forEach((button) => {
+    button.onclick = () => removeMediaItem(button.dataset.removeMedia, button.dataset.value);
+  });
+
+  document.querySelectorAll("[data-remove-person]").forEach((button) => {
+    button.onclick = () => removePerson(button.dataset.removePerson);
+  });
+}
+
+function saveShop() {
+  localStorage.setItem(SHOP_STORE, JSON.stringify(shop));
+}
+
+function newShopItem() {
+  const existingIds = new Set(shop.items.map((item) => item.id));
+  const id = uniqueId("article", existingIds);
+  shop.items.push({ id, name: "Nouvel article", slot: WARDROBE_SLOTS[0], price: 0, sprite: "" });
+  saveShop();
+  renderVestiaire();
+}
+
+function deleteShopItem(id) {
+  shop.items = shop.items.filter((item) => item.id !== id);
+  saveShop();
+  renderVestiaire();
+}
+
+function updateShopItem(id, field, value) {
+  const item = shop.items.find((entry) => entry.id === id);
+  if (!item) return;
+  item[field] = field === "price" ? Number(value || 0) : value;
+  saveShop();
+}
+
+function downloadShop() {
+  saveFile(shop, "shop.json");
+}
+
+function renderVestiaire() {
+  $("#vestiaire-content").innerHTML = `
+    <div class="vestiaire-toolbar">
+      <button id="new-item" class="primary-action">+ Ajouter un article</button>
+      <button id="export-shop" class="btn btn-light" style="color:var(--accent);border-color:var(--border)">Exporter le vestiaire</button>
+    </div>
+    <div class="vestiaire-grid">
+      ${shop.items
+        .map(
+          (item) => `
+        <div class="vestiaire-card" data-id="${esc(item.id)}">
+          ${item.sprite ? `<img src="${esc(item.sprite)}" alt="${esc(item.name)}" />` : `<img alt="" />`}
+          <div>
+            <label>Nom</label>
+            <input data-field="name" value="${esc(item.name)}" />
+          </div>
+          <div>
+            <label>Emplacement</label>
+            <select data-field="slot">
+              ${WARDROBE_SLOTS.map(
+                (slot) => `<option value="${esc(slot)}" ${slot === item.slot ? "selected" : ""}>${esc(slot)}</option>`
+              ).join("")}
+            </select>
+          </div>
+          <div>
+            <label>Prix (${esc(shop.currency?.name || "Gemmes")})</label>
+            <input data-field="price" type="number" min="0" value="${item.price}" />
+          </div>
+          <div>
+            <label>Sprite</label>
+            <input data-field="sprite" value="${esc(item.sprite || "")}" placeholder="assets/..." />
+          </div>
+          <button class="delete" data-delete="${esc(item.id)}">Supprimer cet article</button>
+        </div>`
+        )
+        .join("") || '<p class="empty">Aucun article pour le moment.</p>'}
+    </div>
+  `;
+
+  $("#new-item").onclick = newShopItem;
+  $("#export-shop").onclick = downloadShop;
+
+  document.querySelectorAll("#vestiaire-content .vestiaire-card").forEach((card) => {
+    const id = card.dataset.id;
+    card.querySelectorAll("[data-field]").forEach((input) => {
+      input.addEventListener("input", () => {
+        updateShopItem(id, input.dataset.field, input.value);
+        if (input.dataset.field === "sprite") {
+          const img = card.querySelector("img");
+          if (img) img.src = input.value;
+        }
+      });
+    });
+    card.querySelector("[data-delete]").onclick = () => deleteShopItem(id);
+  });
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+  document.querySelectorAll(".tab-panel").forEach((panel) => {
+    panel.classList.toggle("active", panel.id === `tab-${tab}`);
+  });
+  $("#topbar-title").textContent = { episodes: "Épisodes", media: "Média", vestiaire: "Vestiaire" }[tab];
 }
 
 function episodeDisplayName(episode) {
   return episode.title || episode.id;
 }
 
-function renderEpisodes() {
-  $("#episode-list").innerHTML = Object.values(episodes)
-    .map((episode) => {
-      const active = episode.id === episodeId ? "active" : "";
-      const totalScenes = ensureArray(episode.scenes).length;
-      const totalNodes = Object.keys(episode.nodes || {}).length;
-      return `
-        <button data-episode="${esc(episode.id)}" class="episode-item ${active}">
-          <strong>${esc(episodeDisplayName(episode))}</strong>
-          <small>${totalScenes} scène(s) · ${totalNodes} dialogue(s)</small>
-        </button>
-      `;
-    })
-    .join("");
-
-  document.querySelectorAll("[data-episode]").forEach((button) => {
-    button.onclick = () => {
-      episodeId = button.dataset.episode;
-      const episode = currentEpisode();
-      sceneId = episode.scenes[0]?.id || "";
-      nodeId = episode.scenes[0]?.nodeIds[0] || episode.start || "";
-      save();
-      render();
-    };
-  });
-}
-
-function renderScenes() {
+function renderEpisodeSelect() {
   const episode = currentEpisode();
-  $("#episode-subtitle").textContent = episodeDisplayName(episode);
-  $("#scene-list").innerHTML = episode.scenes
-    .map((scene, index) => {
-      const active = scene.id === sceneId ? "active" : "";
-      return `
-        <button data-scene="${esc(scene.id)}" class="scene-item ${active}">
-          <strong>${esc(sceneLabel(scene, index))}</strong>
-          <small>${scene.nodeIds.length} élément(s)</small>
-        </button>
-      `;
-    })
+  $("#episode-select").innerHTML = Object.values(episodes)
+    .map(
+      (item) =>
+        `<option value="${esc(item.id)}" ${item.id === episodeId ? "selected" : ""}>${esc(episodeDisplayName(item))}</option>`
+    )
     .join("");
-
-  document.querySelectorAll("[data-scene]").forEach((button) => {
-    button.onclick = () => {
-      sceneId = button.dataset.scene;
-      const scene = episode.scenes.find((item) => item.id === sceneId);
-      nodeId = scene?.nodeIds[0] || "";
-      renderScenes();
-      renderNodes();
-      renderEditor();
-    };
-  });
+  $("#episode-title").value = episode ? episode.title || "" : "";
 }
 
-function renderNodes() {
+function renderSceneFlow() {
   const episode = currentEpisode();
-  const scene = episode.scenes.find((item) => item.id === sceneId) || episode.scenes[0];
-  const ids = scene?.nodeIds || [];
+  const container = $("#scene-flow");
 
-  $("#node-list").innerHTML = ids
-    .map((id) => {
-      const node = episode.nodes[id];
-      const active = id === nodeId ? "active" : "";
-      const summary = describeNode(node);
-      return `
-        <button data-node="${esc(id)}" class="node-item ${active}">
-          <i class="dot ${node.type === "choice" ? "choice" : ""}"></i>
-          <span>
-            <strong>${esc(nodeLabel(episode, scene, id))}</strong>
-            <small>${esc(summary)}</small>
-          </span>
-        </button>
-      `;
-    })
-    .join("");
+  if (!episode) {
+    container.innerHTML = '<p class="empty">Crée un épisode pour commencer.</p>';
+    return;
+  }
 
-  document.querySelectorAll("[data-node]").forEach((button) => {
-    button.onclick = () => {
-      nodeId = button.dataset.node;
-      sceneId = findSceneForNode(nodeId)?.id || sceneId;
-      renderNodes();
-      renderEditor();
-    };
-  });
+  container.innerHTML = episode.scenes.length
+    ? episode.scenes.map((scene, index) => renderSceneBlock(episode, scene, index)).join("")
+    : '<p class="empty">Ajoute une première scène pour commencer cet épisode.</p>';
 }
 
-function renderSceneEditor(scene) {
+function renderSceneBlock(episode, scene, index) {
   return `
-    <div class="scene-card">
-      <h3>Décor de la scène</h3>
-      <p class="intro">Tous les éléments ci-dessous garderont ce décor jusqu’à la scène suivante.</p>
-      <div class="scene-grid">
-        <label>Nom de l’épisode<input id="episode-title" value="${esc(currentEpisode().title || "")}"></label>
-        <label>Nom de la scène<input id="scene-title" value="${esc(scene.title || "")}"></label>
-        <label class="wide">Décor<select id="scene-background">${labelsForSelect(files.backgrounds, scene.background || "", "— Choisir un décor —", (item) => item.split("/").pop())}</select></label>
-        <label>Musique de la scène<select id="scene-music">${labelsForSelect(files.music, scene.music || "", "— Garder la musique —")}</select></label>
+    <article class="scene-block" data-scene="${esc(scene.id)}">
+      <div class="scene-block-head">
+        <div class="scene-title-row">
+          <span class="scene-index">Scène ${index + 1}</span>
+          <input class="scene-title-input" data-field="scene-title" value="${esc(scene.title || "")}" />
+        </div>
+        <button class="delete" data-delete-scene="${esc(scene.id)}">Supprimer la scène</button>
       </div>
+      <div class="scene-settings">
+        <label>Décor de la scène<select data-field="scene-background">${labelsForSelect(files.backgrounds, scene.background || "", "— Choisir un décor —", mediaLabel)}</select></label>
+      </div>
+      <div class="scene-nodes">
+        ${
+          scene.nodeIds.length
+            ? scene.nodeIds.map((id, nodeIndex) => renderNodeCard(episode, episode.nodes[id], id, nodeIndex)).join("")
+            : '<p class="empty">Aucun dialogue pour l’instant.</p>'
+        }
+      </div>
+      <div class="scene-node-actions">
+        <button class="primary-action" data-add-line="${esc(scene.id)}">+ Ajouter un dialogue</button>
+        <button class="choice-btn" data-add-choice="${esc(scene.id)}">+ Ajouter un choix</button>
+      </div>
+    </article>
+  `;
+}
+
+function nodeTargetOptions(episode, current, excludeId = "") {
+  const groups = episode.scenes
+    .map((scene, sceneIndex) => {
+      const items = scene.nodeIds
+        .filter((id) => id !== excludeId)
+        .map((id) => {
+          const node = episode.nodes[id];
+          if (!node) return "";
+          const nodeIndex = scene.nodeIds.indexOf(id);
+          const kind = node.type === "choice" ? "Choix" : "Dialogue";
+          const preview = (node.text || "").replaceAll("\n", " ").slice(0, 28);
+          const label = `${kind} ${nodeIndex + 1}${preview ? " — " + preview : ""}`;
+          return `<option value="${esc(id)}" ${id === current ? "selected" : ""}>${esc(label)}</option>`;
+        })
+        .join("");
+      return items ? `<optgroup label="${esc(sceneLabel(scene, sceneIndex))}">${items}</optgroup>` : "";
+    })
+    .join("");
+
+  return `<option value="">— Fin de l’épisode —</option>${groups}`;
+}
+
+function onScreenCheckboxes(node) {
+  const selected = new Set(ensureArray(node.onScreen));
+  return people
+    .map(
+      (person) => `
+      <label class="onscreen-check">
+        <input type="checkbox" data-field="onscreen" value="${esc(person.id)}" ${selected.has(person.id) ? "checked" : ""} />
+        ${esc(person.name)}
+      </label>`
+    )
+    .join("");
+}
+
+function renderNodeCard(episode, node, id, index) {
+  if (!node) return "";
+  const kind = node.type === "choice" ? "Choix" : "Dialogue";
+  const speakerOptions = [
+    `<option value="narration" ${node.speaker === "narration" ? "selected" : ""}>Narration</option>`,
+    ...people.map((person) => `<option value="${esc(person.id)}" ${person.id === node.speaker ? "selected" : ""}>${esc(person.name)}</option>`),
+  ].join("");
+
+  return `
+    <div class="node-card ${node.type === "choice" ? "choice" : ""}" data-node="${esc(id)}">
+      <div class="node-card-head">
+        <span class="node-index">${index + 1}. ${kind}</span>
+        <button class="node-delete" data-delete-node="${esc(id)}" title="Supprimer">×</button>
+      </div>
+      <div class="node-grid">
+        <label>Personnage<select data-field="speaker">${speakerOptions}</select></label>
+        <label>Musique<select data-field="music">${labelsForSelect(files.music, node.music || "", "— Aucune musique —")}</select></label>
+        <label>Position de bulle<select data-field="position">
+          ${["left", "center", "right"].map((position) => `<option value="${position}" ${node.position === position ? "selected" : ""}>${position[0].toUpperCase()}${position.slice(1)}</option>`).join("")}
+        </select></label>
+        <label>Illustration<select data-field="cg">${labelsForSelect(files.illustrations, node.cg || "", "— Aucune illustration —", mediaLabel)}</select></label>
+      </div>
+      <label>Personnages à l’écran<span class="onscreen-list">${onScreenCheckboxes(node)}</span></label>
+      <small class="effect-help">Laisse tout décoché pour garder la mise en scène automatique (le jeu garde les 3 derniers qui ont parlé).</small>
+      <label>${node.type === "choice" ? "Question du choix" : "Phrase du dialogue"}<textarea data-field="text" rows="3">${esc(node.text || "")}</textarea></label>
+      ${
+        node.type === "choice"
+          ? renderChoiceOptions(episode, node, id)
+          : `<label>Suite<select data-field="next">${nodeTargetOptions(episode, node.next || "", id)}</select></label>`
+      }
     </div>
   `;
 }
 
-function renderChoiceEditor(node) {
+function renderChoiceOptions(episode, node, nodeId) {
   return `
-    <section class="options">
-      <h2 class="section-title">Réponses</h2>
-      <p class="intro">Les réponses continuent automatiquement avec l’élément suivant de cette scène.</p>
-      <div id="options">${node.options.map((option, index) => renderChoice(option, index)).join("")}</div>
-      <button id="add-option" class="add-option">+ Ajouter une réponse</button>
-    </section>
+    <div class="node-options">
+      ${node.options.map((option, index) => renderChoiceOption(episode, option, index, nodeId)).join("")}
+      <button class="add-option" data-add-option="true">+ Ajouter une réponse</button>
+    </div>
   `;
 }
 
-function renderChoice(option, index) {
+function renderChoiceOption(episode, option, index, nodeId) {
   const effectKey = Object.keys(option.effects || {})[0] || "";
   const effectValue = effectKey ? option.effects[effectKey] : {};
   const gauge = Object.keys(effectValue || {})[0] || "amour";
   const delta = effectValue?.[gauge] ?? 0;
 
   return `
-    <article class="option" data-option="${index}">
-      <button class="delete-option" type="button">×</button>
-      <label>Réponse<textarea class="choice-text" rows="2">${esc(option.text || "")}</textarea></label>
-      <div class="option-grid">
-        <label>Lovometer de<select class="choice-target">${peopleOptions(effectKey)}</select></label>
-        <label>Jauge<select class="choice-gauge">
+    <article class="choice-option" data-option="${index}">
+      <button class="delete-option" type="button" data-delete-option="${index}">×</button>
+      <label>Réponse<textarea data-field="option-text" rows="2">${esc(option.text || "")}</textarea></label>
+      <div class="choice-option-grid">
+        <label>Lovometer de<select data-field="option-target">${peopleOptions(effectKey)}</select></label>
+        <label>Jauge<select data-field="option-gauge">
           <option value="amour" ${gauge === "amour" ? "selected" : ""}>Amour</option>
           <option value="amitie" ${gauge === "amitie" ? "selected" : ""}>Amitié</option>
         </select></label>
-        <label>Variation (%)<input class="choice-delta" type="number" min="-100" max="100" step="1" value="${esc(delta)}"></label>
+        <label>Variation (%)<input data-field="option-delta" type="number" min="-100" max="100" step="1" value="${esc(delta)}"></label>
       </div>
+      <label>Mène à<select data-field="option-next">${nodeTargetOptions(episode, option.next || "", nodeId)}</select></label>
       <small class="effect-help">Bonne réponse : +5 · Neutre : 0 · Mauvaise réponse : −5</small>
     </article>
   `;
 }
 
-function speakerName(speaker) {
-  if (speaker === "narration") return "Narration";
-  return people.find((person) => person.id === speaker)?.name || "Personnage";
-}
+function handleSceneFlowInput(target) {
+  const field = target.dataset.field;
+  if (!field) return;
 
-function renderPreview(scene, node) {
-  const background = scene.background ? `style="background-image:url('${esc(scene.background)}')"` : "";
-  const position = ["left", "center", "right"].includes(node.position) ? node.position : "center";
-  const choices = node.type === "choice"
-    ? `<div class="preview-choices">${node.options.map((option) => `<span>${esc(option.text || "Réponse")}</span>`).join("")}</div>`
-    : "";
-  return `
-    <section class="preview" aria-label="Aperçu de la scène">
-      <div class="preview-head"><h3>Aperçu</h3><small>tel que le joueur le verra</small></div>
-      <div class="preview-stage ${scene.background ? "has-background" : ""}" ${background}>
-        <div class="preview-scene-name">${esc(scene.title || "Scène")}</div>
-        <div class="preview-bubble ${position}">
-          <strong>${esc(speakerName(node.speaker))}</strong>
-          <p>${esc(node.text || (node.type === "choice" ? "Question du choix" : "Votre dialogue apparaîtra ici."))}</p>
-        </div>
-        ${choices}
-      </div>
-    </section>
-  `;
-}
-
-function renderEditor() {
-  const root = $("#editor-content");
   const episode = currentEpisode();
-  const scene = episode.scenes.find((item) => item.id === sceneId) || episode.scenes[0];
-  const node = episode.nodes[nodeId] || (scene ? episode.nodes[scene.nodeIds[0]] : null);
+  if (!episode) return;
 
-  if (!scene || !node) {
-    root.innerHTML = '<p class="empty">Crée une scène pour commencer, puis ajoute des dialogues à l’intérieur.</p>';
+  const optionCard = target.closest(".choice-option");
+  const nodeCard = target.closest(".node-card");
+  const sceneCard = target.closest(".scene-block");
+
+  if (optionCard && nodeCard) {
+    const node = episode.nodes[nodeCard.dataset.node];
+    const option = node?.options?.[Number(optionCard.dataset.option)];
+    if (!option) return;
+
+    if (field === "option-text") {
+      option.text = target.value;
+    } else if (field === "option-next") {
+      option.next = target.value || "";
+    } else {
+      const person = optionCard.querySelector('[data-field="option-target"]').value || "";
+      const gauge = optionCard.querySelector('[data-field="option-gauge"]').value || "amour";
+      const delta = Number(optionCard.querySelector('[data-field="option-delta"]').value || 0);
+      option.effects = person ? { [person]: { [gauge]: delta } } : {};
+    }
+
+    save();
     return;
   }
 
-  const speakerOptions = [
-    `<option value="narration" ${node.speaker === "narration" ? "selected" : ""}>Narration</option>`,
-    ...people.map((person) => `<option value="${esc(person.id)}" ${person.id === node.speaker ? "selected" : ""}>${esc(person.name)}</option>`),
-  ].join("");
+  if (nodeCard) {
+    const node = episode.nodes[nodeCard.dataset.node];
+    if (!node) return;
 
-  root.innerHTML = `
-    <div class="editor-head">
-      <div>
-        <h2>${esc(episodeDisplayName(episode))}</h2>
-        <p class="intro">Scène active: ${esc(scene.title || "Scène")}</p>
-      </div>
-      <button id="delete-node" class="delete">Supprimer cet élément</button>
-    </div>
-
-    ${renderSceneEditor(scene)}
-
-    <div class="grid">
-      <label>Personnage<select id="speaker">${speakerOptions}</select></label>
-      <label>Position de bulle<select id="position">
-        ${["left", "center", "right"].map((position) => `<option value="${position}" ${node.position === position ? "selected" : ""}>${position[0].toUpperCase()}${position.slice(1)}</option>`).join("")}
-      </select></label>
-      <label class="wide">${node.type === "choice" ? "Question ou dialogue avant le choix" : "Phrase du dialogue"}<textarea id="text" rows="5">${esc(node.text || "")}</textarea></label>
-      <label>Illustration<select id="cg">${labelsForSelect(files.illustrations, node.cg || "", "— Aucune illustration —", (item) => item.split("/").pop())}</select></label>
-    </div>
-
-    ${node.type === "choice" ? renderChoiceEditor(node) : ""}
-    ${renderPreview(scene, node)}
-  `;
-
-  bindEditor(scene, node);
-}
-
-function syncChoice(optionCard, node, index) {
-  const option = node.options[index];
-  if (!option) return;
-
-  option.text = optionCard.querySelector(".choice-text").value;
-  const target = optionCard.querySelector(".choice-target").value || "";
-  const gauge = optionCard.querySelector(".choice-gauge").value || "amour";
-  const delta = Number(optionCard.querySelector(".choice-delta").value || 0);
-  option.effects = target ? { [target]: { [gauge]: delta } } : {};
-}
-
-function bindEditor(scene, node) {
-  const episode = currentEpisode();
-
-  const update = () => {
-    episode.title = $("#episode-title").value.trim() || episode.title;
-    scene.title = $("#scene-title").value.trim() || scene.title;
-    scene.background = $("#scene-background").value || "";
-    scene.music = $("#scene-music").value || "";
-
-    setSceneForNode(scene, node);
-
-    node.speaker = $("#speaker").value;
-    node.position = $("#position").value;
-    node.text = $("#text").value;
-    node.cg = $("#cg").value || "";
-    episode.start = episode.scenes[0]?.nodeIds[0] || episode.start;
-
-    save();
-    renderNodes();
-    const preview = document.querySelector("#editor-content .preview");
-    if (preview) preview.outerHTML = renderPreview(scene, node);
-  };
-
-  document.querySelectorAll(".editor input, .editor select, .editor textarea").forEach((input) => {
-    input.onchange = update;
-    input.oninput = update;
-  });
-
-  $("#delete-node").onclick = () => {
-    if (!confirm(`Supprimer cet élément ?`)) return;
-
-    const oldId = nodeId;
-    delete episode.nodes[oldId];
-
-    episode.scenes.forEach((item) => {
-      item.nodeIds = item.nodeIds.filter((id) => id !== oldId);
-    });
-
-    Object.values(episode.nodes).forEach((entry) => {
-      if (entry.next === oldId) entry.next = "";
-      if (entry.type === "choice") {
-        entry.options.forEach((option) => {
-          if (option.next === oldId) option.next = "";
-        });
-      }
-    });
-
-    nodeId = scene.nodeIds[0] || "";
-    if (!nodeId) {
-      const fallbackScene = episode.scenes.find((item) => item.nodeIds.length > 0);
-      sceneId = fallbackScene?.id || sceneId;
-      nodeId = fallbackScene?.nodeIds[0] || "";
+    if (field === "speaker") node.speaker = target.value;
+    if (field === "music") node.music = target.value || "";
+    if (field === "position") node.position = target.value;
+    if (field === "cg") node.cg = target.value || "";
+    if (field === "text") node.text = target.value;
+    if (field === "next") node.next = target.value || "";
+    if (field === "onscreen") {
+      node.onScreen = [...nodeCard.querySelectorAll('[data-field="onscreen"]:checked')].map((box) => box.value);
     }
 
-    if (episode.start === oldId) episode.start = nodeId || "";
+    save();
+    return;
+  }
+
+  if (sceneCard) {
+    const scene = episode.scenes.find((item) => item.id === sceneCard.dataset.scene);
+    if (!scene) return;
+
+    if (field === "scene-title") scene.title = target.value;
+    if (field === "scene-background") {
+      scene.background = target.value || "";
+      scene.nodeIds.forEach((id) => {
+        const node = episode.nodes[id];
+        if (node) node.background = scene.background;
+      });
+    }
 
     save();
-    render();
-  };
-
-  if (node.type === "choice") {
-    $("#add-option").onclick = () => {
-      node.options.push({ text: "Nouvelle réponse", effects: {}, next: "" });
-      save();
-      renderEditor();
-    };
-
-    document.querySelectorAll(".option").forEach((card) => {
-      const index = Number(card.dataset.option);
-      const sync = () => {
-        syncChoice(card, node, index);
-        save();
-        renderNodes();
-        const preview = document.querySelector("#editor-content .preview");
-        if (preview) preview.outerHTML = renderPreview(scene, node);
-      };
-
-      card.querySelectorAll("input, select, textarea").forEach((input) => {
-        input.onchange = sync;
-        input.oninput = sync;
-      });
-
-      card.querySelector(".delete-option").onclick = () => {
-        node.options.splice(index, 1);
-        save();
-        renderEditor();
-      };
-    });
   }
+}
+
+function bindSceneFlow() {
+  const container = $("#scene-flow");
+
+  container.addEventListener("input", (event) => handleSceneFlowInput(event.target));
+  container.addEventListener("change", (event) => handleSceneFlowInput(event.target));
+
+  container.addEventListener("click", (event) => {
+    const addLine = event.target.closest("[data-add-line]");
+    const addChoice = event.target.closest("[data-add-choice]");
+    const deleteScene = event.target.closest("[data-delete-scene]");
+    const deleteNode = event.target.closest("[data-delete-node]");
+    const addOption = event.target.closest("[data-add-option]");
+    const deleteOption = event.target.closest("[data-delete-option]");
+
+    if (addLine) newNode(addLine.dataset.addLine, "line");
+    else if (addChoice) newNode(addChoice.dataset.addChoice, "choice");
+    else if (deleteScene) removeScene(deleteScene.dataset.deleteScene);
+    else if (deleteNode) removeNode(deleteNode.dataset.deleteNode);
+    else if (addOption) addChoiceOption(event.target.closest(".node-card").dataset.node);
+    else if (deleteOption)
+      removeChoiceOption(event.target.closest(".node-card").dataset.node, Number(deleteOption.dataset.deleteOption));
+  });
 }
 
 function newEpisode() {
@@ -572,24 +863,24 @@ function newEpisode() {
 
   episodes[id] = normalizeEpisode(blankEpisode(id, `Épisode ${index - 1}`));
   episodeId = id;
-  sceneId = "scene_1";
-  nodeId = "scene_1_dialogue_1";
   save();
   render();
 }
 
 function newScene() {
   const episode = currentEpisode();
-  const nextIndex = episode.scenes.length + 1;
   const scene = {
-    id: `scene_${nextIndex}`,
-    title: `Scène ${nextIndex}`,
+    id: uniqueId("scene", new Set(episode.scenes.map((item) => item.id))),
+    title: `Scène ${episode.scenes.length + 1}`,
     background: "",
     music: "",
     nodeIds: [],
   };
 
   const previousScene = episode.scenes[episode.scenes.length - 1];
+  const lastPreviousId = previousScene?.nodeIds[previousScene.nodeIds.length - 1];
+  const lastPreviousNode = lastPreviousId ? episode.nodes[lastPreviousId] : null;
+
   const firstNodeId = `${scene.id}_dialogue_1`;
   episode.nodes[firstNodeId] = {
     type: "line",
@@ -597,45 +888,40 @@ function newScene() {
     text: "",
     next: "",
     background: scene.background || "",
-    music: scene.music || "",
+    music: lastPreviousNode?.music || "",
     position: "center",
   };
   scene.nodeIds.push(firstNodeId);
   episode.scenes.push(scene);
-  sceneId = scene.id;
-  nodeId = firstNodeId;
 
-  if (previousScene?.nodeIds.length) {
-    const lastId = previousScene.nodeIds[previousScene.nodeIds.length - 1];
-    const lastNode = episode.nodes[lastId];
-    if (lastNode) {
-      if (lastNode.type === "line" && !lastNode.next) {
-        lastNode.next = firstNodeId;
-      }
-      if (lastNode.type === "choice") {
-        lastNode.options.forEach((option) => {
-          if (!option.next) option.next = firstNodeId;
-        });
-      }
+  if (lastPreviousNode) {
+    if (lastPreviousNode.type === "line" && !lastPreviousNode.next) {
+      lastPreviousNode.next = firstNodeId;
+    }
+    if (lastPreviousNode.type === "choice") {
+      lastPreviousNode.options.forEach((option) => {
+        if (!option.next) option.next = firstNodeId;
+      });
     }
   }
 
+  episode.start = episode.start || firstNodeId;
   save();
   render();
 }
 
-function newNode(type) {
+function newNode(targetSceneId, type) {
   const episode = currentEpisode();
-  let scene = episode.scenes.find((item) => item.id === sceneId);
-  if (!scene) {
-    scene = episode.scenes[0];
-    sceneId = scene?.id || "";
-  }
+  const scene = episode.scenes.find((item) => item.id === targetSceneId);
   if (!scene) return;
 
   const existingIds = new Set(nodeIdsForEpisode(episode));
   const base = type === "choice" ? "choix" : "dialogue";
   const id = uniqueId(`${scene.id}_${base}`, existingIds);
+  const previousId = scene.nodeIds[scene.nodeIds.length - 1];
+  const previousNode = episode.nodes[previousId];
+  const music = previousNode?.music || scene.music || "";
+
   const node =
     type === "choice"
       ? {
@@ -644,27 +930,23 @@ function newNode(type) {
           text: "",
           options: [{ text: "Nouvelle réponse", effects: {}, next: "" }],
           background: scene.background || "",
-          music: scene.music || "",
+          music,
           position: "center",
         }
       : {
           type,
           speaker: "moi",
-          text: "Nouveau dialogue",
+          text: "",
           next: "",
           background: scene.background || "",
-          music: scene.music || "",
+          music,
           position: "center",
         };
 
   episode.nodes[id] = node;
 
-  const previousId = scene.nodeIds[scene.nodeIds.length - 1];
-  const previousNode = episode.nodes[previousId];
   if (previousNode) {
-    if (previousNode.type === "line" && !previousNode.next) {
-      previousNode.next = id;
-    }
+    if (previousNode.type === "line" && !previousNode.next) previousNode.next = id;
     if (previousNode.type === "choice") {
       previousNode.options.forEach((option) => {
         if (!option.next) option.next = id;
@@ -673,16 +955,83 @@ function newNode(type) {
   }
 
   scene.nodeIds.push(id);
-  nodeId = id;
+  episode.start = episode.start || id;
   save();
   render();
 }
 
-function syncSceneFromEditor() {
+function removeScene(targetSceneId) {
   const episode = currentEpisode();
-  const scene = episode.scenes.find((item) => item.id === sceneId) || episode.scenes[0];
-  if (!scene) return null;
-  return scene;
+  if (episode.scenes.length <= 1) {
+    alert("Un épisode doit garder au moins une scène.");
+    return;
+  }
+  if (!confirm("Supprimer cette scène et tous ses dialogues ?")) return;
+
+  const scene = episode.scenes.find((item) => item.id === targetSceneId);
+  if (!scene) return;
+
+  scene.nodeIds.forEach((id) => delete episode.nodes[id]);
+  episode.scenes = episode.scenes.filter((item) => item.id !== targetSceneId);
+
+  const remainingIds = new Set(nodeIdsForEpisode(episode));
+  Object.values(episode.nodes).forEach((entry) => {
+    if (entry.next && !remainingIds.has(entry.next)) entry.next = "";
+    if (entry.type === "choice") {
+      entry.options.forEach((option) => {
+        if (option.next && !remainingIds.has(option.next)) option.next = "";
+      });
+    }
+  });
+
+  if (!remainingIds.has(episode.start)) {
+    episode.start = episode.scenes[0]?.nodeIds[0] || "";
+  }
+
+  save();
+  render();
+}
+
+function removeNode(id) {
+  if (!confirm("Supprimer ce dialogue ?")) return;
+  const episode = currentEpisode();
+  delete episode.nodes[id];
+
+  episode.scenes.forEach((scene) => {
+    scene.nodeIds = scene.nodeIds.filter((nodeId) => nodeId !== id);
+  });
+
+  Object.values(episode.nodes).forEach((entry) => {
+    if (entry.next === id) entry.next = "";
+    if (entry.type === "choice") {
+      entry.options.forEach((option) => {
+        if (option.next === id) option.next = "";
+      });
+    }
+  });
+
+  if (episode.start === id) {
+    episode.start = episode.scenes[0]?.nodeIds[0] || "";
+  }
+
+  save();
+  render();
+}
+
+function addChoiceOption(id) {
+  const node = currentEpisode().nodes[id];
+  if (!node) return;
+  node.options.push({ text: "Nouvelle réponse", effects: {}, next: "" });
+  save();
+  render();
+}
+
+function removeChoiceOption(id, index) {
+  const node = currentEpisode().nodes[id];
+  if (!node) return;
+  node.options.splice(index, 1);
+  save();
+  render();
 }
 
 function downloadCurrent() {
@@ -722,9 +1071,6 @@ function importFile(event) {
         throw new Error("Fichier invalide");
       }
 
-      const active = currentEpisode();
-      sceneId = active.scenes[0]?.id || "";
-      nodeId = active.scenes[0]?.nodeIds[0] || active.start || "";
       save();
       render();
     } catch (error) {
@@ -736,13 +1082,24 @@ function importFile(event) {
 }
 
 async function init() {
-  const [characters, publishedEpisodes] = await Promise.all([
+  const [characters, publishedEpisodes, publishedShop] = await Promise.all([
     fetch("data/characters.json").then((response) => response.json()),
     Promise.all(["episode1", "episode2"].map(async (id) => {
       const response = await fetch(`data/episodes/${id}.json`);
       return response.ok ? response.json() : null;
     })),
+    fetch("data/shop.json").then((response) => (response.ok ? response.json() : null)),
   ]);
+
+  shop = publishedShop || shop;
+  const savedShop = localStorage.getItem(SHOP_STORE);
+  if (savedShop) {
+    try {
+      shop = JSON.parse(savedShop);
+    } catch {
+      // Une ancienne sauvegarde invalide ne doit jamais empêcher l'accès à l'admin.
+    }
+  }
 
   people = [
     ...(characters.player ? [characters.player] : []),
@@ -751,7 +1108,14 @@ async function init() {
   ].map((person) => ({
     id: person.id,
     name: person.name || person.defaultName,
+    sprite: person.sprite || "",
   }));
+
+  await discoverMedia();
+  BASE_FILES = copy(files);
+  loadMediaExtras();
+  loadPeopleExtras();
+  people = [...people, ...extraPeople];
 
   const publishedById = Object.fromEntries(
     publishedEpisodes
@@ -785,34 +1149,41 @@ async function init() {
     episodeId = episodes.episode1 ? "episode1" : Object.keys(episodes)[0] || "";
   }
 
-  const active = currentEpisode();
-  sceneId = active.scenes[0]?.id || "";
-  nodeId = active.scenes[0]?.nodeIds[0] || active.start || "";
-
   bind();
   render();
 }
 
 function bind() {
-  $("#new-episode").onclick = newEpisode;
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.onclick = () => switchTab(btn.dataset.tab);
+  });
+  $("#episode-select").onchange = (event) => {
+    episodeId = event.target.value;
+    save();
+    render();
+  };
+  $("#episode-title").onchange = (event) => {
+    const episode = currentEpisode();
+    if (episode) episode.title = event.target.value.trim() || episode.title;
+    save();
+    renderEpisodeSelect();
+  };
   $("#new-episode-main").onclick = newEpisode;
-  $("#new-scene").onclick = newScene;
   $("#new-scene-main").onclick = newScene;
-  $("#new-line").onclick = () => newNode("line");
-  $("#new-line-main").onclick = () => newNode("line");
-  $("#new-choice").onclick = () => newNode("choice");
   $("#export-json").onclick = downloadCurrent;
   $("#export-all").onclick = downloadAll;
   $("#import-json").onchange = importFile;
+  bindSceneFlow();
 }
 
 function render() {
-  renderEpisodes();
-  renderScenes();
-  renderNodes();
-  renderEditor();
+  renderEpisodeSelect();
+  renderSceneFlow();
+  renderMedia();
+  renderVestiaire();
 }
 
 init().catch((error) => {
-  $("#editor-content").innerHTML = `<p class="empty">${esc(error.message)}</p>`;
+  $("#scene-flow").innerHTML = `<p class="empty">${esc(error.message)}</p>`;
 });
+

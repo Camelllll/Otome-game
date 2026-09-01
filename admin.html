@@ -1,11 +1,36 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Otome Studio</title><link rel="stylesheet" href="admin.css" /></head>
 <body>
-  <header class="topbar"><div><span>OTOME STUDIO</span><h1>Épisodes</h1></div><div><label class="btn btn-light" for="import-json">Importer</label><input id="import-json" hidden type="file" accept="application/json" /><button id="export-json" class="btn btn-light">Exporter l’épisode</button><button id="export-all" class="btn btn-light">Sauvegarder tout</button></div></header>
-  <main class="workspace">
-    <aside class="sidebar episodes"><div class="side-title"><h2>Épisodes</h2><button id="new-episode" class="round-btn" title="Ajouter un épisode">＋</button></div><button id="new-episode-main" class="primary-action">+ Ajouter un épisode</button><div id="episode-list"></div></aside>
-    <aside class="sidebar scenes"><div class="side-title"><div><h2>Scènes</h2><small id="episode-subtitle"></small></div><button id="new-scene" class="round-btn">＋</button></div><p class="sidebar-help">Une scène = un décor et une suite de dialogues.</p><button id="new-scene-main" class="primary-action">+ Ajouter une scène</button><div id="scene-list"></div></aside>
-    <aside class="sidebar dialogues"><div class="side-title"><h2>Dans cette scène</h2><button id="new-line" class="round-btn">＋</button></div><p class="sidebar-help">Tout s’enchaîne automatiquement dans cet ordre.</p><button id="new-line-main" class="primary-action">+ Ajouter un dialogue</button><button id="new-choice" class="choice-btn">＋ Ajouter un choix</button><div id="node-list"></div></aside>
-    <section class="editor"><div id="editor-content"></div></section>
-  </main><script type="module" src="src/admin.js"></script>
+  <header class="topbar"><div><span>OTOME STUDIO</span><h1 id="topbar-title">Épisodes</h1></div></header>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="episodes">Épisodes</button>
+    <button class="tab-btn" data-tab="media">Média</button>
+    <button class="tab-btn" data-tab="vestiaire">Vestiaire</button>
+  </nav>
+  <section class="tab-panel active episode-flow" id="tab-episodes">
+    <div class="panel-block episode-toolbar">
+      <div class="episode-picker">
+        <label for="episode-select">Épisode</label>
+        <select id="episode-select"></select>
+        <button id="new-episode-main" class="primary-action">+ Nouvel épisode</button>
+      </div>
+      <input id="episode-title" class="episode-title-input" placeholder="Titre de l’épisode" />
+      <div class="episode-tools">
+        <label class="btn btn-light" for="import-json">Importer</label>
+        <input id="import-json" hidden type="file" accept="application/json" />
+        <button id="export-json" class="btn btn-light">Exporter l’épisode</button>
+        <button id="export-all" class="btn btn-light">Sauvegarder tout</button>
+      </div>
+    </div>
+    <p class="branch-help">Astuce : pour une scène qui dépend d’un choix, crée une scène par chemin possible, puis choisis sa destination dans « Suite » (dialogue) ou « Mène à » (réponse d’un choix).</p>
+    <div id="scene-flow"></div>
+    <button id="new-scene-main" class="primary-action add-scene-btn">+ Ajouter une scène</button>
+  </section>
+  <section class="tab-panel" id="tab-media">
+    <div class="panel-block" id="media-content"></div>
+  </section>
+  <section class="tab-panel" id="tab-vestiaire">
+    <div class="panel-block" id="vestiaire-content"></div>
+  </section>
+  <script type="module" src="src/admin.js"></script>
 </body></html>

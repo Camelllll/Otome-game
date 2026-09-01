@@ -89,7 +89,15 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode } = 
       personnagesPresents.length = 0;
       zoneBulle.replaceChildren();
     }
-    if (affichage.estPersonnageSurScene && affichage.spriteScene) {
+
+    if (affichage.onScreen) {
+      // Mise en scène choisie explicitement dans l'admin : elle remplace la gestion automatique.
+      personnagesPresents.length = 0;
+      affichage.onScreen.slice(0, 3).forEach((id) => {
+        const personnage = moteur.personnagesParId.get(id);
+        if (personnage?.sprite) personnagesPresents.push({ id, sprite: personnage.sprite });
+      });
+    } else if (affichage.estPersonnageSurScene && affichage.spriteScene) {
       const index = personnagesPresents.findIndex((personnage) => personnage.id === affichage.speakerId);
       if (index === -1) {
         // Une scène peut afficher jusqu'à trois interlocuteurs. Le plus ancien laisse sa place à un quatrième.

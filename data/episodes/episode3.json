@@ -1,0 +1,60 @@
+{
+  "id": "episode3",
+  "title": "Épisode 3",
+  "university": "Université Aster",
+  "start": "scene_1_dialogue_1",
+  "music": "",
+  "nodes": {
+    "scene_1_dialogue_1": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "cc",
+      "next": "scene_1_dialogue_2",
+      "background": "assets/Décors/Salle de TD.jpg",
+      "position": "center"
+    },
+    "scene_1_dialogue_2": {
+      "type": "line",
+      "speaker": "isaac",
+      "text": "cool",
+      "next": "scene_1_dialogue_3",
+      "background": "assets/Décors/Salle de TD.jpg",
+      "music": "",
+      "position": "right",
+      "onScreen": [
+        "isaac"
+      ]
+    },
+    "scene_1_dialogue_3": {
+      "type": "line",
+      "speaker": "nathan",
+      "text": "sazjkdejza;fbdjca",
+      "next": "scene_2_dialogue_1",
+      "background": "assets/Décors/Salle de TD.jpg",
+      "music": "",
+      "position": "center"
+    },
+    "scene_2_dialogue_1": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "sezddzdedze",
+      "next": "scene_2_dialogue_2",
+      "background": "assets/Décors/Salle de TD.jpg",
+      "music": "",
+      "position": "center"
+    },
+    "scene_2_dialogue_2": {
+      "type": "line",
+      "speaker": "isaac",
+      "text": "",
+      "next": "",
+      "background": "assets/Décors/Salle de TD.jpg",
+      "music": "",
+      "position": "center",
+      "onScreen": [
+        "aaron",
+        "camel"
+      ]
+    }
+  }
+}
