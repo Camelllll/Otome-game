@@ -1,0 +1,516 @@
+/* Style pastel, doux, inspiré des dating sims shojo. */
+:root {
+  --rose-pastel: #ffd6e8;
+  --rose-vif: #ff8fb1;
+  --mauve: #c9a7eb;
+  --creme: #fff8f3;
+  --texte-fonce: #4a3b47;
+  --degrade-jauge: linear-gradient(90deg, #ffb6c1, #ff6f91);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: "Segoe UI", "Poppins", sans-serif;
+  background: var(--creme);
+  color: var(--texte-fonce);
+}
+
+#jeu {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.ecran-dialogue {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, var(--rose-pastel), var(--mauve));
+}
+
+/* Commande d'ambiance toujours accessible, sans gêner les éléments de jeu. */
+.bouton-musique {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 20;
+  border: 2px solid white;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  background: rgba(255, 143, 177, 0.92);
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(74, 59, 71, 0.2);
+}
+
+.bouton-musique:hover { background: var(--mauve); }
+.bouton-musique.muet { background: rgba(74, 59, 71, 0.68); }
+
+.decor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.illustration-cg {
+  display: block;
+  max-width: min(82vw, 1100px);
+  max-height: 78vh;
+  object-fit: contain;
+  border: 3px solid rgba(255, 255, 255, 0.86);
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  animation: apparition-illustration 0.35s ease-out both;
+}
+
+.voile-illustration {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  place-items: center;
+  background: rgba(20, 13, 21, 0.62);
+}
+
+.voile-illustration.visible { display: grid; }
+
+.fermer-illustration {
+  position: absolute;
+  top: max(1rem, 8vh);
+  right: max(1rem, 8vw);
+  width: 42px;
+  height: 42px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: var(--rose-vif);
+  color: white;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@keyframes apparition-illustration {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.zone-personnages {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Les sprites sont ancrés au bas de l'écran : la barre est translucide et laisse voir leur bas. */
+.cadre-personnage {
+  position: absolute;
+  bottom: 0;
+  width: min(58vw, 660px);
+  height: min(82vh, 660px);
+  overflow: hidden;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+}
+
+.cadre-personnage.solo {
+  left: 50%;
+  bottom: -64.5vh;
+  width: min(58vw, 1060px);
+  height: 160vh;
+  transform: translateX(-50%);
+}
+
+.cadre-personnage.duo-0,
+.cadre-personnage.duo-1 {
+  bottom: -64.5vh;
+  width: min(58vw, 1060px);
+  height: 160vh;
+}
+
+.cadre-personnage.duo-0 { left: 7%; }
+.cadre-personnage.duo-1 { right: 7%; }
+.cadre-personnage.trio-0,
+.cadre-personnage.trio-1,
+.cadre-personnage.trio-2 { bottom: -8vh; height: 88vh; }
+.cadre-personnage.trio-0 { left: 2%; width: min(34vw, 460px); }
+.cadre-personnage.trio-1 { left: 50%; width: min(34vw, 460px); transform: translateX(-50%); }
+.cadre-personnage.trio-2 { right: 2%; width: min(34vw, 460px); }
+
+.sprite-personnage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.25));
+}
+
+/* Bulle de discussion des personnages : le décor reste volontairement visible au travers. */
+.zone-bulle {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  pointer-events: none;
+}
+
+.bulle-personnage {
+  position: absolute;
+  top: clamp(5rem, 12vh, 10rem);
+  width: min(390px, 31vw);
+  padding: 1rem 1.2rem 1.1rem;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 22px;
+  background: rgba(255, 250, 253, 0.78);
+  color: var(--texte-fonce);
+  box-shadow: 0 8px 22px rgba(53, 30, 43, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(5px);
+  text-align: left;
+  font: inherit;
+  pointer-events: auto;
+  animation: apparition-bulle 0.22s ease-out both;
+}
+
+.bulle-personnage::after {
+  content: "";
+  position: absolute;
+  bottom: -16px;
+  border-width: 16px 12px 0;
+  border-style: solid;
+  border-color: rgba(255, 250, 253, 0.78) transparent transparent;
+}
+
+.bulle-personnage.pos-left { left: 4%; }
+.bulle-personnage.pos-left::after { left: 18%; }
+.bulle-personnage.pos-right { right: 4%; }
+.bulle-personnage.pos-right::after { right: 18%; }
+.bulle-personnage.pos-center { left: 50%; transform: translateX(-50%); }
+.bulle-personnage.pos-center::after { left: calc(50% - 12px); }
+
+.nom-bulle-personnage {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #d83269;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.texte-bulle-personnage {
+  font-size: clamp(1rem, 1.3vw, 1.22rem);
+  line-height: 1.42;
+}
+
+
+@keyframes apparition-bulle {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bulle-personnage.pos-center { animation-name: apparition-bulle-centree; }
+@keyframes apparition-bulle-centree {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Lovo-meter horizontal, discret, en haut à gauche. */
+.lovometre {
+  position: absolute;
+  top: 1rem;
+  z-index: 12;
+  display: none;
+}
+
+.lovometre.pos-gauche { left: 1rem; }
+.lovometre.pos-droite { display: none !important; }
+
+.lovometre.visible { display: flex; }
+
+.lovometre-cadre {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  min-width: min(390px, 48vw);
+  padding: 0.55rem 0.85rem 0.65rem 0.45rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.93), rgba(255, 224, 237, 0.9));
+  border: 2px solid #fff;
+  border-radius: 10px 23px 23px 23px;
+  box-shadow: 0 5px 16px rgba(74, 59, 71, 0.24), inset 0 0 0 2px rgba(255, 143, 177, 0.55);
+}
+
+.lovometre-cadre::after {
+  content: "✦";
+  position: absolute;
+  right: 0.55rem;
+  top: 0.12rem;
+  color: var(--rose-vif);
+  font-size: 0.85rem;
+}
+
+.lovometre-embleme {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  border: 2px solid white;
+  border-radius: 50% 50% 45% 45%;
+  background: linear-gradient(145deg, #ff9dbd, #ed3b70);
+  color: white;
+  font-size: 1.65rem;
+  line-height: 1;
+  box-shadow: 0 2px 7px rgba(182, 30, 77, 0.35);
+}
+
+.lovometre-nom {
+  padding-left: 0.25rem;
+  color: #b52759;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lovometre-barre {
+  position: relative;
+  width: min(320px, 38vw);
+  height: 27px;
+  margin: 0.2rem 0 0 0.25rem;
+  background: linear-gradient(90deg, #edd8e1, #f8eaf0);
+  border: 2px solid #d47d9d;
+  border-radius: 999px;
+  box-shadow: inset 0 2px 4px rgba(134, 56, 83, 0.18), 0 2px 4px rgba(74, 59, 71, 0.13);
+  display: flex;
+  overflow: hidden;
+}
+
+.lovometre-remplissage {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd0df, #ff9fbe);
+  transition: width 0.5s ease;
+  border-radius: inherit;
+}
+
+.lovometre-barre.niveau-moyen .lovometre-remplissage { background: linear-gradient(90deg, #ffc0d4, #ff719f); }
+.lovometre-barre.niveau-eleve .lovometre-remplissage { background: linear-gradient(90deg, #ff9fc0, #f9477d); }
+.lovometre-barre.niveau-fort .lovometre-remplissage { background: linear-gradient(90deg, #ff75a5, #d91d58); }
+
+.lovometre-pourcentage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: var(--texte-fonce);
+  font-weight: 700;
+  font-size: 0.86rem;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+
+.lovometre-pourcentage.sur-remplissage {
+  color: white;
+  text-shadow: 0 1px 2px rgba(74, 24, 47, 0.55);
+}
+
+.coeurs-gain {
+  position: absolute;
+  left: 50%;
+  bottom: 135px;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.coeur-gain {
+  position: absolute;
+  left: var(--decalage);
+  color: #ef245a;
+  font-size: 2.55rem;
+  filter: drop-shadow(0 2px 2px rgba(114, 20, 48, 0.32));
+  animation: coeur-vers-lovo 1.65s cubic-bezier(0.2, 0.85, 0.3, 1) var(--delai) forwards;
+}
+
+.coeurs-perte {
+  position: absolute;
+  top: 60px;
+  left: 105px;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.coeur-perte {
+  position: absolute;
+  left: var(--decalage);
+  color: #d72459;
+  font-size: 2.45rem;
+  filter: drop-shadow(0 2px 2px rgba(92, 17, 40, 0.36));
+  animation: coeur-quitte-lovo 1.55s cubic-bezier(0.3, 0.75, 0.45, 1) var(--delai) forwards;
+}
+
+.eclat-coeur {
+  position: absolute;
+  left: calc(var(--decalage) + 10px);
+  color: #a8244a;
+  font-size: 1.1rem;
+  opacity: 0;
+  animation: eclat-coeur 0.62s ease-out var(--delai) forwards;
+}
+
+@keyframes coeur-quitte-lovo {
+  0% { opacity: 1; transform: translate(0, 0) scale(0.95); }
+  55% { opacity: 1; transform: translate(75px, 125px) scale(1.08) rotate(12deg); }
+  72% { opacity: 0; transform: translate(110px, 165px) scale(0.25) rotate(46deg); }
+  100% { opacity: 0; transform: translate(135px, 205px) scale(0); }
+}
+
+@keyframes eclat-coeur {
+  0%, 28% { opacity: 0; transform: translate(75px, 125px) scale(0.2); }
+  45% { opacity: 1; transform: translate(75px, 125px) scale(1); }
+  100% { opacity: 0; transform: translate(112px, 168px) scale(0.35) rotate(55deg); }
+}
+
+@keyframes coeur-vers-lovo {
+  0% { opacity: 0; transform: translateY(18px) scale(0.55) rotate(-12deg); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50vw + 170px), calc(-100vh + 205px)) scale(0.42) rotate(16deg); }
+}
+
+.zone-narration {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+}
+
+.barre-narration {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.84);
+  border-top: 4px solid var(--rose-vif);
+  /* Une barre compacte, avec assez d'espace à gauche pour le portrait à cheval sur sa bordure. */
+  min-height: 132px;
+  padding: 1.05rem 2.5rem 1.05rem 18rem;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Pendant une bulle personnage, la barre reste accessible mais se fait plus discrète. */
+.barre-narration.sans-texte {
+  min-height: 102px;
+}
+
+.avatar-joueur {
+  position: absolute;
+    left: -125px;
+    top: auto;
+    bottom: 0;
+    width: 535px;
+    height: 355px;
+    object-fit: cover;
+    object-position: top center;
+    border: 0;
+    background: transparent;
+    flex-shrink: 0;
+    filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.22));
+}
+
+.contenu-narration {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  text-align: left;
+}
+
+.nom-personnage {
+  font-weight: 700;
+  color: var(--rose-vif);
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.nom-personnage-inline {
+  font-weight: 700;
+  color: var(--rose-vif);
+}
+
+.texte-dialogue {
+  font-size: clamp(1.15rem, 1.45vw, 1.4rem);
+  line-height: 1.4;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.texte-fin {
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.dialogue-cliquable {
+  cursor: pointer;
+}
+
+.dialogue-cliquable:hover { background: rgba(255, 255, 255, 0.91); }
+.dialogue-cliquable:focus-visible { outline: 3px solid var(--mauve); outline-offset: -5px; }
+
+.liste-choix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bouton-choix {
+  background: white;
+  border: 2px solid var(--rose-vif);
+  border-radius: 16px;
+  padding: 0.6rem 1rem;
+  text-align: left;
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.bouton-choix:hover {
+  background: var(--rose-pastel);
+}
+
+.jauge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.jauge-etiquette {
+  min-width: 55px;
+  font-size: 0.8rem;
+}
+
+.jauge-barre {
+  flex: 1;
+  height: 10px;
+  background: #eee;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.jauge-remplissage {
+  height: 100%;
+  background: var(--degrade-jauge);
+  transition: width 0.4s ease;
+}

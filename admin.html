@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Otome Studio</title><link rel="stylesheet" href="admin.css" /></head>
+<body>
+  <header class="topbar"><div><span>OTOME STUDIO</span><h1>Épisodes</h1></div><div><label class="btn btn-light" for="import-json">Importer</label><input id="import-json" hidden type="file" accept="application/json" /><button id="export-json" class="btn btn-light">Exporter l’épisode</button><button id="export-all" class="btn btn-light">Sauvegarder tout</button></div></header>
+  <main class="workspace">
+    <aside class="sidebar episodes"><div class="side-title"><h2>Épisodes</h2><button id="new-episode" class="round-btn" title="Ajouter un épisode">＋</button></div><button id="new-episode-main" class="primary-action">+ Ajouter un épisode</button><div id="episode-list"></div></aside>
+    <aside class="sidebar scenes"><div class="side-title"><div><h2>Scènes</h2><small id="episode-subtitle"></small></div><button id="new-scene" class="round-btn">＋</button></div><p class="sidebar-help">Une scène = un décor et une suite de dialogues.</p><button id="new-scene-main" class="primary-action">+ Ajouter une scène</button><div id="scene-list"></div></aside>
+    <aside class="sidebar dialogues"><div class="side-title"><h2>Dans cette scène</h2><button id="new-line" class="round-btn">＋</button></div><p class="sidebar-help">Tout s’enchaîne automatiquement dans cet ordre.</p><button id="new-line-main" class="primary-action">+ Ajouter un dialogue</button><button id="new-choice" class="choice-btn">＋ Ajouter un choix</button><div id="node-list"></div></aside>
+    <section class="editor"><div id="editor-content"></div></section>
+  </main><script type="module" src="src/admin.js"></script>
+</body></html>

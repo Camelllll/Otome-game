@@ -1,0 +1,117 @@
+{
+  "id": "episode2",
+  "title": "route 2",
+  "university": "Université Aster",
+  "start": "scene_1_dialogue_1",
+  "music": "",
+  "nodes": {
+    "scene_1_dialogue_1": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Coucou ! comment tu vas?",
+      "next": "scene_2_dialogue_1",
+      "background": "assets/Décors/Cour Campus.jpg",
+      "position": "center",
+      "music": "Romantique doux",
+      "cg": ""
+    },
+    "scene_2_dialogue_1": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "ça va hassoul et toi?",
+      "next": "scene_3_dialogue_1",
+      "background": "assets/Décors/Chambre sucrette campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "cg": ""
+    },
+    "scene_3_dialogue_1": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "ça va mashallah",
+      "next": "scene_4_dialogue_1",
+      "background": "assets/Décors/Chambre sucrette campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "cg": ""
+    },
+    "scene_4_dialogue_1": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Okkkk benef",
+      "next": "scene_4_choix_1",
+      "background": "assets/Décors/Chambre sucrette campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "cg": ""
+    },
+    "scene_4_choix_1": {
+      "type": "choice",
+      "speaker": "camel",
+      "text": "les fesses je préfère ça comment ?",
+      "options": [
+        {
+          "text": "Bien fermes",
+          "effects": {
+            "camel": {
+              "amour": 21
+            }
+          },
+          "next": "scene_5_dialogue_1"
+        },
+        {
+          "text": "Douce et onctueuses",
+          "effects": {
+            "camel": {
+              "amour": -28
+            }
+          },
+          "next": "scene_5_dialogue_1"
+        },
+        {
+          "text": "moelleuses et claquantes",
+          "effects": {
+            "camel": {
+              "amour": 0
+            }
+          },
+          "next": "scene_5_dialogue_1"
+        }
+      ],
+      "background": "assets/Décors/Chambre sucrette campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "cg": ""
+    },
+    "scene_5_dialogue_1": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "t'es complètement fou",
+      "next": "scene_6_dialogue_1",
+      "background": "assets/Décors/Chambre sucrette campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "cg": ""
+    },
+    "scene_6_dialogue_1": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "et oui..",
+      "next": "scene_2_dialogue_2",
+      "background": "assets/Décors/Chambre sucrette campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "cg": ""
+    },
+    "scene_2_dialogue_2": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Nouveau dialogue",
+      "next": "",
+      "background": "assets/Décors/Chambre sucrette campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "cg": ""
+    }
+  }
+}
