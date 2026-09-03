@@ -578,3 +578,56 @@ textarea{
     grid-template-columns:1fr;
   }
 }
+
+.admin-login{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+  background:#f4f1fb;
+}
+
+.admin-login form{
+  display:flex;
+  flex-direction:column;
+  gap:0.75rem;
+  width:20rem;
+  padding:2rem;
+  background:white;
+  border-radius:12px;
+  box-shadow:0 12px 32px rgba(0,0,0,0.1);
+}
+
+.admin-login input{
+  padding:0.6rem 0.8rem;
+  border-radius:8px;
+  border:1px solid #ddd;
+}
+
+.admin-login-error{
+  color:#b3261e;
+  min-height:1.2rem;
+  font-size:0.85rem;
+}
+
+.admin-remember-me{
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  font-size:0.85rem;
+  color:#555;
+}
+
+.node-end-toggle{
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  font-weight:600;
+  margin:0.5rem 0;
+}
+
+.node-warning{
+  display:block;
+  color:#b3261e;
+  margin-top:0.25rem;
+}

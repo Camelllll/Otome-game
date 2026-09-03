@@ -1,4 +1,4 @@
-// Écran de sélection d'épisode : accès rapide à un épisode donné, pratique pour développer/tester.
+// Écran de sélection d'épisode : les épisodes terminés sont marqués, les suivants se débloquent progressivement.
 export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episodeActuel, onSelect }) {
   const ecran = document.createElement("div");
   ecran.className = "ecran-selection-episode";
@@ -17,18 +17,23 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
 
   const sousTitre = document.createElement("p");
   sousTitre.className = "sous-titre-selection-episode";
-  sousTitre.textContent = "Pratique pour tester rapidement un épisode en développement.";
+  sousTitre.textContent = "Termine un épisode pour débloquer le suivant.";
   contenu.appendChild(sousTitre);
 
   const liste = document.createElement("div");
   liste.className = "liste-episodes";
 
-  episodes.forEach(({ id, title }) => {
+  episodes.forEach(({ id, title, complete, verrouille }) => {
     const bouton = document.createElement("button");
     bouton.className = "carte-episode";
     if (id === episodeActuel) bouton.classList.add("actif");
-    bouton.innerHTML = `<span class="numero-episode">Épisode ${id}</span><span class="titre-episode">${title}</span>`;
-    bouton.addEventListener("click", () => onSelect(id));
+    if (complete) bouton.classList.add("termine");
+    if (verrouille) bouton.classList.add("verrouille");
+    bouton.disabled = Boolean(verrouille);
+    const numero = id.match(/^episode(\d+)$/)?.[1] || id;
+    const badge = complete ? " ✅" : verrouille ? " 🔒" : "";
+    bouton.innerHTML = `<span class="numero-episode">Épisode ${numero}${badge}</span><span class="titre-episode">${title}</span>`;
+    if (!verrouille) bouton.addEventListener("click", () => onSelect(id));
     liste.appendChild(bouton);
   });
 

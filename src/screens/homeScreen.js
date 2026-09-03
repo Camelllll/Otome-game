@@ -1,8 +1,8 @@
 // Écran d'accueil du jeu : titre, intro, bouton démarrage, personnages dispersés en arrière-plan.
-import { chargerSauvegarde, sauvegarder } from "../engine/saveSystem.js";
+import { chargerSauvegarde, reinitialiserSauvegarde } from "../engine/saveSystem.js";
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
 
-export function lancerEcranAccueil(conteneurRacine, { onDemarrer }) {
+export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }) {
   // Lancer la musique d'ambiance
   const musique = new MusiqueAmbiance();
   
@@ -82,8 +82,9 @@ export function lancerEcranAccueil(conteneurRacine, { onDemarrer }) {
   zoneBoutons.className = "zone-boutons-accueil";
 
   // Bouton Continuer
-  const sauvegarde = chargerSauvegarde();
-  if (sauvegarde.playerName && sauvegarde.playerName !== "Sucrette" && sauvegarde.currentEpisode > 1) {
+  const sauvegarde = await chargerSauvegarde(joueur.id);
+  const aDejaJoue = Boolean(sauvegarde.currentNode) || sauvegarde.playerName !== "Sucrette";
+  if (aDejaJoue) {
     const btnContinuer = document.createElement("button");
     btnContinuer.className = "btn-accueil btn-continuer";
     btnContinuer.textContent = `Continuer (${sauvegarde.playerName})`;
@@ -95,10 +96,8 @@ export function lancerEcranAccueil(conteneurRacine, { onDemarrer }) {
   const btnNouvelle = document.createElement("button");
   btnNouvelle.className = "btn-accueil btn-nouvelle";
   btnNouvelle.textContent = "Nouvelle partie";
-  btnNouvelle.addEventListener("click", () => {
-    // Réinitialiser la sauvegarde
-    const nouvelleSauvegarde = { playerName: "Sucrette", currentEpisode: 1, currentNode: null };
-    sauvegarder(nouvelleSauvegarde);
+  btnNouvelle.addEventListener("click", async () => {
+    await reinitialiserSauvegarde(joueur.id);
     onDemarrer("nouvelle");
   });
   zoneBoutons.appendChild(btnNouvelle);

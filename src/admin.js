@@ -1,4 +1,9 @@
-const STORE = "otome-admin-episodes-v2";
+import { listEpisodes, saveEpisode, publishEpisode, unpublishEpisode, listMedia, addMediaEntry, uploadMedia, deleteMedia } from "./services/adminRepository.js";
+import { connexionAdmin, obtenirSessionAdmin } from "./services/adminAuth.js";
+import { definirSeSouvenir } from "./services/supabaseClient.js";
+import { parseDocxVersEpisode } from "./services/docxImportService.js";
+
+const STORE = "otome-admin-episodes-v2"; // cache local de secours uniquement, la base est la source de vérité
 
 const $ = (selector) => document.querySelector(selector);
 const copy = (value) => JSON.parse(JSON.stringify(value));
@@ -58,9 +63,11 @@ const MEDIA_FOLDERS = {
   ],
 };
 
-// Snapshot des entrées d'origine : sert à distinguer ce qui est supprimable (ajouté depuis l'admin).
+// Snapshot des entrées d'origine (fichiers bundlés dans assets/) : distinct des médias uploadés en base.
 let BASE_FILES = copy(files);
 let mediaLabels = {};
+// Chemin -> { id, category } pour les médias venant de la base (nécessaire pour les supprimer).
+let mediaAssetIndex = {};
 
 let people = [];
 let extraPeople = [];
@@ -71,7 +78,6 @@ let activeTab = "episodes";
 
 const WARDROBE_SLOTS = ["haut", "bas", "coiffure", "accessoire", "chaussures"];
 const SHOP_STORE = "otome-admin-shop-v1";
-const MEDIA_STORE = "otome-admin-media-v1";
 const PEOPLE_STORE = "otome-admin-people-v1";
 
 const currentEpisode = () => episodes[episodeId];
@@ -143,6 +149,7 @@ function inferScenesFromNodes(episode) {
 function normalizeEpisode(raw) {
   const episode = copy(raw);
   episode.nodes ||= {};
+  episode.status ||= "draft";
   episode.scenes = ensureArray(episode.scenes);
 
   if (episode.scenes.length === 0) {
@@ -173,6 +180,7 @@ function blankEpisode(id, title) {
   return {
     id,
     title,
+    status: "draft",
     university: "Université Aster",
     start: startNode,
     music: "",
@@ -261,52 +269,48 @@ async function discoverMedia() {
   }
 }
 
-function loadMediaExtras() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(MEDIA_STORE) || "null");
-    if (!saved) return;
-    ensureArray(saved.backgrounds).forEach((value) => {
-      if (value && !files.backgrounds.includes(value)) files.backgrounds.push(value);
-    });
-    ensureArray(saved.illustrations).forEach((value) => {
-      if (value && !files.illustrations.includes(value)) files.illustrations.push(value);
-    });
-    ensureArray(saved.music).forEach((value) => {
-      if (value && !files.music.includes(value)) files.music.push(value);
-    });
-    mediaLabels = saved.labels && typeof saved.labels === "object" ? saved.labels : {};
-  } catch {
-    // Un brouillon média invalide ne doit jamais empêcher l'accès à l'admin.
-  }
+// Charge la bibliothèque de médias depuis la base (partagée entre tous les admins/appareils).
+async function loadMediaLibrary() {
+  const medias = await listMedia();
+  mediaAssetIndex = {};
+  medias.forEach(({ id, category, path, label }) => {
+    if (!files[category]) return;
+    if (!files[category].includes(path)) files[category].push(path);
+    mediaLabels[path] = label;
+    mediaAssetIndex[path] = { id, category };
+  });
 }
 
-function saveMediaExtras() {
-  localStorage.setItem(
-    MEDIA_STORE,
-    JSON.stringify({
-      backgrounds: files.backgrounds.filter((item) => !BASE_FILES.backgrounds.includes(item)),
-      illustrations: files.illustrations.filter((item) => !BASE_FILES.illustrations.includes(item)),
-      music: files.music.filter((item) => !BASE_FILES.music.includes(item)),
-      labels: mediaLabels,
-    })
-  );
-}
-
-function addMediaItem(category, value, label = "") {
+// Référence un chemin déjà existant (ex: assets/... du dépôt) sans upload de fichier.
+async function ajouterReferenceMedia(category, value) {
   const trimmed = (value || "").trim();
   if (!trimmed) return;
-  if (!files[category].includes(trimmed)) files[category].push(trimmed);
-  if (label) mediaLabels[trimmed] = label;
-  saveMediaExtras();
+  const cree = await addMediaEntry(category, trimmed, trimmed);
+  if (!files[category].includes(cree.path)) files[category].push(cree.path);
+  mediaLabels[cree.path] = cree.label;
+  mediaAssetIndex[cree.path] = { id: cree.id, category };
   renderMedia();
   renderSceneFlow();
 }
 
-function removeMediaItem(category, value) {
+// Upload un vrai fichier vers le bucket Storage "media" + référence en base.
+async function ajouterFichierMedia(file, category) {
+  const cree = await uploadMedia(file, category);
+  if (!files[category].includes(cree.path)) files[category].push(cree.path);
+  mediaLabels[cree.path] = cree.label;
+  mediaAssetIndex[cree.path] = { id: cree.id, category };
+  renderMedia();
+  renderSceneFlow();
+}
+
+async function removeMediaItem(category, value) {
   if (BASE_FILES[category].includes(value)) return;
+  const reference = mediaAssetIndex[value];
+  if (!reference) return;
+  await deleteMedia(reference.id, value);
   files[category] = files[category].filter((item) => item !== value);
   delete mediaLabels[value];
-  saveMediaExtras();
+  delete mediaAssetIndex[value];
   renderMedia();
   renderSceneFlow();
 }
@@ -347,7 +351,31 @@ function removePerson(id) {
 }
 
 function save() {
+  // Cache local instantané (secours hors-ligne) + synchronisation en base en tâche de fond.
   localStorage.setItem(STORE, JSON.stringify({ episodes, episodeId }));
+  const episode = currentEpisode();
+  if (!episode) return;
+  saveEpisode(episode.id, episode.title, exportEpisodeData(episode), episode.status).catch((erreur) => {
+    console.warn("Synchronisation en ligne impossible pour cet épisode.", erreur);
+  });
+}
+
+async function togglePublish() {
+  const episode = currentEpisode();
+  if (!episode) return;
+  try {
+    if (episode.status === "published") {
+      await unpublishEpisode(episode.id);
+      episode.status = "draft";
+    } else {
+      await saveEpisode(episode.id, episode.title, exportEpisodeData(episode), "published");
+      episode.status = "published";
+    }
+    renderEpisodeSelect();
+  } catch (erreur) {
+    alert("Impossible de mettre à jour le statut de publication (voir la console).");
+    console.error(erreur);
+  }
 }
 
 function exportEpisodeData(episode) {
@@ -476,29 +504,43 @@ function bindMedia() {
       fileInput.onchange = async () => {
         const file = fileInput.files?.[0];
         if (!file) return;
-        const dataUrl = await readFileAsDataUrl(file);
         if (category === "people") {
+          const dataUrl = await readFileAsDataUrl(file);
           addPerson(pathInput.value.trim() || file.name, dataUrl);
         } else {
-          addMediaItem(category, dataUrl, file.name);
+          try {
+            await ajouterFichierMedia(file, category);
+          } catch (erreur) {
+            alert("Upload impossible : " + (erreur.message || "erreur inconnue."));
+          }
         }
         fileInput.value = "";
         pathInput.value = "";
       };
     }
 
-    addBtn.onclick = () => {
+    addBtn.onclick = async () => {
       if (category === "people") {
         addPerson(pathInput.value.trim(), "");
       } else {
-        addMediaItem(category, pathInput.value.trim());
+        try {
+          await ajouterReferenceMedia(category, pathInput.value.trim());
+        } catch (erreur) {
+          alert("Ajout impossible : " + (erreur.message || "erreur inconnue."));
+        }
       }
       pathInput.value = "";
     };
   });
 
   document.querySelectorAll("[data-remove-media]").forEach((button) => {
-    button.onclick = () => removeMediaItem(button.dataset.removeMedia, button.dataset.value);
+    button.onclick = async () => {
+      try {
+        await removeMediaItem(button.dataset.removeMedia, button.dataset.value);
+      } catch (erreur) {
+        alert("Suppression impossible : " + (erreur.message || "erreur inconnue."));
+      }
+    };
   });
 
   document.querySelectorAll("[data-remove-person]").forEach((button) => {
@@ -612,10 +654,15 @@ function renderEpisodeSelect() {
   $("#episode-select").innerHTML = Object.values(episodes)
     .map(
       (item) =>
-        `<option value="${esc(item.id)}" ${item.id === episodeId ? "selected" : ""}>${esc(episodeDisplayName(item))}</option>`
+        `<option value="${esc(item.id)}" ${item.id === episodeId ? "selected" : ""}>${esc(episodeDisplayName(item))}${item.status === "published" ? " ✅" : " (brouillon)"}</option>`
     )
     .join("");
   $("#episode-title").value = episode ? episode.title || "" : "";
+  const boutonPublier = $("#publish-episode");
+  if (boutonPublier && episode) {
+    boutonPublier.textContent = episode.status === "published" ? "Dépublier" : "Publier";
+    boutonPublier.classList.toggle("published", episode.status === "published");
+  }
 }
 
 function renderSceneFlow() {
@@ -679,7 +726,16 @@ function nodeTargetOptions(episode, current, excludeId = "") {
     })
     .join("");
 
-  return `<option value="">— Fin de l’épisode —</option>${groups}`;
+  return `<option value="">— Aucune suite définie (le jeu se bloquera ici) —</option>${groups}`;
+}
+
+// Liste les autres épisodes pour le sélecteur "Épisode suivant" d'un nœud de fin.
+function episodeTargetOptions(current) {
+  const options = Object.values(episodes)
+    .filter((item) => item.id !== episodeId)
+    .map((item) => `<option value="${esc(item.id)}" ${item.id === current ? "selected" : ""}>${esc(episodeDisplayName(item))}</option>`)
+    .join("");
+  return `<option value="">— Aucun (retour à la sélection) —</option>${options}`;
 }
 
 function onScreenCheckboxes(node) {
@@ -697,7 +753,7 @@ function onScreenCheckboxes(node) {
 
 function renderNodeCard(episode, node, id, index) {
   if (!node) return "";
-  const kind = node.type === "choice" ? "Choix" : "Dialogue";
+  const kind = node.type === "choice" ? "Choix" : node.type === "end" ? "Fin" : "Dialogue";
   const speakerOptions = [
     `<option value="narration" ${node.speaker === "narration" ? "selected" : ""}>Narration</option>`,
     ...people.map((person) => `<option value="${esc(person.id)}" ${person.id === node.speaker ? "selected" : ""}>${esc(person.name)}</option>`),
@@ -723,7 +779,21 @@ function renderNodeCard(episode, node, id, index) {
       ${
         node.type === "choice"
           ? renderChoiceOptions(episode, node, id)
-          : `<label>Suite<select data-field="next">${nodeTargetOptions(episode, node.next || "", id)}</select></label>`
+          : `
+            <label class="node-end-toggle">
+              <input type="checkbox" data-field="is-end" ${node.type === "end" ? "checked" : ""} />
+              Fin de l’épisode
+            </label>
+            ${
+              node.type === "end"
+                ? `<label>Épisode suivant<select data-field="next-episode">${episodeTargetOptions(node.nextEpisode || "")}</select></label>`
+                : `
+                  <label>Suite<select data-field="next">${nodeTargetOptions(episode, node.next || "", id)}</select></label>
+                  ${!node.next ? '<small class="node-warning">⚠️ Aucune suite définie : le jeu se bloquera sur ce dialogue. Coche « Fin de l’épisode » si c’est voulu, sinon choisis un dialogue suivant.</small>'
+                    : ""}
+                `
+            }
+          `
       }
     </div>
   `;
@@ -803,6 +873,12 @@ function handleSceneFlowInput(target) {
     if (field === "cg") node.cg = target.value || "";
     if (field === "text") node.text = target.value;
     if (field === "next") node.next = target.value || "";
+    if (field === "next-episode") node.nextEpisode = target.value || null;
+    if (field === "is-end") {
+      node.type = target.checked ? "end" : "line";
+      if (node.type === "end") node.next = "";
+      renderSceneFlow();
+    }
     if (field === "onscreen") {
       node.onScreen = [...nodeCard.querySelectorAll('[data-field="onscreen"]:checked')].map((box) => box.value);
     }
@@ -1050,6 +1126,36 @@ function downloadAll() {
   );
 }
 
+async function importDocxFile(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const personnagesConnus = new Set(people.map((personne) => personne.id));
+    const idExistant = currentEpisode()?.id;
+    const idCible = idExistant || Object.keys(episodes).find((id) => !episodes[id]) || "episode1";
+    const titre = currentEpisode()?.title || file.name.replace(/\.docx$/i, "");
+
+    const { episode, avertissements } = await parseDocxVersEpisode(arrayBuffer, idCible, titre, personnagesConnus);
+
+    episodes[idCible] = normalizeEpisode({ ...episode, status: currentEpisode()?.status || "draft" });
+    episodeId = idCible;
+    save();
+    render();
+
+    if (avertissements.length > 0) {
+      alert(`Épisode importé avec des avertissements :\n\n${avertissements.join("\n")}`);
+    } else {
+      alert(`Épisode importé : ${Object.keys(episode.nodes).length} nœuds générés.`);
+    }
+  } catch (erreur) {
+    alert("Import du .docx impossible : " + (erreur.message || "erreur inconnue."));
+    console.error(erreur);
+  }
+}
+
 function importFile(event) {
   const file = event.target.files?.[0];
   if (!file) return;
@@ -1082,12 +1188,9 @@ function importFile(event) {
 }
 
 async function init() {
-  const [characters, publishedEpisodes, publishedShop] = await Promise.all([
+  const [characters, dbEpisodes, publishedShop] = await Promise.all([
     fetch("data/characters.json").then((response) => response.json()),
-    Promise.all(["episode1", "episode2"].map(async (id) => {
-      const response = await fetch(`data/episodes/${id}.json`);
-      return response.ok ? response.json() : null;
-    })),
+    listEpisodes(),
     fetch("data/shop.json").then((response) => (response.ok ? response.json() : null)),
   ]);
 
@@ -1113,41 +1216,21 @@ async function init() {
 
   await discoverMedia();
   BASE_FILES = copy(files);
-  loadMediaExtras();
+  await loadMediaLibrary();
   loadPeopleExtras();
   people = [...people, ...extraPeople];
 
-  const publishedById = Object.fromEntries(
-    publishedEpisodes
-      .filter(Boolean)
-      .map((episode) => [episode.id, normalizeEpisode(episode)])
+  // La base est la source de vérité : les épisodes (brouillons et publiés) viennent tous de là.
+  episodes = Object.fromEntries(
+    dbEpisodes.map((row) => [row.id, normalizeEpisode({ ...row.data, id: row.id, title: row.title, status: row.status })])
   );
 
-  const saved = localStorage.getItem(STORE);
-  let restored = false;
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      const restoredEpisodes = Object.fromEntries(
-        Object.entries(parsed?.episodes || {})
-          .filter(([, episode]) => episode && typeof episode === "object" && episode.nodes)
-          .map(([id, episode]) => [id, normalizeEpisode(episode)])
-      );
-
-      if (Object.keys(restoredEpisodes).length > 0) {
-        episodes = { ...publishedById, ...restoredEpisodes };
-        episodeId = parsed.episodeId && episodes[parsed.episodeId] ? parsed.episodeId : Object.keys(episodes)[0];
-        restored = true;
-      }
-    } catch {
-      // Une ancienne sauvegarde invalide ne doit jamais empêcher l'accès à l'admin.
-    }
+  if (Object.keys(episodes).length === 0) {
+    // Base vide (premier lancement) : on part d'un épisode 1 vierge.
+    episodes.episode1 = normalizeEpisode(blankEpisode("episode1", "Épisode 1"));
   }
 
-  if (!restored) {
-    episodes = publishedById;
-    episodeId = episodes.episode1 ? "episode1" : Object.keys(episodes)[0] || "";
-  }
+  episodeId = episodes.episode1 ? "episode1" : Object.keys(episodes)[0] || "";
 
   bind();
   render();
@@ -1173,6 +1256,8 @@ function bind() {
   $("#export-json").onclick = downloadCurrent;
   $("#export-all").onclick = downloadAll;
   $("#import-json").onchange = importFile;
+  $("#import-docx").onchange = importDocxFile;
+  $("#publish-episode").onclick = togglePublish;
   bindSceneFlow();
 }
 
@@ -1183,7 +1268,50 @@ function render() {
   renderVestiaire();
 }
 
-init().catch((error) => {
-  $("#scene-flow").innerHTML = `<p class="empty">${esc(error.message)}</p>`;
+// Bascule l'affichage via style.display : l'attribut "hidden" est écrasé par la règle CSS
+// ".admin-login { display:flex }" (même spécificité, la règle CSS gagne).
+function afficherApp() {
+  $("#admin-login").style.display = "none";
+  $("#admin-app").style.display = "";
+  $("#admin-app").hidden = false;
+}
+
+async function demarrerAdmin() {
+  let session = null;
+  try {
+    session = await obtenirSessionAdmin();
+  } catch (erreur) {
+    // Ne doit jamais empêcher l'affichage du formulaire de connexion.
+    console.warn("Vérification de session impossible, affichage du formulaire de connexion.", erreur);
+  }
+
+  if (session) {
+    afficherApp();
+    try {
+      await init();
+    } catch (erreur) {
+      console.error("[admin] erreur pendant init()", erreur);
+      $("#scene-flow").innerHTML = `<p class="empty">Erreur au chargement : ${esc(erreur.message)}</p>`;
+    }
+    return;
+  }
+
+  $("#admin-login-submit").addEventListener("click", async () => {
+    const erreurEl = $("#admin-login-error");
+    erreurEl.textContent = "";
+    try {
+      definirSeSouvenir($("#admin-remember-me").checked);
+      await connexionAdmin($("#admin-email").value, $("#admin-password").value);
+      afficherApp();
+      await init();
+    } catch (erreur) {
+      erreurEl.textContent = "Connexion impossible : " + (erreur.message || "identifiants invalides.");
+      console.error("[admin] erreur de connexion", erreur);
+    }
+  });
+}
+
+demarrerAdmin().catch((error) => {
+  console.error("[admin] erreur fatale au démarrage", error);
 });
 

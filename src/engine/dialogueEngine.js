@@ -134,6 +134,14 @@ export class DialogueEngine {
     this.nodeId = nodeId;
     this.pageIndex = 0;
     this.sauvegarde.currentNode = nodeId;
+    // Marque l'épisode terminé dès qu'on atteint un nœud "end" (débloque l'épisode suivant).
+    const noeud = this.episodeData.nodes[nodeId];
+    if (noeud?.type === "end") {
+      this.sauvegarde.completedEpisodes ||= [];
+      if (!this.sauvegarde.completedEpisodes.includes(this.episodeData.id)) {
+        this.sauvegarde.completedEpisodes.push(this.episodeData.id);
+      }
+    }
     sauvegarder(this.sauvegarde);
   }
 

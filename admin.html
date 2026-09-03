@@ -1,6 +1,21 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Otome Studio</title><link rel="stylesheet" href="admin.css" /></head>
 <body>
+  <div id="admin-login" class="admin-login">
+    <form id="admin-login-form" onsubmit="return false">
+      <h1>Otome Studio</h1>
+      <p>Connecte-toi avec ton compte admin Supabase.</p>
+      <input id="admin-email" type="email" placeholder="Email" required />
+      <input id="admin-password" type="password" placeholder="Mot de passe" required />
+      <label class="admin-remember-me">
+        <input id="admin-remember-me" type="checkbox" checked />
+        Se souvenir de moi
+      </label>
+      <p id="admin-login-error" class="admin-login-error"></p>
+      <button id="admin-login-submit" type="button" class="primary-action">Se connecter</button>
+    </form>
+  </div>
+  <div id="admin-app" hidden>
   <header class="topbar"><div><span>OTOME STUDIO</span><h1 id="topbar-title">Épisodes</h1></div></header>
   <nav class="tabs">
     <button class="tab-btn active" data-tab="episodes">Épisodes</button>
@@ -16,10 +31,13 @@
       </div>
       <input id="episode-title" class="episode-title-input" placeholder="Titre de l’épisode" />
       <div class="episode-tools">
-        <label class="btn btn-light" for="import-json">Importer</label>
+        <label class="btn btn-light" for="import-json">Importer JSON</label>
         <input id="import-json" hidden type="file" accept="application/json" />
+        <label class="btn btn-light" for="import-docx">Importer .docx</label>
+        <input id="import-docx" hidden type="file" accept=".docx" />
         <button id="export-json" class="btn btn-light">Exporter l’épisode</button>
         <button id="export-all" class="btn btn-light">Sauvegarder tout</button>
+        <button id="publish-episode" class="primary-action">Publier</button>
       </div>
     </div>
     <p class="branch-help">Astuce : pour une scène qui dépend d’un choix, crée une scène par chemin possible, puis choisis sa destination dans « Suite » (dialogue) ou « Mène à » (réponse d’un choix).</p>
@@ -32,5 +50,6 @@
   <section class="tab-panel" id="tab-vestiaire">
     <div class="panel-block" id="vestiaire-content"></div>
   </section>
+  </div>
   <script type="module" src="src/admin.js"></script>
 </body></html>

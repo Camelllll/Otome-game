@@ -1,63 +1,24 @@
-// Point d'entrée du jeu : affiche l'écran d'accueil, puis charge l'épisode courant.
+// Point d'entrée du jeu : connecte le joueur, affiche l'écran d'accueil, puis charge l'épisode courant.
 import { chargerSauvegarde, sauvegarder, recalculerActionPoints } from "./engine/saveSystem.js";
 import { DialogueEngine, aplatirPersonnages } from "./engine/dialogueEngine.js";
+import { getCharacters, getEpisode, getPublishedEpisodesList } from "./services/gameRepository.js";
+import { obtenirSessionJoueur } from "./services/playerRepository.js";
 import { lancerEcranDialogue } from "./screens/dialogueScreen.js";
 import { lancerEcranAccueil } from "./screens/homeScreen.js";
 import { lancerEcranSelectionEpisode } from "./screens/episodeSelectScreen.js";
+import { lancerEcranConnexion } from "./screens/loginScreen.js";
 
 const conteneurJeu = document.getElementById("jeu");
 
-async function chargerJson(chemin) {
-  const reponse = await fetch(chemin);
-  if (!reponse.ok) throw new Error(`Impossible de charger ${chemin}`);
-  return reponse.json();
-}
-
-async function chargerEpisode(idEpisode) {
-  try {
-    const brouillon = JSON.parse(localStorage.getItem("otome-admin-episodes-v2") || "null");
-    if (brouillon?.episodes?.[idEpisode]) return brouillon.episodes[idEpisode];
-  } catch (erreur) {
-    console.warn("Brouillon du back-office illisible, chargement du fichier publié.", erreur);
-  }
-  return chargerJson(`data/episodes/episode${idEpisode}.json`);
-}
-
-// Liste les épisodes publiés (data/episodes) ainsi que ceux créés dans l'admin mais pas encore publiés.
+// Liste les épisodes publiés depuis la base (l'admin publie les brouillons quand ils sont prêts).
 async function listerEpisodesDisponibles() {
-  const ids = new Set([1, 2]);
-  const titresBrouillon = {};
-
-  try {
-    const brouillon = JSON.parse(localStorage.getItem("otome-admin-episodes-v2") || "null");
-    Object.entries(brouillon?.episodes || {}).forEach(([cle, episode]) => {
-      const correspondance = cle.match(/^episode(\d+)$/);
-      if (!correspondance) return;
-      const id = Number(correspondance[1]);
-      ids.add(id);
-      titresBrouillon[id] = episode?.title;
-    });
-  } catch (erreur) {
-    console.warn("Brouillon du back-office illisible, liste d'épisodes réduite aux fichiers publiés.", erreur);
-  }
-
-  return Promise.all(
-    [...ids].sort((a, b) => a - b).map(async (id) => {
-      if (titresBrouillon[id]) return { id, title: titresBrouillon[id] };
-      try {
-        const data = await chargerJson(`data/episodes/episode${id}.json`);
-        return { id, title: data.title || `Épisode ${id}` };
-      } catch {
-        return { id, title: `Épisode ${id}` };
-      }
-    })
-  );
+  return getPublishedEpisodesList();
 }
 
 async function lancerEpisode(idEpisode, sauvegarde) {
   const [charactersData, episodeData] = await Promise.all([
-    chargerJson("data/characters.json"),
-    chargerEpisode(idEpisode)
+    getCharacters(),
+    getEpisode(idEpisode)
   ]);
 
   const personnagesParId = aplatirPersonnages(charactersData);
@@ -65,7 +26,11 @@ async function lancerEpisode(idEpisode, sauvegarde) {
 
   lancerEcranDialogue(conteneurJeu, moteur, {
     onFinEpisode: (prochainEpisode) => {
-      if (!prochainEpisode) return;
+      if (!prochainEpisode) {
+        // Pas d'épisode suivant défini : retour à l'écran de sélection plutôt que de rester bloqué.
+        afficherSelectionEpisode(sauvegarde);
+        return;
+      }
       sauvegarde.currentEpisode = prochainEpisode;
       sauvegarde.currentNode = null;
       sauvegarde.currentBackground = null;
@@ -77,23 +42,36 @@ async function lancerEpisode(idEpisode, sauvegarde) {
 
 async function afficherSelectionEpisode(sauvegarde) {
   const episodes = await listerEpisodesDisponibles();
+  const completes = new Set(sauvegarde.completedEpisodes || []);
+  // Pas de verrouillage pour l'instant (en développement, il faut pouvoir tester n'importe quel épisode) :
+  // seul un badge "terminé" reste affiché à titre indicatif.
+  const episodesAvecStatut = episodes.map((episode) => ({
+    ...episode,
+    complete: completes.has(episode.id),
+    verrouille: false,
+  }));
+
   lancerEcranSelectionEpisode(conteneurJeu, {
-    episodes,
+    episodes: episodesAvecStatut,
     episodeActuel: sauvegarde.currentEpisode,
     onSelect: (idEpisode) => {
-      sauvegarde.currentEpisode = idEpisode;
-      sauvegarde.currentNode = null;
-      sauvegarde.currentBackground = null;
-      sauvegarder(sauvegarde);
+      // Ne remet le dialogue à zéro que si on change réellement d'épisode (sinon on perdrait la reprise en cours).
+      if (idEpisode !== sauvegarde.currentEpisode) {
+        sauvegarde.currentEpisode = idEpisode;
+        sauvegarde.currentNode = null;
+        sauvegarde.currentBackground = null;
+        sauvegarder(sauvegarde);
+      }
       lancerEpisode(idEpisode, sauvegarde);
     }
   });
 }
 
-async function afficherAccueil() {
+async function afficherAccueil(joueur) {
   lancerEcranAccueil(conteneurJeu, {
+    joueur,
     onDemarrer: async (type) => {
-      const sauvegarde = chargerSauvegarde();
+      const sauvegarde = await chargerSauvegarde(joueur.id);
       recalculerActionPoints(sauvegarde);
 
       // Pour une nouvelle partie, demander le prénom
@@ -107,12 +85,33 @@ async function afficherAccueil() {
         sauvegarder(sauvegarde);
       }
 
+      // Si une partie est déjà en cours, on reprend directement le dialogue là où elle s'est arrêtée
+      // plutôt que de repasser par l'écran de sélection.
+      if (type === "continuer" && sauvegarde.currentNode) {
+        lancerEpisode(sauvegarde.currentEpisode, sauvegarde);
+        return;
+      }
+
       afficherSelectionEpisode(sauvegarde);
     }
   });
 }
 
-afficherAccueil().catch((erreur) => {
+async function demarrer() {
+  const joueurExistant = await obtenirSessionJoueur();
+  if (joueurExistant) {
+    afficherAccueil(joueurExistant);
+    return;
+  }
+  lancerEcranConnexion(conteneurJeu, {
+    onConnecte: (joueur) => {
+      afficherAccueil(joueur);
+    }
+  });
+}
+
+demarrer().catch((erreur) => {
   console.error(erreur);
   conteneurJeu.textContent = "Erreur au chargement du jeu. Consulte la console.";
 });
+

@@ -1,0 +1,3 @@
+node_modules/
+src/services/adminConfig.local.js
+.DS_Store

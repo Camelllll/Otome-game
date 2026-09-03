@@ -1,0 +1,67 @@
+MODÈLE D'ÉPISODE — à copier dans un document Word, puis enregistrer en .docx
+============================================================================
+
+Comment ça marche (à supprimer avant de rendre le fichier final) :
+- Une ligne "PERSONNAGE : texte" = une réplique de ce personnage.
+  Le nom doit correspondre à l'identifiant du personnage (isaac, aaron, sasha, camel,
+  mehdi, stella, liam, leonie, zoe, victoria, nathan, charlie, mere, pere, moi).
+- Une ligne sans "NOM :" devant = de la narration (description, pensées entre parenthèses...).
+- [decor: nom du décor] / [musique: nom du morceau] / [illustration: nom de l'image]
+  s'appliquent à partir de la ligne suivante (jusqu'au prochain changement).
+  Une scène = toutes les lignes avec le même décor ; ça devient une nouvelle scène
+  automatiquement dès qu'un nouveau [decor: ...] apparaît, pas besoin de le marquer autrement.
+- Une ligne qui commence par "- " = une option de choix. Toutes les lignes "- " qui se
+  suivent forment le même choix.
+- (perso+5) ou (perso-5) à la fin d'une option = effet sur la jauge d'amour de ce
+  personnage. (perso:amitie+5) pour la jauge d'amitié.
+- Deux façons d'enchaîner après un choix :
+  1. Réponse courte qui se rejoint vite : une ligne "-- PERSONNAGE : texte" juste après
+     l'option (plusieurs "--" à la suite = plusieurs répliques dans cette branche).
+  2. Scène entièrement différente selon le choix : ajoute "-> nom_de_scene" à la fin de
+     l'option, et crée plus loin dans le document un bloc "## nom_de_scene" (peu importe
+     l'ordre, il peut être écrit avant ou après le choix).
+- [fin] ou [fin: episode2] termine l'épisode (episode2 = épisode suivant à enchaîner).
+
+------------------------------------------------------------------------------
+
+Exemple 1 — réponse courte qui se rejoint tout de suite :
+
+[decor: Cour campus nuit]
+[musique: Romantique doux]
+
+(Nous voilà dans la cour du campus, décorée de guirlandes lumineuses.)
+LIAM : Première année ?
+MOI : Euh... Oui, merci beaucoup.
+
+- Enchantée, merci pour le sauvetage. (liam+5)
+-- LIAM : Je t'en prie, c'est mon rôle. Suis-moi.
+- Salut ! Merci, j'aurais fini par y arriver. (liam+0)
+-- LIAM : Je n'en doute pas. Suis-moi.
+- Tu dois avoir du boulot avec tous les nouveaux ? (liam-5)
+-- LIAM : C'est mon rôle, donc oui. Suis-moi.
+
+LIAM : On continue, je vais te montrer les dortoirs.
+
+------------------------------------------------------------------------------
+
+Exemple 2 — le choix mène à deux scènes complètement différentes (décors différents) :
+
+[decor: Chambre sucrette campus]
+LEONIE : Ça te dit de venir à la soirée d'intégration ce soir ?
+
+- Oui, je viens avec toi ! (leonie+5) -> soiree
+- Non, je préfère rester ici ce soir. (leonie-5) -> soiree_annulee
+
+## soiree
+[decor: Cour campus nuit]
+[musique: Romantique doux]
+LEONIE : Trop bien, allons-y !
+(La soirée bat son plein...)
+[fin: episode2]
+
+## soiree_annulee
+[decor: Chambre sucrette campus]
+LEONIE : D'accord, tant pis. Repose-toi bien.
+(Je passe une soirée tranquille dans ma chambre.)
+[fin: episode2]
+

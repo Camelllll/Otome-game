@@ -393,6 +393,44 @@ html, body {
   justify-content: center;
 }
 
+.ecran-fin-episode {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(74, 59, 71, 0.75);
+}
+
+.ecran-fin-episode.visible {
+  display: flex;
+}
+
+.fin-episode-panneau {
+  background: var(--creme);
+  border-radius: 20px;
+  padding: 2.5rem 3rem;
+  text-align: center;
+  max-width: 24rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.fin-episode-panneau h2 {
+  margin: 0 0 0.75rem;
+  color: var(--rose-vif);
+  font-size: 1.6rem;
+}
+
+.fin-episode-panneau p {
+  margin: 0 0 1.5rem;
+  color: var(--texte-fonce);
+}
+
+.fin-episode-panneau .btn-continuer {
+  width: 100%;
+}
+
 .barre-narration {
   position: relative;
   width: 100%;
@@ -797,6 +835,21 @@ html, body {
   background: rgba(255, 255, 255, 0.95);
 }
 
+.carte-episode.termine {
+  opacity: 0.7;
+}
+
+.carte-episode.verrouille {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.carte-episode.verrouille:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .numero-episode {
   font-size: 0.75rem;
   font-weight: 800;
@@ -809,5 +862,73 @@ html, body {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--texte-fonce);
+}
+
+.ecran-connexion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, var(--rose-pastel), var(--mauve));
+  text-align: center;
+  padding: 2rem;
+}
+
+.contenu-connexion {
+  max-width: 26rem;
+}
+
+.onglets-connexion {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.onglets-connexion button {
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  border: 2px solid white;
+  background: transparent;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--texte-fonce);
+}
+
+.onglets-connexion button.actif {
+  background: var(--rose-vif);
+  color: white;
+  border-color: var(--rose-vif);
+}
+
+.formulaire-connexion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.formulaire-connexion input {
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  border: 2px solid white;
+  font-size: 1rem;
+}
+
+.formulaire-connexion button {
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--rose-vif);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.erreur-connexion {
+  color: #b3261e;
+  min-height: 1.2rem;
+  font-size: 0.9rem;
 }
 

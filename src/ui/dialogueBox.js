@@ -60,11 +60,6 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
       listeChoix.appendChild(bouton);
     }
     contenu.appendChild(listeChoix);
-  } else if (affichage.type === "end") {
-    const bouton = document.createElement("button");
-    bouton.className = "bouton-suivant";
-    bouton.textContent = "Fin de l'épisode";
-    contenu.appendChild(bouton);
   } else {
     // Toute la barre de dialogue devient la commande de progression : plus immersive qu'un bouton isolé.
     barre.classList.add("dialogue-cliquable");
@@ -85,4 +80,31 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
 
   barre.appendChild(contenu);
   conteneur.appendChild(barre);
+}
+
+// Écran de fin d'épisode : remplace la barre de dialogue par un panneau centré avec un bouton stylisé.
+export function afficherFinEpisode(conteneur, { aProchainEpisode, onContinuer }) {
+  conteneur.innerHTML = "";
+  conteneur.classList.add("visible");
+
+  const panneau = document.createElement("div");
+  panneau.className = "fin-episode-panneau";
+
+  const titre = document.createElement("h2");
+  titre.textContent = "Fin de l'épisode";
+  panneau.appendChild(titre);
+
+  const texte = document.createElement("p");
+  texte.textContent = aProchainEpisode
+    ? "Bravo, tu as terminé cet épisode !"
+    : "Tu as terminé le dernier épisode disponible pour l'instant.";
+  panneau.appendChild(texte);
+
+  const bouton = document.createElement("button");
+  bouton.className = "btn-accueil btn-continuer";
+  bouton.textContent = aProchainEpisode ? "Épisode suivant" : "Retour à la sélection";
+  bouton.addEventListener("click", onContinuer);
+  panneau.appendChild(bouton);
+
+  conteneur.appendChild(panneau);
 }

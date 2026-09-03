@@ -1,5 +1,5 @@
 // Écran de dialogue : affiche le décor, le personnage sur scène, sa bulle, la barre du bas et les lovomètres.
-import { afficherBullePersonnage, afficherBarreNarration } from "../ui/dialogueBox.js";
+import { afficherBullePersonnage, afficherBarreNarration, afficherFinEpisode } from "../ui/dialogueBox.js";
 import { afficherLovometre, animerGainLovo, animerPerteLovo } from "../ui/gaugeBar.js";
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
 
@@ -70,6 +70,10 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode } = 
   const zoneBarre = document.createElement("div");
   zoneBarre.className = "zone-narration";
   scene.appendChild(zoneBarre);
+
+  const zoneFinEpisode = document.createElement("div");
+  zoneFinEpisode.className = "ecran-fin-episode";
+  scene.appendChild(zoneFinEpisode);
 
   conteneurRacine.innerHTML = "";
   conteneurRacine.appendChild(scene);
@@ -143,35 +147,42 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode } = 
     afficherLovometre(lovometreGauche, infoLovo);
     afficherLovometre(lovometreDroite, null);
 
-    afficherBarreNarration(zoneBarre, affichage, {
-      onSuivant: () => {
-        // La réponse de Sucrette est déjà visible sous la bulle : on la valide avec ce clic et on passe à son nœud suivant.
-        if (affichage.reponseSucrette?.next) moteur.aller(affichage.reponseSucrette.next);
-        else moteur.avancer();
-        rendre();
-      },
-      onChoix: (index) => {
-        const option = moteur.noeudCourant?.options?.[index];
-        const cible = personnagesPresents.length === 1 ? personnagesPresents[0].id : null;
-        const variation = cible
-          ? Object.values(option?.effects?.[cible] || {}).reduce((total, delta) => total + delta, 0)
-          : 0;
-        if (variation > 0) animerGainLovo(scene, variation);
-        if (variation < 0) animerPerteLovo(scene, variation);
-        moteur.choisir(index);
-        rendre();
-      }
-    });
+    if (affichage.type === "end") {
+      zoneBarre.style.display = "none";
+      afficherFinEpisode(zoneFinEpisode, {
+        aProchainEpisode: Boolean(affichage.nextEpisode),
+        onContinuer: () => onFinEpisode?.(affichage.nextEpisode),
+      });
+    } else {
+      zoneBarre.style.display = "";
+      zoneFinEpisode.classList.remove("visible");
+      zoneFinEpisode.innerHTML = "";
+
+      afficherBarreNarration(zoneBarre, affichage, {
+        onSuivant: () => {
+          // La réponse de Sucrette est déjà visible sous la bulle : on la valide avec ce clic et on passe à son nœud suivant.
+          if (affichage.reponseSucrette?.next) moteur.aller(affichage.reponseSucrette.next);
+          else moteur.avancer();
+          rendre();
+        },
+        onChoix: (index) => {
+          const option = moteur.noeudCourant?.options?.[index];
+          const cible = personnagesPresents.length === 1 ? personnagesPresents[0].id : null;
+          const variation = cible
+            ? Object.values(option?.effects?.[cible] || {}).reduce((total, delta) => total + delta, 0)
+            : 0;
+          if (variation > 0) animerGainLovo(scene, variation);
+          if (variation < 0) animerPerteLovo(scene, variation);
+          moteur.choisir(index);
+          rendre();
+        }
+      });
+    }
 
     // Le personnage, les jauges et les CG disposent uniquement de l'espace au-dessus de la barre.
     // On mesure la barre après son rendu afin d'empêcher tout chevauchement, même pour un texte long.
     const hauteurBarre = zoneBarre.offsetHeight || 0;
     scene.style.setProperty("--hauteur-barre", `${hauteurBarre}px`);
-
-    if (affichage.type === "end" && onFinEpisode) {
-      const bouton = zoneBarre.querySelector(".bouton-suivant");
-      bouton?.addEventListener("click", () => onFinEpisode(affichage.nextEpisode));
-    }
   }
 
   rendre();
