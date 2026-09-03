@@ -8,7 +8,7 @@
     "scene_1_dialogue_1": {
       "type": "line",
       "speaker": "narration",
-      "text": "(Nous voilà dans la cour du campus. Elle est décorée de guirlandes lumineuses, une grosse enceinte passe des musiques du moment.\nDes groupes d'étudiants discutent autour du buffet, d'autres jouent au baby-foot ou s'installent déjà sur les bancs en riant.",
+      "text": "(Nous voilà dans la cour du campus. Elle est décorée de guirlandes lumineuses, une grosse enceinte passe des musiques du moment.\nDes groupes d'étudiants discutent autour du buffet, d'autres jouent au baby-foot ou s'installent déjà sur les bancs en riant.)",
       "next": "scene_1_dialogue_2",
       "background": "assets/Décors/Cour campus nuit.png",
       "position": "center",
@@ -18,7 +18,7 @@
     "scene_1_dialogue_2": {
       "type": "line",
       "speaker": "narration",
-      "text": "Malgré l'ambiance festive, on sent que tout le monde essaie discrètement de trouver sa place.)",
+      "text": "(Malgré l'ambiance festive, on sent que tout le monde essaie discrètement de trouver sa place.)",
       "next": "scene_1_dialogue_3",
       "background": "assets/Décors/Cour campus nuit.png",
       "music": "Romantique doux",
@@ -87,7 +87,7 @@
     "scene_1_dialogue_8": {
       "type": "line",
       "speaker": "leonie",
-      "text": "Bon... mission numéro un : trouver à boire.",
+      "text": "Bon... mission numéro une : trouver à boire.",
       "next": "scene_1_dialogue_9",
       "background": "assets/Décors/Cour campus nuit.png",
       "music": "Romantique doux",
@@ -556,7 +556,7 @@
     "scene_3_dialogue_30": {
       "type": "line",
       "speaker": "narration",
-      "text": "(On arrive finalement devant un baby-foot où deux garçons jouent bruyamment.\n",
+      "text": "(On arrive finalement devant un baby-foot où deux garçons jouent bruyamment.)\n",
       "next": "scene_3_dialogue_31",
       "background": "assets/Décors/Cour campus nuit.png",
       "music": "Romantique doux",
@@ -568,7 +568,7 @@
     "scene_3_dialogue_31": {
       "type": "line",
       "speaker": "narration",
-      "text": "L'un porte une casquette à l'envers, des cheveux violets dépassent de chaque côté. L'autre, métisse, affiche un sourire rayonnant.)",
+      "text": "(L'un porte une casquette à l'envers, des cheveux violets dépassent de chaque côté. L'autre, métisse, affiche un sourire rayonnant.)",
       "next": "scene_4_dialogue_1",
       "background": "assets/Décors/Cour campus nuit.png",
       "music": "Romantique doux",
@@ -1097,7 +1097,7 @@
     "scene_12_dialogue_1": {
       "type": "line",
       "speaker": "narration",
-      "text": "(Tout le monde se met à rire de ses bêtises. L'ambiance devient instantanément plus légère.",
+      "text": "(Tout le monde se met à rire de ses bêtises. L'ambiance devient instantanément plus légère.)",
       "next": "scene_12_dialogue_2",
       "background": "assets/Décors/Cour campus nuit.png",
       "music": "Romantique doux",
@@ -1106,7 +1106,7 @@
     "scene_12_dialogue_2": {
       "type": "line",
       "speaker": "narration",
-      "text": "Puis… Quelques accords de guitare résonnent un peu plus loin.\nLes conversations autour de moi semblent s'effacer pendant une seconde. Cette mélodie. Je la connais…",
+      "text": "(Puis… Quelques accords de guitare résonnent un peu plus loin.\nLes conversations autour de moi semblent s'effacer pendant une seconde. Cette mélodie. Je la connais…)",
       "next": "scene_12_dialogue_3",
       "background": "assets/Décors/Cour campus nuit.png",
       "music": "Romantique doux",
@@ -1115,7 +1115,7 @@
     "scene_12_dialogue_3": {
       "type": "line",
       "speaker": "narration",
-      "text": "Un étudiant termine son morceau sous quelques applaudissements.)",
+      "text": "(Un étudiant termine son morceau sous quelques applaudissements.)",
       "next": "scene_13_dialogue_1",
       "background": "assets/Décors/Cour campus nuit.png",
       "music": "Romantique doux",
@@ -1651,7 +1651,7 @@
     "scene_13_dialogue_42": {
       "type": "line",
       "speaker": "narration",
-      "text": "(À ce moment-là, une étudiante passe près de nous. Chemise parfaitement repassée, lunettes, un carnet sous le bras.",
+      "text": "(À ce moment-là, une étudiante passe près de nous. Chemise parfaitement repassée, lunettes, un carnet sous le bras.)",
       "next": "scene_13_dialogue_43",
       "background": "assets/Décors/Cour campus nuit.png",
       "music": "Romantique doux",
@@ -1663,13 +1663,2373 @@
     "scene_13_dialogue_43": {
       "type": "line",
       "speaker": "narration",
-      "text": "Elle semble traverser la cour sans vraiment prêter attention à la soirée. Camel l'aperçoit.)",
-      "next": "",
+      "text": "(Elle semble traverser la cour sans vraiment prêter attention à la soirée. Camel l'aperçoit.)",
+      "next": "scene_14_dialogue_1",
       "background": "assets/Décors/Cour campus nuit.png",
       "music": "Romantique doux",
       "position": "center",
       "onScreen": [
         "camel"
+      ]
+    },
+    "scene_14_dialogue_1": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Tiens... Victoria.",
+      "next": "scene_14_dialogue_2",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_14_dialogue_2": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Elle s'arrête. Son regard passe brièvement sur Camel, puis sur moi.)",
+      "next": "scene_14_dialogue_3",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_14_dialogue_3": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Je ne pensais pas te revoir ici.",
+      "next": "scene_14_dialogue_4",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_dialogue_4": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Moi non plus.",
+      "next": "scene_14_dialogue_5",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_14_dialogue_5": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Vous vous connaissez ?",
+      "next": "scene_14_dialogue_6",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_14_dialogue_6": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Nous étions dans le même lycée en terminale.",
+      "next": "scene_14_dialogue_7",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_dialogue_7": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Enfin... surtout dans le même bâtiment. C'était largement suffisant.",
+      "next": "scene_14_dialogue_8",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_14_dialogue_8": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Petit silence. Elle reporte son attention sur moi.)",
+      "next": "scene_14_dialogue_9",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_14_dialogue_9": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Première année ?",
+      "next": "scene_14_dialogue_10",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_dialogue_10": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Oui.",
+      "next": "scene_14_dialogue_11",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_dialogue_11": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Communication ?",
+      "next": "scene_14_dialogue_12",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_dialogue_12": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "En effet.",
+      "next": "scene_14_dialogue_13",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_dialogue_13": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Profite de ce soir. Demain après-midi, les illusions commenceront à disparaître.",
+      "next": "scene_14_choix_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_choix_1": {
+      "type": "choice",
+      "speaker": "moi",
+      "text": "",
+      "options": [
+        {
+          "text": "Top. Merci pour… l’encouragement.",
+          "effects": {
+            "victoria": {
+              "amour": -5
+            }
+          },
+          "next": "scene_14_dialogue_14"
+        },
+        {
+          "text": "Je vais essayer de m’en souvenir.",
+          "effects": {
+            "victoria": {
+              "amour": 0
+            }
+          },
+          "next": "scene_14_dialogue_15"
+        },
+        {
+          "text": "Ça me rassure pas vraiment.",
+          "effects": {
+            "victoria": {
+              "amour": -5
+            }
+          },
+          "next": "scene_14_dialogue_16"
+        }
+      ],
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_14_dialogue_14": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "C'en était pas un.",
+      "next": "scene_14_dialogue_17",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_dialogue_15": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Oui, c’est dans ton intérêt.",
+      "next": "scene_14_dialogue_17",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_dialogue_16": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Ça tombe bien, ce n’était pas le but.",
+      "next": "scene_14_dialogue_17",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_14_dialogue_17": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(A peine sa phrase terminée, elle reprend son chemin sans même nous regarder.)",
+      "next": "scene_15_dialogue_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_15_dialogue_1": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Fais pas attention. Elle donne souvent l'impression de passer un entretien d'embauche.",
+      "next": "scene_15_dialogue_2",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_15_dialogue_2": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Vous étiez proches ?",
+      "next": "scene_15_dialogue_3",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_15_dialogue_3": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Pas vraiment. On s'est surtout croisés pendant un an.",
+      "next": "scene_15_dialogue_4",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_15_dialogue_4": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Soudain, une annonce retentit dans un micro.)",
+      "next": "scene_15_dialogue_5",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": []
+    },
+    "scene_15_dialogue_5": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "*Bonsoir à tous les nouveaux ! Je fais partie de l’équipe d’orga de cette soirée d’inté. Vous êtes là pour faire connaissance, donc vous êtes tous attendus devant la scène pour un premier petit jeu.*",
+      "next": "scene_15_dialogue_6",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": []
+    },
+    "scene_15_dialogue_6": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(On se rapproche alors tous de la petite scène au milieu de la cour. Cinq minutes plus tard, l'animateur tape deux fois dans son micro.)",
+      "next": "scene_15_dialogue_7",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": []
+    },
+    "scene_15_dialogue_7": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "*Ooooh ! Je vous sens un peu timides ! Ça tombe bien. On est là pour régler ce problème.\nOn vous a préparé deux mini jeux ce soir. On vous explique le premier.*",
+      "next": "scene_15_dialogue_8",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": []
+    },
+    "scene_15_dialogue_8": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "*Très simple : vous allez choisir un binôme.\nVous devrez répondre ensemble à une série de 3 cartes avec chacune une question à laquelle chacun doit répondre.*",
+      "next": "scene_15_dialogue_9",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": []
+    },
+    "scene_15_dialogue_9": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "Le but ? Découvrir votre partenaire... sans mentir, évidemment. Vous avez 15 minutes !",
+      "next": "scene_16_dialogue_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": []
+    },
+    "scene_16_dialogue_1": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Bon… Je crois qu'il faut vite que je choisisse un binôme avant de me retrouver seule. Je prends mon courage à deux mains et je fonce.)",
+      "next": "scene_16_choix_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha",
+        "camel",
+        "mehdi"
+      ]
+    },
+    "scene_16_choix_1": {
+      "type": "choice",
+      "speaker": "moi",
+      "text": "",
+      "options": [
+        {
+          "text": "Mehdi, tu veux qu'on fasse équipe ?",
+          "effects": {
+            "mehdi": {
+              "amour": 0
+            }
+          },
+          "next": "scene_17_dialogue_1"
+        },
+        {
+          "text": "Sasha, on se met ensemble ?",
+          "effects": {
+            "sasha": {
+              "amour": 0
+            }
+          },
+          "next": "scene_18_dialogue_1"
+        },
+        {
+          "text": "Camel, tu veux vérifier si on se connaît toujours aussi bien ?",
+          "effects": {
+            "camel": {
+              "amour": 0
+            }
+          },
+          "next": "scene_19_dialogue_1"
+        }
+      ],
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha",
+        "camel",
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_1": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Avec plaisir !",
+      "next": "scene_17_dialogue_2",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_2": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(On s’installe à une petite table après avoir récupéré trois cartes. Le jeu commence.)",
+      "next": "scene_17_dialogue_3",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_3": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Tu veux commencer ?",
+      "next": "scene_17_dialogue_4",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_4": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "D’accord, c’est parti !\nPremière question : “quel est ton plus gros défaut ?”",
+      "next": "scene_17_dialogue_5",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_5": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Je réfléchis beaucoup trop.\nParfois, je passe tellement de temps à peser le pour et le contre... que quelqu'un finit par décider à ma place.",
+      "next": "scene_17_dialogue_6",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_6": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "À ton tour.",
+      "next": "scene_17_choix_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_choix_1": {
+      "type": "choice",
+      "speaker": "moi",
+      "text": "",
+      "options": [
+        {
+          "text": "Je manque un peu de confiance en moi",
+          "effects": {
+            "mehdi": {
+              "amour": 5
+            }
+          },
+          "next": "scene_17_dialogue_7"
+        },
+        {
+          "text": "Je suis trop pessimiste.",
+          "effects": {
+            "mehdi": {
+              "amour": -5
+            }
+          },
+          "next": "scene_17_dialogue_9"
+        },
+        {
+          "text": "Je suis un peu têtue.",
+          "effects": {
+            "mehdi": {
+              "amour": 0
+            }
+          },
+          "next": "scene_17_dialogue_8"
+        }
+      ],
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_7": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "T’inquiète, je crois qu’on est plus nombreux que tu le penses à être comme ça.",
+      "next": "scene_17_dialogue_10",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_8": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Après, si c’est pour défendre ce qui compte, c’est pas forcément un défaut.",
+      "next": "scene_17_dialogue_10",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_9": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Ça, c’est dommage. Il faut savoir prendre la vie du bon côté !",
+      "next": "scene_17_dialogue_10",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_10": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je pioche une deuxième carte.)",
+      "next": "scene_17_dialogue_11",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_11": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "“Quelle est la qualité que tu admires le plus chez quelqu'un ?”",
+      "next": "scene_17_dialogue_12",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_12": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Les gens qui restent eux-mêmes. Même quand ils veulent faire bonne impression.",
+      "next": "scene_17_dialogue_13",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_13": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je souris... C'est une jolie réponse.)",
+      "next": "scene_17_dialogue_14",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_14": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "T'as toujours une réponse toute prête ?",
+      "next": "scene_17_dialogue_15",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_15": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Ahah, non. Mais celle-là, j'y avais déjà réfléchi. À ton tour.",
+      "next": "scene_17_dialogue_16",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_16": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "J’admire les gens très sociables. J’aimerais beaucoup l’être davantage.",
+      "next": "scene_17_dialogue_17",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_17": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Et bien regarde, c’est ton premier jour sur le campus, et tu joues à ce jeu avec un quasi-inconnu. T’es sur la bonne voie !",
+      "next": "scene_17_dialogue_18",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_18": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Sa réponse me fait plaisir. Je lui souris timidement.)",
+      "next": "scene_17_dialogue_19",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_19": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Dernière carte. “Décris ton partenaire en un seul mot.”",
+      "next": "scene_17_dialogue_20",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_20": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Mehdi réfléchit quelques secondes.)",
+      "next": "scene_17_dialogue_21",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_21": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Je dirai… curieuse.",
+      "next": "scene_17_dialogue_22",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_22": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Pourquoi ?",
+      "next": "scene_17_dialogue_23",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_23": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Depuis tout à l'heure… Tu regardes tout. Les gens, les bâtiments, même les affiches partout.",
+      "next": "scene_17_dialogue_24",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_24": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Comme si t'avais peur de rater quelque chose.",
+      "next": "scene_17_dialogue_25",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_25": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(...Il est vraiment observateur.)",
+      "next": "scene_17_dialogue_26",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_26": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Je te retourne la question.",
+      "next": "scene_17_dialogue_27",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_27": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Du coup, je dirai que tu es observateur.",
+      "next": "scene_17_dialogue_28",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_17_dialogue_28": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Ahah, c’est bien vu.",
+      "next": "scene_20_dialogue_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_18_dialogue_1": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Oula ! Ça va trop vite entre nous {PlayerName}.",
+      "next": "scene_18_dialogue_2",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_2": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je rigole malgré moi. Il me met un léger coup d’épaule et poursuit)",
+      "next": "scene_18_dialogue_3",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_3": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Désolé, pas ma meilleure vanne mais j’étais obligé. Aller viens, on va prendre les cartes et commencer.",
+      "next": "scene_18_dialogue_4",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_4": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(On s’installe à une petite table après avoir récupéré trois cartes. Le jeu commence.)",
+      "next": "scene_18_dialogue_5",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_5": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Honneur aux dames, commence.",
+      "next": "scene_18_dialogue_6",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_6": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Ok, première question : “quel est le talent le plus inutile que tu possèdes ?”",
+      "next": "scene_18_dialogue_7",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_7": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Je reconnais une chanson en trois secondes. Même les musiques de pub. Impressionnant, non ?",
+      "next": "scene_18_choix_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_choix_1": {
+      "type": "choice",
+      "speaker": "moi",
+      "text": "",
+      "options": [
+        {
+          "text": "Mhhh, c’est pas mal en effet.",
+          "effects": {
+            "sasha": {
+              "amour": 0
+            }
+          },
+          "next": "scene_18_dialogue_8"
+        },
+        {
+          "text": "C’est un peu inquiétant, surtout.",
+          "effects": {
+            "sasha": {
+              "amour": 5
+            }
+          },
+          "next": "scene_18_dialogue_10"
+        },
+        {
+          "text": "N’importe quelle musique ? Impossible, je te crois pas.",
+          "effects": {
+            "sasha": {
+              "amour": -5
+            }
+          },
+          "next": "scene_18_dialogue_11"
+        }
+      ],
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_18_dialogue_8": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Pas mal ? Mhhh. Ok, je prends.",
+      "next": "scene_18_dialogue_13",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_9": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Sasha éclate de rire)",
+      "next": "scene_18_dialogue_10",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_10": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Ouais je sais. Mais attends, c’est un vrai talent, je suis hyper utile en blindtest.",
+      "next": "scene_18_dialogue_13",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_11": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Sasha pose dramatiquement une main sur son coeur)",
+      "next": "scene_18_dialogue_12",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_12": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Tu doutes de mon talent ? Tu viens de me briser le cœur {PlayerName}.",
+      "next": "scene_18_dialogue_13",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_13": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "À toi de répondre maintenant. T’y échapperas pas.",
+      "next": "scene_18_dialogue_14",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_14": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je réfléchis quelques secondes.)",
+      "next": "scene_18_dialogue_15",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_15": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Je pense que je suis très forte pour retrouver les objets perdus.",
+      "next": "scene_18_dialogue_16",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_16": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Je t’embauche. Moi je suis très fort pour les perdre. On ferait une bonne équipe.",
+      "next": "scene_18_dialogue_17",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_17": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Aller, on enchaîne, c’est quoi la prochaine question ?",
+      "next": "scene_18_dialogue_18",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_18": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je retourne la deuxième carte.)",
+      "next": "scene_18_dialogue_19",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_19": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "\"Quelle est la chose la plus ridicule que tu aies faite ?\"",
+      "next": "scene_18_dialogue_20",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_20": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Sasha réfléchit.)",
+      "next": "scene_18_dialogue_21",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_21": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "...J'ai voulu impressionner une fille en faisant du skate au lycée. Je suis tombé avant même de monter dessus.",
+      "next": "scene_18_dialogue_22",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_22": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je ne peux pas m'empêcher de rire.)",
+      "next": "scene_18_dialogue_23",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_23": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Vraiment ?",
+      "next": "scene_18_dialogue_24",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_24": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Du coup la fille est partie et m’a plus jamais parlé.",
+      "next": "scene_18_dialogue_25",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_25": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Et toi ? La chose la plus ridicule que t’aies faite ?",
+      "next": "scene_18_dialogue_26",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_26": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Pas plus tard qu’hier, j’ai voulu ouvrir la portière de ma voiture… Sauf que c’était pas la mienne. Et le propriétaire de la voiture me regardait.",
+      "next": "scene_18_dialogue_27",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_27": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Il éclate de rire.)",
+      "next": "scene_18_dialogue_28",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_28": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Donc t’as failli voler une voiture sans faire exprès ? ",
+      "next": "scene_18_dialogue_29",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_29": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "J’ai surtout découvert que le sol pouvait devenir très intéressant à regarder. C’était… embarrassant. Très embarrassant.",
+      "next": "scene_18_dialogue_30",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_30": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Bon, dernière question : “à quoi te fait penser ton binôme ?”",
+      "next": "scene_18_dialogue_31",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_31": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "À un chat.",
+      "next": "scene_18_dialogue_32",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_32": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je le regarde, surprise.)",
+      "next": "scene_18_dialogue_33",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_33": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Un chat ?",
+      "next": "scene_18_dialogue_34",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_34": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Ouais. Au début ça observe. Ça juge un peu. Puis quand il décide de s’approcher… C’est que t’as réussi le test.",
+      "next": "scene_18_dialogue_35",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_35": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je souris timidement. C’était un compliment ça… ?)",
+      "next": "scene_18_dialogue_36",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_36": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Et moi, je te fais penser à quoi ?",
+      "next": "scene_18_dialogue_37",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_37": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Et bien tu m’as tout l’air d’être un petit clown.",
+      "next": "scene_18_dialogue_38",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_18_dialogue_38": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "C’est les cheveux violets qui font cet effet là.",
+      "next": "scene_20_dialogue_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_19_dialogue_1": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Chaud. Viens, on va récupérer les cartes pour jouer.",
+      "next": "scene_19_dialogue_2",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_2": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(On s’installe à une petite table après avoir récupéré trois cartes. Le jeu commence. Je retourne la première carte.)",
+      "next": "scene_19_dialogue_3",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_3": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Alors, première question : \"Quelle chanson te décrit le mieux ?\"",
+      "next": "scene_19_dialogue_4",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_4": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Comme par hasard, une question sur la musique.",
+      "next": "scene_19_dialogue_5",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_5": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Je dirais… Une chanson qui va un peu crescendo… Genre Iris des Goo Goo Dolls.",
+      "next": "scene_19_dialogue_6",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_6": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Ouais. De la guitare acoustique. Jusqu’ici ça te ressemble assez bien.",
+      "next": "scene_19_dialogue_7",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_7": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Je prends ça pour un compliment.\nEt toi ?",
+      "next": "scene_19_dialogue_8",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_8": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "C’est difficile comme question. Laisse moi réfléchir…",
+      "next": "scene_19_dialogue_9",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_9": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Peut-être… Riptide de Vance Joy.",
+      "next": "scene_19_dialogue_10",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_10": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "T’as réfléchi longtemps.",
+      "next": "scene_19_dialogue_11",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_11": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Parce que je connais beaucoup de musiques. Non pas parce que je ne me connais pas parfaitement…",
+      "next": "scene_19_dialogue_12",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_12": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Bref, deuxième question. \"Qui de vous deux est le plus têtu ?\"",
+      "next": "scene_19_dialogue_13",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_13": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Camel me regarde.)",
+      "next": "scene_19_dialogue_14",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_14": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Toi.",
+      "next": "scene_19_dialogue_15",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_15": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Pardon ?",
+      "next": "scene_19_dialogue_16",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_16": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Tu fais cette tête quand tu sais que j'ai raison.",
+      "next": "scene_19_choix_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_choix_1": {
+      "type": "choice",
+      "speaker": "moi",
+      "text": "",
+      "options": [
+        {
+          "text": "C’est clairement toi le plus têtu. ",
+          "effects": {
+            "camel": {
+              "amour": -5
+            }
+          },
+          "next": "scene_19_dialogue_17"
+        },
+        {
+          "text": "On est peut-être tous les deux un peu trop têtus.",
+          "effects": {
+            "camel": {
+              "amour": 0
+            }
+          },
+          "next": "scene_19_dialogue_18"
+        },
+        {
+          "text": "Je fais cette tête quand je suis convaincue d’avoir raison.",
+          "effects": {
+            "camel": {
+              "amour": 5
+            }
+          },
+          "next": "scene_19_dialogue_19"
+        }
+      ],
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_19_dialogue_17": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Mauvaise foi détectée.",
+      "next": "scene_19_dialogue_20",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_18": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Ça se défend. 1 partout pour cette fois.",
+      "next": "scene_19_dialogue_20",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_19": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Donc tout le temps. C’est bien toi la plus têtue.",
+      "next": "scene_19_dialogue_20",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_20": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je l’ignore et je retourne la dernière carte.)",
+      "next": "scene_19_dialogue_21",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_21": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "\"Décris ton partenaire en un seul mot.\"",
+      "next": "scene_19_dialogue_22",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_22": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Camel réfléchit longuement. Puis sourit.)",
+      "next": "scene_19_dialogue_23",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_23": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Inattendue.",
+      "next": "scene_19_dialogue_24",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_24": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Inattendue ?",
+      "next": "scene_19_dialogue_25",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_25": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Ouais. Parce qu'à chaque fois que je crois savoir ce que tu vas répondre… Tu me surprends.",
+      "next": "scene_19_dialogue_26",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_26": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Petit silence. J’essaie de retenir un petit sourire.)",
+      "next": "scene_19_dialogue_27",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_27": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Pour toi, je dirais… Tchatcheur.",
+      "next": "scene_19_dialogue_28",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_19_dialogue_28": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Alors là ! Je vois pas de quoi tu parles. J’ai juste de la répartie.",
+      "next": "scene_20_dialogue_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_20_dialogue_1": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "*Merci tout le monde !*\n(Quelques applaudissements retentissent. Les étudiants commencent à se disperser de nouveau dans la cour.)",
+      "next": "scene_20_dialogue_2",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_20_dialogue_2": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je ne pensais pas rencontrer autant de monde dès le premier soir. Et pourtant... j'ai déjà l'impression que cette année risque d'être bien différente de tout ce que j'ai connu jusque-là.)",
+      "next": "scene_20_dialogue_3",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_20_dialogue_3": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "*On enchaîne avec le deuxième et dernier jeu ! Cette fois, on complique un peu les choses.\nVous allez partir par équipes de trois. Vous devez retrouver trois jetons cachés sur le campus grâce à des énigmes.*",
+      "next": "scene_20_dialogue_4",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_20_dialogue_4": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "*L'équipe gagnante remportera trois places de cinéma !*",
+      "next": "scene_21_dialogue_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_21_dialogue_1": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Ah ! Ça, ça vaut le coup.",
+      "next": "scene_21_dialogue_2",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_21_dialogue_2": {
+      "type": "line",
+      "speaker": "mehdi",
+      "text": "Sasha, tu regardes même pas le film quand tu vas au cinéma…",
+      "next": "scene_21_dialogue_3",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "mehdi"
+      ]
+    },
+    "scene_21_dialogue_3": {
+      "type": "line",
+      "speaker": "sasha",
+      "text": "Ouais. Mais j'adore le pop-corn.",
+      "next": "scene_22_dialogue_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "sasha"
+      ]
+    },
+    "scene_22_dialogue_1": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "*Les équipes sont déjà faites ! La liste des équipes est affichée un peu partout dans la cour, je vous laisse en prendre connaissance.*",
+      "next": "scene_22_dialogue_2",
+      "background": "",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_22_dialogue_2": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Je m’avance vers la première liste que je vois et je cherche mon nom parmi les 200 nouveaux étudiants… Bingo ! Je suis avec…)",
+      "next": "scene_22_choix_1",
+      "background": "",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_22_choix_1": {
+      "type": "choice",
+      "speaker": "moi",
+      "text": "",
+      "options": [
+        {
+          "text": "Camel et Victoria (je choisis cette équipe)",
+          "effects": {
+            "camel": {
+              "amour": 0
+            }
+          },
+          "next": "scene_23_dialogue_1"
+        },
+        {
+          "text": "Mehdi et Léonie (je choisis cette équipe)",
+          "effects": {
+            "mehdi": {
+              "amour": 0
+            }
+          },
+          "next": "scene_23_dialogue_1"
+        },
+        {
+          "text": "Sasha et Zoé (je choisis cette équipe)",
+          "effects": {
+            "sasha": {
+              "amour": 0
+            }
+          },
+          "next": "scene_23_dialogue_1"
+        }
+      ],
+      "background": "",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_23_dialogue_1": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Nous nous sommes tous les trois retrouvés devant la scène pour récupérer les 3 énigmes.)",
+      "next": "scene_23_dialogue_2",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_23_dialogue_2": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Ok, c’est parti. Je lis la première énigme.",
+      "next": "scene_23_dialogue_3",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_23_dialogue_3": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "\"Je suis l’endroit où les étudiants viennent dormir les yeux ouverts.\"\nDonc… Le cours de 8h ?",
+      "next": "scene_23_dialogue_4",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_23_dialogue_4": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Victoria soupire)",
+      "next": "scene_23_dialogue_5",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_23_dialogue_5": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "L’amphithéâtre. On y va.",
+      "next": "scene_23_dialogue_6",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_23_dialogue_6": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "T’es vraiment pas drôle.",
+      "next": "scene_23_dialogue_7",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_23_dialogue_7": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Et pourtant, on avance.",
+      "next": "scene_23_dialogue_8",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_23_dialogue_8": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Ils ont l’air d’avoir l’habitude de se lancer des piques…)",
+      "next": "scene_24_dialogue_1",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_24_dialogue_1": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Pendant qu’on marche, Camel me regarde.)",
+      "next": "scene_24_dialogue_2",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_24_dialogue_2": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Au fait… Tu pensais que j’étais devenu quoi ? Rockstar ?",
+      "next": "scene_24_choix_1",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_24_choix_1": {
+      "type": "choice",
+      "speaker": "moi",
+      "text": "",
+      "options": [
+        {
+          "text": "Peut-être bien ouais, ça aurait pu bien t’aller.",
+          "effects": {
+            "camel": {
+              "amour": 0
+            }
+          },
+          "next": "scene_24_dialogue_3"
+        },
+        {
+          "text": "Plutôt guitariste dans le métro.",
+          "effects": {
+            "camel": {
+              "amour": -5
+            }
+          },
+          "next": "scene_24_dialogue_3"
+        },
+        {
+          "text": "J’avoue que je me suis déjà posé la question.",
+          "effects": {
+            "camel": {
+              "amour": 5
+            }
+          },
+          "next": "scene_24_dialogue_3"
+        }
+      ],
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_24_dialogue_3": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "J’suis flatté. Malheureusement, j’en suis pas encore là.",
+      "next": "scene_24_dialogue_4",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_24_dialogue_4": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Ça viendra, peut-être !",
+      "next": "scene_24_dialogue_5",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_24_dialogue_5": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Aïe. Je vais vraiment finir par croire que je joue mal à force.",
+      "next": "scene_24_dialogue_6",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_24_dialogue_6": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Sois pas si susceptible.",
+      "next": "scene_24_dialogue_7",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_24_dialogue_7": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Ah ouais ?",
+      "next": "scene_24_dialogue_8",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_24_dialogue_8": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "Oui.",
+      "next": "scene_24_dialogue_9",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_24_dialogue_9": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Camel laisse échapper un petit sourire.)",
+      "next": "scene_24_dialogue_10",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_24_dialogue_10": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Encore une fois, je m’attendais pas à cette réponse.",
+      "next": "scene_25_dialogue_1",
+      "background": "assets/Décors/Hall campus.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_25_dialogue_1": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Bon, vous avez fini ? J’ai trouvé le premier jeton pendant que vous faisiez vos petites retrouvailles. Ce n’est ni le moment, ni l’endroit. Camel, c’est quoi la deuxième énigme ?",
+      "next": "scene_25_dialogue_2",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_25_dialogue_2": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Ça la tuerait de se détendre un peu celle-là ?)",
+      "next": "scene_25_dialogue_3",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_25_dialogue_3": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Camel lui lance un regard de défi et s’adresse à elle.)",
+      "next": "scene_25_dialogue_4",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_25_dialogue_4": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Comment s’appelle cette soirée déjà ? Ah oui, une soirée d’INTÉGRATION. Du coup, je crois que c’est bel et bien le moment et l’endroit pour faire nos “petites retrouvailles”.",
+      "next": "scene_25_dialogue_5",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_25_dialogue_5": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Wow… Là je le reconnais bien. Il a dit les termes.)",
+      "next": "scene_25_dialogue_6",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_25_dialogue_6": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Il a ensuite enchaîné en lisant la deuxième énigme.)",
+      "next": "scene_25_dialogue_7",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_25_dialogue_7": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "“Je suis l’endroit où certains prétendent travailler.”",
+      "next": "scene_25_dialogue_8",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_25_dialogue_8": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "La bibliothèque.",
+      "next": "scene_25_dialogue_9",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_25_dialogue_9": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "T’as répondu un peu trop vite je trouve.",
+      "next": "scene_25_dialogue_10",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_25_dialogue_10": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Parce que j’y mets jamais les pieds.",
+      "next": "scene_25_dialogue_11",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_25_dialogue_11": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Ça se voit.",
+      "next": "scene_26_dialogue_1",
+      "background": "assets/Décors/Amphi 1 nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_26_dialogue_1": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "J’ai trouvé le deuxième jeton. On a presque fini, tu peux lire la dernière énigme Camel ?",
+      "next": "scene_26_dialogue_2",
+      "background": "assets/Décors/Bibliothèque nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_26_dialogue_2": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "À ce rythme là on a carrément nos chances de gagner ! ",
+      "next": "scene_26_dialogue_3",
+      "background": "assets/Décors/Bibliothèque nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_26_dialogue_3": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "La dernière énigme c’est “je suis vide le matin, rempli le midi et nettoyé l’après-midi.”",
+      "next": "scene_26_dialogue_4",
+      "background": "assets/Décors/Bibliothèque nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_26_dialogue_4": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Celle-là est simple. Vite, on va au réfectoire.",
+      "next": "scene_27_dialogue_1",
+      "background": "assets/Décors/Bibliothèque nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_27_dialogue_1": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Ah ah ! Dernier jeton trouvé. C’est bon, on a les 3.",
+      "next": "scene_27_dialogue_2",
+      "background": "assets/Décors/Cafétéria campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_27_dialogue_2": {
+      "type": "line",
+      "speaker": "moi",
+      "text": "On retourne dans la cour ! J’espère qu’on sera les premiers.",
+      "next": "scene_28_dialogue_1",
+      "background": "assets/Décors/Cafétéria campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel"
+      ]
+    },
+    "scene_28_dialogue_1": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(On arrive devant la scène. À première vue, il n’y a pas d’autre équipe devant nous.)",
+      "next": "scene_28_dialogue_2",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center"
+    },
+    "scene_28_dialogue_2": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "S’il vous plaît ? On a récupéré les 3 jetons.",
+      "next": "scene_28_dialogue_3",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_28_dialogue_3": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "Déjà ? Je crois qu’on a nos gagnants alors !*",
+      "next": "scene_28_dialogue_4",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_28_dialogue_4": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Il faut dire que vos énigmes n’étaient pas très compliquées…",
+      "next": "scene_28_dialogue_5",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_28_dialogue_5": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "*L’objectif était surtout de vous faire découvrir le campus et que vous fassiez un peu connaissance.*",
+      "next": "scene_28_dialogue_6",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "victoria"
+      ]
+    },
+    "scene_28_dialogue_6": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Camel et moi échangeons un regard complice et moqueur envers Victoria.)",
+      "next": "scene_28_dialogue_7",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_28_dialogue_7": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(D’un geste naturel, on se check, et il me fait un clin d’oeil discret.)",
+      "next": "scene_28_dialogue_8",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_28_dialogue_8": {
+      "type": "line",
+      "speaker": "camel",
+      "text": "Victoria, reconnais que sans nous, tu te serais ennuyée.",
+      "next": "scene_28_dialogue_9",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ],
+      "cg": "assets/Illustrations/Episode 2/Illustration 3 - Camel + sucrette.png"
+    },
+    "scene_28_dialogue_9": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(Elle répond sans même tourner la tête.)",
+      "next": "scene_28_dialogue_10",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_28_dialogue_10": {
+      "type": "line",
+      "speaker": "victoria",
+      "text": "Sans vous, j'aurais surtout terminé trois minutes plus tôt…",
+      "next": "scene_28_dialogue_11",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
+      ]
+    },
+    "scene_28_dialogue_11": {
+      "type": "line",
+      "speaker": "narration",
+      "text": "(...Qu’est-ce qu’elle peut être froide...)",
+      "next": "",
+      "background": "assets/Décors/Cour campus nuit.png",
+      "music": "Romantique doux",
+      "position": "center",
+      "onScreen": [
+        "camel",
+        "victoria"
       ]
     }
   }
