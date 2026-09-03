@@ -350,14 +350,25 @@ function removePerson(id) {
   renderSceneFlow();
 }
 
-function save() {
-  // Cache local instantané (secours hors-ligne) + synchronisation en base en tâche de fond.
+let minuteurSynchronisation = null;
+let minuteurCacheLocal = null;
+
+function sauvegarderCacheLocal() {
   localStorage.setItem(STORE, JSON.stringify({ episodes, episodeId }));
+}
+
+function save() {
+  // Les deux sauvegardes sont différées afin que la saisie reste fluide, même avec de longs épisodes.
+  clearTimeout(minuteurCacheLocal);
+  minuteurCacheLocal = setTimeout(sauvegarderCacheLocal, 150);
   const episode = currentEpisode();
   if (!episode) return;
-  saveEpisode(episode.id, episode.title, exportEpisodeData(episode), episode.status).catch((erreur) => {
-    console.warn("Synchronisation en ligne impossible pour cet épisode.", erreur);
-  });
+  clearTimeout(minuteurSynchronisation);
+  minuteurSynchronisation = setTimeout(() => {
+    saveEpisode(episode.id, episode.title, exportEpisodeData(episode), episode.status).catch((erreur) => {
+      console.warn("Synchronisation en ligne impossible pour cet épisode.", erreur);
+    });
+  }, 500);
 }
 
 async function togglePublish() {
@@ -674,12 +685,21 @@ function renderSceneFlow() {
     return;
   }
 
-  container.innerHTML = episode.scenes.length
-    ? episode.scenes.map((scene, index) => renderSceneBlock(episode, scene, index)).join("")
-    : '<p class="empty">Ajoute une première scène pour commencer cet épisode.</p>';
+  // Calculé une seule fois pour tout le rendu : chaque carte partage cette liste au lieu de dupliquer
+  // toutes les destinations possibles dans son propre menu.
+  const indexCibles = buildTargetOptionsIndex(episode);
+
+  container.innerHTML = `
+    <datalist id="node-targets">${nodeTargetOptions(indexCibles)}</datalist>
+    ${
+      episode.scenes.length
+        ? episode.scenes.map((scene, index) => renderSceneBlock(episode, scene, index, indexCibles)).join("")
+        : '<p class="empty">Ajoute une première scène pour commencer cet épisode.</p>'
+    }
+  `;
 }
 
-function renderSceneBlock(episode, scene, index) {
+function renderSceneBlock(episode, scene, index, indexCibles) {
   return `
     <article class="scene-block" data-scene="${esc(scene.id)}">
       <div class="scene-block-head">
@@ -695,7 +715,7 @@ function renderSceneBlock(episode, scene, index) {
       <div class="scene-nodes">
         ${
           scene.nodeIds.length
-            ? scene.nodeIds.map((id, nodeIndex) => renderNodeCard(episode, episode.nodes[id], id, nodeIndex)).join("")
+            ? scene.nodeIds.map((id, nodeIndex) => renderNodeCard(episode, episode.nodes[id], id, nodeIndex, indexCibles)).join("")
             : '<p class="empty">Aucun dialogue pour l’instant.</p>'
         }
       </div>
@@ -707,26 +727,33 @@ function renderSceneBlock(episode, scene, index) {
   `;
 }
 
-function nodeTargetOptions(episode, current, excludeId = "") {
-  const groups = episode.scenes
-    .map((scene, sceneIndex) => {
-      const items = scene.nodeIds
-        .filter((id) => id !== excludeId)
-        .map((id) => {
-          const node = episode.nodes[id];
-          if (!node) return "";
-          const nodeIndex = scene.nodeIds.indexOf(id);
-          const kind = node.type === "choice" ? "Choix" : "Dialogue";
-          const preview = (node.text || "").replaceAll("\n", " ").slice(0, 28);
-          const label = `${kind} ${nodeIndex + 1}${preview ? " — " + preview : ""}`;
-          return `<option value="${esc(id)}" ${id === current ? "selected" : ""}>${esc(label)}</option>`;
-        })
-        .join("");
-      return items ? `<optgroup label="${esc(sceneLabel(scene, sceneIndex))}">${items}</optgroup>` : "";
-    })
-    .join("");
+// Index des cibles possibles pour "Suite"/"Mène à", construit une seule fois par rendu complet.
+function buildTargetOptionsIndex(episode) {
+  return episode.scenes.map((scene, sceneIndex) => ({
+    label: sceneLabel(scene, sceneIndex),
+    items: scene.nodeIds
+      .map((id, nodeIndex) => {
+        const node = episode.nodes[id];
+        if (!node) return null;
+        const kind = node.type === "choice" ? "Choix" : node.type === "end" ? "Fin" : "Dialogue";
+        const preview = (node.text || "").replaceAll("\n", " ").slice(0, 28);
+        const label = `${kind} ${nodeIndex + 1}${preview ? " — " + preview : ""}`;
+        return { id, html: `<option value="${esc(id)}" label="${esc(`${sceneLabel(scene, sceneIndex)} - ${label}`)}"></option>` };
+      })
+      .filter(Boolean),
+  }));
+}
 
-  return `<option value="">— Aucune suite définie (le jeu se bloquera ici) —</option>${groups}`;
+function nodeTargetOptions(indexCibles) {
+  return indexCibles.flatMap(({ items }) => items.map((item) => item.html)).join("");
+}
+
+function nodeTargetInput(current, field) {
+  return `<input data-field="${field}" list="node-targets" value="${esc(current || "")}" placeholder="Identifiant du dialogue suivant" />`;
+}
+
+function validNodeTarget(episode, value, sourceId) {
+  return value && value !== sourceId && episode.nodes[value] ? value : "";
 }
 
 // Liste les autres épisodes pour le sélecteur "Épisode suivant" d'un nœud de fin.
@@ -751,7 +778,7 @@ function onScreenCheckboxes(node) {
     .join("");
 }
 
-function renderNodeCard(episode, node, id, index) {
+function renderNodeCard(episode, node, id, index, indexCibles) {
   if (!node) return "";
   const kind = node.type === "choice" ? "Choix" : node.type === "end" ? "Fin" : "Dialogue";
   const speakerOptions = [
@@ -778,7 +805,7 @@ function renderNodeCard(episode, node, id, index) {
       <label>${node.type === "choice" ? "Question du choix" : "Phrase du dialogue"}<textarea data-field="text" rows="3">${esc(node.text || "")}</textarea></label>
       ${
         node.type === "choice"
-          ? renderChoiceOptions(episode, node, id)
+          ? renderChoiceOptions(episode, node, id, indexCibles)
           : `
             <label class="node-end-toggle">
               <input type="checkbox" data-field="is-end" ${node.type === "end" ? "checked" : ""} />
@@ -788,7 +815,7 @@ function renderNodeCard(episode, node, id, index) {
               node.type === "end"
                 ? `<label>Épisode suivant<select data-field="next-episode">${episodeTargetOptions(node.nextEpisode || "")}</select></label>`
                 : `
-                  <label>Suite<select data-field="next">${nodeTargetOptions(episode, node.next || "", id)}</select></label>
+                  <label>Suite${nodeTargetInput(node.next, "next")}</label>
                   ${!node.next ? '<small class="node-warning">⚠️ Aucune suite définie : le jeu se bloquera sur ce dialogue. Coche « Fin de l’épisode » si c’est voulu, sinon choisis un dialogue suivant.</small>'
                     : ""}
                 `
@@ -799,16 +826,16 @@ function renderNodeCard(episode, node, id, index) {
   `;
 }
 
-function renderChoiceOptions(episode, node, nodeId) {
+function renderChoiceOptions(episode, node, nodeId, indexCibles) {
   return `
     <div class="node-options">
-      ${node.options.map((option, index) => renderChoiceOption(episode, option, index, nodeId)).join("")}
+      ${node.options.map((option, index) => renderChoiceOption(episode, option, index, nodeId, indexCibles)).join("")}
       <button class="add-option" data-add-option="true">+ Ajouter une réponse</button>
     </div>
   `;
 }
 
-function renderChoiceOption(episode, option, index, nodeId) {
+function renderChoiceOption(episode, option, index, nodeId, indexCibles) {
   const effectKey = Object.keys(option.effects || {})[0] || "";
   const effectValue = effectKey ? option.effects[effectKey] : {};
   const gauge = Object.keys(effectValue || {})[0] || "amour";
@@ -826,7 +853,7 @@ function renderChoiceOption(episode, option, index, nodeId) {
         </select></label>
         <label>Variation (%)<input data-field="option-delta" type="number" min="-100" max="100" step="1" value="${esc(delta)}"></label>
       </div>
-      <label>Mène à<select data-field="option-next">${nodeTargetOptions(episode, option.next || "", nodeId)}</select></label>
+      <label>Mène à${nodeTargetInput(option.next, "option-next")}</label>
       <small class="effect-help">Bonne réponse : +5 · Neutre : 0 · Mauvaise réponse : −5</small>
     </article>
   `;
@@ -851,7 +878,8 @@ function handleSceneFlowInput(target) {
     if (field === "option-text") {
       option.text = target.value;
     } else if (field === "option-next") {
-      option.next = target.value || "";
+      option.next = validNodeTarget(episode, target.value, nodeCard.dataset.node);
+      target.value = option.next;
     } else {
       const person = optionCard.querySelector('[data-field="option-target"]').value || "";
       const gauge = optionCard.querySelector('[data-field="option-gauge"]').value || "amour";
@@ -872,7 +900,10 @@ function handleSceneFlowInput(target) {
     if (field === "position") node.position = target.value;
     if (field === "cg") node.cg = target.value || "";
     if (field === "text") node.text = target.value;
-    if (field === "next") node.next = target.value || "";
+    if (field === "next") {
+      node.next = validNodeTarget(episode, target.value, nodeCard.dataset.node);
+      target.value = node.next;
+    }
     if (field === "next-episode") node.nextEpisode = target.value || null;
     if (field === "is-end") {
       node.type = target.checked ? "end" : "line";
@@ -940,7 +971,7 @@ function newEpisode() {
   episodes[id] = normalizeEpisode(blankEpisode(id, `Épisode ${index - 1}`));
   episodeId = id;
   save();
-  render();
+  renderEpisodeTab();
 }
 
 function newScene() {
@@ -983,7 +1014,7 @@ function newScene() {
 
   episode.start = episode.start || firstNodeId;
   save();
-  render();
+  renderEpisodeTab();
 }
 
 function newNode(targetSceneId, type) {
@@ -1033,7 +1064,7 @@ function newNode(targetSceneId, type) {
   scene.nodeIds.push(id);
   episode.start = episode.start || id;
   save();
-  render();
+  renderEpisodeTab();
 }
 
 function removeScene(targetSceneId) {
@@ -1065,7 +1096,7 @@ function removeScene(targetSceneId) {
   }
 
   save();
-  render();
+  renderEpisodeTab();
 }
 
 function removeNode(id) {
@@ -1091,7 +1122,7 @@ function removeNode(id) {
   }
 
   save();
-  render();
+  renderEpisodeTab();
 }
 
 function addChoiceOption(id) {
@@ -1099,7 +1130,7 @@ function addChoiceOption(id) {
   if (!node) return;
   node.options.push({ text: "Nouvelle réponse", effects: {}, next: "" });
   save();
-  render();
+  renderEpisodeTab();
 }
 
 function removeChoiceOption(id, index) {
@@ -1107,7 +1138,7 @@ function removeChoiceOption(id, index) {
   if (!node) return;
   node.options.splice(index, 1);
   save();
-  render();
+  renderEpisodeTab();
 }
 
 function downloadCurrent() {
@@ -1143,7 +1174,7 @@ async function importDocxFile(event) {
     episodes[idCible] = normalizeEpisode({ ...episode, status: currentEpisode()?.status || "draft" });
     episodeId = idCible;
     save();
-    render();
+    renderEpisodeTab();
 
     if (avertissements.length > 0) {
       alert(`Épisode importé avec des avertissements :\n\n${avertissements.join("\n")}`);
@@ -1178,7 +1209,7 @@ function importFile(event) {
       }
 
       save();
-      render();
+      renderEpisodeTab();
     } catch (error) {
       alert("Fichier invalide");
     }
@@ -1243,7 +1274,7 @@ function bind() {
   $("#episode-select").onchange = (event) => {
     episodeId = event.target.value;
     save();
-    render();
+    renderEpisodeTab();
   };
   $("#episode-title").onchange = (event) => {
     const episode = currentEpisode();
@@ -1266,6 +1297,13 @@ function render() {
   renderSceneFlow();
   renderMedia();
   renderVestiaire();
+}
+
+// Version allégée utilisée pour toute édition d'épisode (nœud/scène) : les onglets Média et
+// Vestiaire n'ont pas besoin d'être reconstruits à chaque fois, ce qui était la vraie source de lenteur.
+function renderEpisodeTab() {
+  renderEpisodeSelect();
+  renderSceneFlow();
 }
 
 // Bascule l'affichage via style.display : l'attribut "hidden" est écrasé par la règle CSS
