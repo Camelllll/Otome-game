@@ -1,4 +1,4 @@
-// Écran d'accueil du jeu : titre, intro, bouton démarrage, personnages dispersés en arrière-plan.
+// Écran d'accueil du jeu : logo Pomme d'Amour, intro, boutons de lancement, crushs en arrière-plan.
 import { chargerSauvegarde, reinitialiserSauvegarde } from "../engine/saveSystem.js";
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
 
@@ -13,6 +13,27 @@ export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }
   const fond = document.createElement("div");
   fond.className = "fond-accueil";
   accueil.appendChild(fond);
+
+  // Image de campus douce en filigrane
+  const fondImage = document.createElement("img");
+  fondImage.className = "fond-accueil-image";
+  fondImage.src = "assets/Décors/Cour Campus.jpg";
+  fondImage.alt = "Campus Université Aster";
+  accueil.appendChild(fondImage);
+
+  // Particules cœurs romantiques flottantes
+  const zoneParticules = document.createElement("div");
+  zoneParticules.className = "particules-flottantes";
+  for (let i = 0; i < 14; i++) {
+    const coeur = document.createElement("span");
+    coeur.className = "particule-coeur";
+    coeur.textContent = i % 3 === 0 ? "🍎" : i % 2 === 0 ? "♥" : "✦";
+    coeur.style.left = `${Math.random() * 95}%`;
+    coeur.style.animationDelay = `${Math.random() * 7}s`;
+    coeur.style.animationDuration = `${8 + Math.random() * 6}s`;
+    zoneParticules.appendChild(coeur);
+  }
+  accueil.appendChild(zoneParticules);
 
   // Zone personnages dispersés (arrière-plan)
   const zonePersonnagesArriere = document.createElement("div");
@@ -59,22 +80,26 @@ export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }
   const contenu = document.createElement("div");
   contenu.className = "contenu-accueil";
 
-  // Titre principal
-  const titre = document.createElement("h1");
-  titre.className = "titre-accueil";
-  titre.textContent = "Choisis-moi";
-  contenu.appendChild(titre);
+  // Logo principal Pomme d'Amour
+  const wrapperLogo = document.createElement("div");
+  wrapperLogo.className = "logo-accueil-wrapper";
+  const logo = document.createElement("img");
+  logo.className = "logo-accueil";
+  logo.src = "assets/logo/Logo Pomme d'Amour.png";
+  logo.alt = "Pomme d'Amour — Otome Game";
+  wrapperLogo.appendChild(logo);
+  contenu.appendChild(wrapperLogo);
 
-  // Sous-titre
-  const sousTitre = document.createElement("p");
-  sousTitre.className = "sous-titre-accueil";
-  sousTitre.textContent = "Université Aster";
-  contenu.appendChild(sousTitre);
+  // Badge campus
+  const badgeUni = document.createElement("div");
+  badgeUni.className = "badge-universite-accueil";
+  badgeUni.innerHTML = "<span>🎓</span> Université Aster";
+  contenu.appendChild(badgeUni);
 
   // Intro texte
   const intro = document.createElement("p");
   intro.className = "intro-accueil";
-  intro.innerHTML = "Bienvenue à l'Université Aster.<br/>Ici, chaque cœur a son histoire,<br/>et chaque choix change ton destin.";
+  intro.innerHTML = "Bienvenue à l'Université Aster.<br/>Ici, chaque cœur a son histoire, et chaque choix change ton destin.";
   contenu.appendChild(intro);
 
   // Zone boutons
@@ -87,7 +112,7 @@ export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }
   if (aDejaJoue) {
     const btnContinuer = document.createElement("button");
     btnContinuer.className = "btn-accueil btn-continuer";
-    btnContinuer.textContent = `Continuer (${sauvegarde.playerName})`;
+    btnContinuer.innerHTML = `<span>💖</span> Continuer (${sauvegarde.playerName || "Sucrette"})`;
     btnContinuer.addEventListener("click", () => onDemarrer("continuer"));
     zoneBoutons.appendChild(btnContinuer);
   }
@@ -95,7 +120,7 @@ export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }
   // Bouton Nouvelle partie
   const btnNouvelle = document.createElement("button");
   btnNouvelle.className = "btn-accueil btn-nouvelle";
-  btnNouvelle.textContent = "Nouvelle partie";
+  btnNouvelle.innerHTML = "<span>✨</span> Nouvelle partie";
   btnNouvelle.addEventListener("click", async () => {
     await reinitialiserSauvegarde(joueur.id);
     onDemarrer("nouvelle");

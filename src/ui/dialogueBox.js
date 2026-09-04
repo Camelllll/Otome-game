@@ -1,11 +1,11 @@
-// Bulle semi-transparente pour les personnages présents dans la scène.
-export function afficherBullePersonnage(conteneur, affichage) {
-  // La bulle reste visible pendant la réplique suivante de Sucrette : elle donne du rythme à l'échange.
-  if (!affichage.estPersonnageSurScene || !affichage.text) return;
+// Bulle semi-transparente posée à côté du personnage qui parle (jamais par-dessus lui).
+export function afficherBullePersonnage(conteneur, affichage, cote = "droite") {
+  // La bulle précédente disparaît à chaque clic, même si le nœud courant n'en affiche aucune.
   conteneur.replaceChildren();
+  if (!affichage.estPersonnageSurScene || !affichage.text) return;
 
   const bulle = document.createElement("div");
-  bulle.className = `bulle-personnage pos-${affichage.position || "center"}`;
+  bulle.className = `bulle-personnage cote-${cote}`;
 
   const nom = document.createElement("span");
   nom.className = "nom-bulle-personnage";
@@ -41,7 +41,7 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
   if (texteBas) {
     const texte = document.createElement("div");
     texte.className = affichage.type === "end" ? "texte-dialogue texte-fin" : "texte-dialogue";
-    const nomBas = affichage.estPersonnageSurScene ? "Sucrette" : affichage.speakerName;
+    const nomBas = affichage.estPersonnageSurScene ? affichage.reponseSucrette?.speakerName || "" : affichage.speakerName;
     const prefixeNom = nomBas
       ? `<span class="nom-personnage-inline">${nomBas}.</span> `
       : "";

@@ -45,8 +45,8 @@ export class DialogueEngine {
     const estPersonnageSurScene = Boolean(noeud.speaker) && noeud.speaker !== "moi" && noeud.speaker !== "narration";
     // Sprite plein pied affiché sur la scène : le portrait du nœud prime, sinon l'illustration par défaut du personnage.
     const spriteScene = estPersonnageSurScene ? (portrait || personnage?.sprite || null) : null;
-    // Position sur scène : celle précisée dans le nœud, sinon celle par défaut du personnage, sinon à droite.
-    const position = noeud.position || personnage?.stagePosition || "right";
+    // Côté de bulle imposé par l'admin ; sans consigne, l'écran la place du côté libre du personnage.
+    const position = noeud.position || null;
 
     const { texte: textePage, aDautresPages } = this.obtenirPageDeTexte(noeud);
 
@@ -77,15 +77,33 @@ export class DialogueEngine {
     };
   }
 
-  // Une réplique de personnage peut être accompagnée immédiatement de la réponse de Sucrette dans la barre basse.
+  // Une réplique de personnage est accompagnée immédiatement de la réponse de Sucrette (ou de la narration)
+  // dans la barre basse : elles s'affichent en même temps que la bulle, sans clic supplémentaire.
   obtenirReponseSucrette(noeud) {
     if (!noeud.next || noeud.type !== "line" || noeud.speaker === "moi" || noeud.speaker === "narration") return null;
     const suivant = this.episodeData.nodes[noeud.next];
-    if (!suivant || suivant.type !== "line" || suivant.speaker !== "moi" || !suivant.text || !suivant.next) return null;
+    if (!suivant || suivant.type !== "line" || !suivant.text || !suivant.next) return null;
+    if (suivant.speaker !== "moi" && suivant.speaker !== "narration") return null;
+    // Un texte long garde ses pages : on ne le fusionne pas dans la bulle courante.
+    if (suivant.text.split("\n").length > 3) return null;
+    if (!this.memeMiseEnScene(noeud, suivant)) return null;
     return {
       text: this.interpoler(suivant.text),
+      speakerName: this.nomSpeakerParDefaut(suivant.speaker),
       next: suivant.next || null
     };
+  }
+
+  // Deux nœuds ne sont fusionnés que s'ils partagent le même décor et les mêmes personnages :
+  // sinon l'apparition ou la disparition d'un personnage serait sautée.
+  memeMiseEnScene(noeud, suivant) {
+    if (suivant.background && noeud.background && suivant.background !== noeud.background) return false;
+    if (!Array.isArray(suivant.onScreen)) return true;
+    if (!Array.isArray(noeud.onScreen)) return false;
+    return (
+      noeud.onScreen.length === suivant.onScreen.length &&
+      noeud.onScreen.every((id) => suivant.onScreen.includes(id))
+    );
   }
 
   // Découpe le texte du nœud en pages de 3 lignes maximum et retourne la page courante.

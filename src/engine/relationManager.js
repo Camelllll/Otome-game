@@ -1,5 +1,6 @@
 // Gestion des jauges de relation (Amitié / Amour) par personnage.
-const JAUGE_MIN = -100;
+// Les jauges sont directement exprimées en pourcentage : un effet de +5 ajoute 5 % au lovomètre.
+const JAUGE_MIN = 0;
 const JAUGE_MAX = 100;
 
 // Retourne (en la créant si besoin) la fiche de jauges d'un personnage dans la sauvegarde.
@@ -28,9 +29,9 @@ export function appliquerEffets(sauvegarde, effets) {
   }
 }
 
-// Convertit une valeur de jauge (-100..100) en pourcentage d'affichage pour la barre.
+// La jauge est déjà un pourcentage : on se contente de la borner (anciennes sauvegardes comprises).
 export function jaugeEnPourcentageAffichage(valeur) {
-  return Math.round(((valeur - JAUGE_MIN) / (JAUGE_MAX - JAUGE_MIN)) * 100);
+  return Math.round(Math.max(JAUGE_MIN, Math.min(JAUGE_MAX, valeur ?? 0)));
 }
 
 export { JAUGE_MIN, JAUGE_MAX };

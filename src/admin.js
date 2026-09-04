@@ -676,6 +676,36 @@ function renderEpisodeSelect() {
   }
 }
 
+// Chaque dialogue mémorise explicitement qui est à l'écran : l'auteur peut ainsi retirer un personnage
+// en décochant sa case, sans qu'il reste affiché dans les dialogues suivants.
+function normaliserMiseEnScene(episode) {
+  let presents = [];
+  let decor = null;
+  let modifie = false;
+
+  for (const scene of episode.scenes || []) {
+    if (scene.background !== decor) {
+      decor = scene.background;
+      presents = [];
+    }
+    for (const id of scene.nodeIds || []) {
+      const node = episode.nodes[id];
+      if (!node) continue;
+      if (Array.isArray(node.onScreen)) {
+        presents = node.onScreen.slice(0, 3);
+        continue;
+      }
+      if (node.speaker && node.speaker !== "moi" && node.speaker !== "narration" && !presents.includes(node.speaker)) {
+        presents = [...presents, node.speaker].slice(-3);
+      }
+      node.onScreen = [...presents];
+      modifie = true;
+    }
+  }
+
+  return modifie;
+}
+
 function renderSceneFlow() {
   const episode = currentEpisode();
   const container = $("#scene-flow");
@@ -684,6 +714,8 @@ function renderSceneFlow() {
     container.innerHTML = '<p class="empty">Crée un épisode pour commencer.</p>';
     return;
   }
+
+  if (normaliserMiseEnScene(episode)) save();
 
   // Calculé une seule fois pour tout le rendu : chaque carte partage cette liste au lieu de dupliquer
   // toutes les destinations possibles dans son propre menu.
@@ -795,13 +827,15 @@ function renderNodeCard(episode, node, id, index, indexCibles) {
       <div class="node-grid">
         <label>Personnage<select data-field="speaker">${speakerOptions}</select></label>
         <label>Musique<select data-field="music">${labelsForSelect(files.music, node.music || "", "— Aucune musique —")}</select></label>
-        <label>Position de bulle<select data-field="position">
-          ${["left", "center", "right"].map((position) => `<option value="${position}" ${node.position === position ? "selected" : ""}>${position[0].toUpperCase()}${position.slice(1)}</option>`).join("")}
+        <label>Côté de la bulle<select data-field="position">
+          <option value="" ${node.position !== "left" && node.position !== "right" ? "selected" : ""}>Automatique (à côté du personnage)</option>
+          <option value="left" ${node.position === "left" ? "selected" : ""}>Toujours à gauche du personnage</option>
+          <option value="right" ${node.position === "right" ? "selected" : ""}>Toujours à droite du personnage</option>
         </select></label>
         <label>Illustration<select data-field="cg">${labelsForSelect(files.illustrations, node.cg || "", "— Aucune illustration —", mediaLabel)}</select></label>
       </div>
       <label>Personnages à l’écran<span class="onscreen-list">${onScreenCheckboxes(node)}</span></label>
-      <small class="effect-help">Laisse tout décoché pour garder la mise en scène automatique (le jeu garde les 3 derniers qui ont parlé).</small>
+      <small class="effect-help">Coche un personnage pour qu’il apparaisse, décoche-le pour qu’il quitte l’écran. La liste est reprise telle quelle sur ce dialogue (3 personnages maximum).</small>
       <label>${node.type === "choice" ? "Question du choix" : "Phrase du dialogue"}<textarea data-field="text" rows="3">${esc(node.text || "")}</textarea></label>
       ${
         node.type === "choice"
@@ -835,26 +869,40 @@ function renderChoiceOptions(episode, node, nodeId, indexCibles) {
   `;
 }
 
-function renderChoiceOption(episode, option, index, nodeId, indexCibles) {
-  const effectKey = Object.keys(option.effects || {})[0] || "";
-  const effectValue = effectKey ? option.effects[effectKey] : {};
-  const gauge = Object.keys(effectValue || {})[0] || "amour";
-  const delta = effectValue?.[gauge] ?? 0;
+// Un choix peut faire varier plusieurs lovomètres : les effets sont édités ligne par ligne.
+function listerEffets(effects) {
+  const lignes = [];
+  for (const [personId, jauges] of Object.entries(effects || {})) {
+    for (const [gauge, delta] of Object.entries(jauges || {})) {
+      lignes.push({ personId, gauge, delta });
+    }
+  }
+  return lignes.length ? lignes : [{ personId: "", gauge: "amour", delta: 0 }];
+}
 
+function renderChoiceEffect({ personId, gauge, delta }, index) {
+  return `
+    <div class="choice-option-grid choice-effect" data-effect="${index}">
+      <label>Lovometer de<select data-field="option-target">${peopleOptions(personId)}</select></label>
+      <label>Jauge<select data-field="option-gauge">
+        <option value="amour" ${gauge === "amour" ? "selected" : ""}>Amour</option>
+        <option value="amitie" ${gauge === "amitie" ? "selected" : ""}>Amitié</option>
+      </select></label>
+      <label>Variation (%)<input data-field="option-delta" type="number" min="-100" max="100" step="1" value="${esc(delta)}"></label>
+      <button class="delete-effect" type="button" data-delete-effect="${index}" title="Retirer ce lovometer">×</button>
+    </div>
+  `;
+}
+
+function renderChoiceOption(episode, option, index, nodeId, indexCibles) {
   return `
     <article class="choice-option" data-option="${index}">
       <button class="delete-option" type="button" data-delete-option="${index}">×</button>
       <label>Réponse<textarea data-field="option-text" rows="2">${esc(option.text || "")}</textarea></label>
-      <div class="choice-option-grid">
-        <label>Lovometer de<select data-field="option-target">${peopleOptions(effectKey)}</select></label>
-        <label>Jauge<select data-field="option-gauge">
-          <option value="amour" ${gauge === "amour" ? "selected" : ""}>Amour</option>
-          <option value="amitie" ${gauge === "amitie" ? "selected" : ""}>Amitié</option>
-        </select></label>
-        <label>Variation (%)<input data-field="option-delta" type="number" min="-100" max="100" step="1" value="${esc(delta)}"></label>
-      </div>
+      ${listerEffets(option.effects).map(renderChoiceEffect).join("")}
+      <button class="add-effect" type="button" data-add-effect="${index}">+ Ajouter un lovometer</button>
       <label>Mène à${nodeTargetInput(option.next, "option-next")}</label>
-      <small class="effect-help">Bonne réponse : +5 · Neutre : 0 · Mauvaise réponse : −5</small>
+      <small class="effect-help">Bonne réponse : +5 · Neutre : 0 · Mauvaise réponse : −5. Une même réponse peut monter un lovometer et en faire baisser un autre.</small>
     </article>
   `;
 }
@@ -881,10 +929,14 @@ function handleSceneFlowInput(target) {
       option.next = validNodeTarget(episode, target.value, nodeCard.dataset.node);
       target.value = option.next;
     } else {
-      const person = optionCard.querySelector('[data-field="option-target"]').value || "";
-      const gauge = optionCard.querySelector('[data-field="option-gauge"]').value || "amour";
-      const delta = Number(optionCard.querySelector('[data-field="option-delta"]').value || 0);
-      option.effects = person ? { [person]: { [gauge]: delta } } : {};
+      option.effects = {};
+      optionCard.querySelectorAll(".choice-effect").forEach((ligne) => {
+        const person = ligne.querySelector('[data-field="option-target"]').value || "";
+        if (!person) return;
+        const gauge = ligne.querySelector('[data-field="option-gauge"]').value || "amour";
+        const delta = Number(ligne.querySelector('[data-field="option-delta"]').value || 0);
+        option.effects[person] = { ...(option.effects[person] || {}), [gauge]: delta };
+      });
     }
 
     save();
@@ -895,7 +947,17 @@ function handleSceneFlowInput(target) {
     const node = episode.nodes[nodeCard.dataset.node];
     if (!node) return;
 
-    if (field === "speaker") node.speaker = target.value;
+    if (field === "speaker") {
+      node.speaker = target.value;
+      // Un nouveau personnage qui prend la parole entre automatiquement en scène.
+      const estPersonnage = node.speaker && node.speaker !== "moi" && node.speaker !== "narration";
+      if (estPersonnage && Array.isArray(node.onScreen) && !node.onScreen.includes(node.speaker)) {
+        node.onScreen = [...node.onScreen, node.speaker].slice(-3);
+        save();
+        renderSceneFlow();
+        return;
+      }
+    }
     if (field === "music") node.music = target.value || "";
     if (field === "position") node.position = target.value;
     if (field === "cg") node.cg = target.value || "";
@@ -948,11 +1010,21 @@ function bindSceneFlow() {
     const deleteNode = event.target.closest("[data-delete-node]");
     const addOption = event.target.closest("[data-add-option]");
     const deleteOption = event.target.closest("[data-delete-option]");
+    const addEffect = event.target.closest("[data-add-effect]");
+    const deleteEffect = event.target.closest("[data-delete-effect]");
 
     if (addLine) newNode(addLine.dataset.addLine, "line");
     else if (addChoice) newNode(addChoice.dataset.addChoice, "choice");
     else if (deleteScene) removeScene(deleteScene.dataset.deleteScene);
     else if (deleteNode) removeNode(deleteNode.dataset.deleteNode);
+    else if (addEffect)
+      addChoiceEffect(event.target.closest(".node-card").dataset.node, Number(addEffect.dataset.addEffect));
+    else if (deleteEffect)
+      removeChoiceEffect(
+        event.target.closest(".node-card").dataset.node,
+        Number(event.target.closest(".choice-option").dataset.option),
+        Number(deleteEffect.dataset.deleteEffect)
+      );
     else if (addOption) addChoiceOption(event.target.closest(".node-card").dataset.node);
     else if (deleteOption)
       removeChoiceOption(event.target.closest(".node-card").dataset.node, Number(deleteOption.dataset.deleteOption));
@@ -1137,6 +1209,30 @@ function removeChoiceOption(id, index) {
   const node = currentEpisode().nodes[id];
   if (!node) return;
   node.options.splice(index, 1);
+  save();
+  renderEpisodeTab();
+}
+
+function addChoiceEffect(id, optionIndex) {
+  const option = currentEpisode().nodes[id]?.options?.[optionIndex];
+  if (!option) return;
+  option.effects ||= {};
+  const libre = people.find((person) => !option.effects[person.id]);
+  if (!libre) return;
+  option.effects[libre.id] = { amour: 0 };
+  save();
+  renderEpisodeTab();
+}
+
+function removeChoiceEffect(id, optionIndex, effectIndex) {
+  const option = currentEpisode().nodes[id]?.options?.[optionIndex];
+  if (!option) return;
+  const restants = listerEffets(option.effects).filter((_, index) => index !== effectIndex);
+  option.effects = {};
+  for (const { personId, gauge, delta } of restants) {
+    if (!personId) continue;
+    option.effects[personId] = { ...(option.effects[personId] || {}), [gauge]: delta };
+  }
   save();
   renderEpisodeTab();
 }

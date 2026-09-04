@@ -15,7 +15,7 @@ async function listerEpisodesDisponibles() {
   return getPublishedEpisodesList();
 }
 
-async function lancerEpisode(idEpisode, sauvegarde) {
+async function lancerEpisode(idEpisode, sauvegarde, joueur) {
   const [charactersData, episodeData] = await Promise.all([
     getCharacters(),
     getEpisode(idEpisode)
@@ -25,22 +25,25 @@ async function lancerEpisode(idEpisode, sauvegarde) {
   const moteur = new DialogueEngine(episodeData, personnagesParId, sauvegarde);
 
   lancerEcranDialogue(conteneurJeu, moteur, {
+    fichesPersonnages: [...(charactersData.crushs || []), ...(charactersData.secondary || [])],
+    onRetourEpisodes: () => afficherSelectionEpisode(sauvegarde, joueur),
+    onRetourAccueil: joueur ? () => afficherAccueil(joueur) : null,
     onFinEpisode: (prochainEpisode) => {
       if (!prochainEpisode) {
         // Pas d'épisode suivant défini : retour à l'écran de sélection plutôt que de rester bloqué.
-        afficherSelectionEpisode(sauvegarde);
+        afficherSelectionEpisode(sauvegarde, joueur);
         return;
       }
       sauvegarde.currentEpisode = prochainEpisode;
       sauvegarde.currentNode = null;
       sauvegarde.currentBackground = null;
       sauvegarder(sauvegarde);
-      lancerEpisode(sauvegarde.currentEpisode, sauvegarde);
+      lancerEpisode(sauvegarde.currentEpisode, sauvegarde, joueur);
     }
   });
 }
 
-async function afficherSelectionEpisode(sauvegarde) {
+async function afficherSelectionEpisode(sauvegarde, joueur) {
   const episodes = await listerEpisodesDisponibles();
   const completes = new Set(sauvegarde.completedEpisodes || []);
   // Pas de verrouillage pour l'instant (en développement, il faut pouvoir tester n'importe quel épisode) :
@@ -54,6 +57,9 @@ async function afficherSelectionEpisode(sauvegarde) {
   lancerEcranSelectionEpisode(conteneurJeu, {
     episodes: episodesAvecStatut,
     episodeActuel: sauvegarde.currentEpisode,
+    joueur,
+    sauvegarde,
+    onRetourAccueil: joueur ? () => afficherAccueil(joueur) : null,
     onSelect: (idEpisode) => {
       // Ne remet le dialogue à zéro que si on change réellement d'épisode (sinon on perdrait la reprise en cours).
       if (idEpisode !== sauvegarde.currentEpisode) {
@@ -62,7 +68,7 @@ async function afficherSelectionEpisode(sauvegarde) {
         sauvegarde.currentBackground = null;
         sauvegarder(sauvegarde);
       }
-      lancerEpisode(idEpisode, sauvegarde);
+      lancerEpisode(idEpisode, sauvegarde, joueur);
     }
   });
 }
@@ -88,11 +94,11 @@ async function afficherAccueil(joueur) {
       // Si une partie est déjà en cours, on reprend directement le dialogue là où elle s'est arrêtée
       // plutôt que de repasser par l'écran de sélection.
       if (type === "continuer" && sauvegarde.currentNode) {
-        lancerEpisode(sauvegarde.currentEpisode, sauvegarde);
+        lancerEpisode(sauvegarde.currentEpisode, sauvegarde, joueur);
         return;
       }
 
-      afficherSelectionEpisode(sauvegarde);
+      afficherSelectionEpisode(sauvegarde, joueur);
     }
   });
 }

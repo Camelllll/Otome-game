@@ -522,6 +522,32 @@ textarea{
   margin-top:.6rem;
 }
 
+.choice-effect{
+  grid-template-columns:1fr 1fr .8fr auto;
+  align-items:end;
+}
+
+.delete-effect{
+  border:0;
+  background:none;
+  color:#c23461;
+  font-size:1.2rem;
+  padding:0 .3rem .3rem;
+  cursor:pointer;
+}
+
+.add-effect{
+  margin-top:.5rem;
+  border:1px dashed #ee8fac;
+  border-radius:12px;
+  background:#fff;
+  color:#b62d5b;
+  padding:.4rem .7rem;
+  font-weight:700;
+  font-size:.85rem;
+  cursor:pointer;
+}
+
 .delete-option{
   position:absolute;
   top:.4rem;
