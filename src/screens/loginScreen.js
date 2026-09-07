@@ -59,12 +59,12 @@ export function lancerEcranConnexion(conteneurRacine, { onConnecte }) {
   const btnConnexion = document.createElement("button");
   btnConnexion.type = "button";
   btnConnexion.className = "btn-onglet";
-  btnConnexion.innerHTML = "<span>💖</span> Se connecter";
+  btnConnexion.innerHTML = "Se connecter";
 
   const btnInscription = document.createElement("button");
   btnInscription.type = "button";
   btnInscription.className = "btn-onglet";
-  btnInscription.innerHTML = "<span>✨</span> Nouveau compte";
+  btnInscription.innerHTML = "Nouveau compte";
 
   onglets.append(btnConnexion, btnInscription);
   carte.appendChild(onglets);
@@ -141,14 +141,14 @@ export function lancerEcranConnexion(conteneurRacine, { onConnecte }) {
   const boutonValider = document.createElement("button");
   boutonValider.type = "submit";
   boutonValider.className = "bouton-cta-connexion";
-  boutonValider.textContent = "🌸 Entrer sur le Campus";
+  boutonValider.textContent = "Entrer sur le Campus";
 
   formulaire.append(groupeEmail, groupeMotDePasse, messageErreur, boutonValider);
   carte.appendChild(formulaire);
 
   const texteBas = document.createElement("p");
   texteBas.className = "texte-bas-connexion";
-  texteBas.textContent = "Prête à rencontrer Isaac, Aaron, Sasha, Camel et Mehdi ?";
+  texteBas.textContent = "Prêt(e) à rencontrer Isaac, Aaron, Sasha, Camel et les autres ?";
   carte.appendChild(texteBas);
 
   ecran.appendChild(carte);
@@ -158,7 +158,7 @@ export function lancerEcranConnexion(conteneurRacine, { onConnecte }) {
     btnInscription.classList.toggle("actif", onglet === "inscription");
     
     if (onglet === "connexion") {
-      boutonValider.innerHTML = "🌸 Entrer sur le Campus";
+      boutonValider.innerHTML = "🌸 Entrer sur le Campus 🌸";
       if (formulaire.contains(groupePseudo)) {
         formulaire.removeChild(groupePseudo);
       }
