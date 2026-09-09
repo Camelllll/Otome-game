@@ -2392,7 +2392,7 @@
       "background": "assets/Décors/Salle de TD.jpg"
     },
     "n207": {
-      "cg": "assets/Illustrations/Épisode 4/Illustration 1 - Stella + sucrette.png",
+      "cg": "assets/Illustrations/Épisode 4/Illustration 1 - Stella et sucrette.png",
       "next": "n326",
       "text": "(Je lui rends son sourire.)",
       "type": "line",
@@ -3061,7 +3061,7 @@
       "background": "assets/Décors/Salle de TD.jpg"
     },
     "n265": {
-      "cg": "assets/Illustrations/Épisode 4/Illustration 2 - Sasha + sucrette.png",
+      "cg": "assets/Illustrations/Épisode 4/Illustration 2 - Sasha et sucrette.png",
       "next": "n326",
       "text": "Je dirais plutôt… Rapprochés.",
       "type": "line",
@@ -3717,7 +3717,7 @@
       "background": "assets/Décors/Salle de TD.jpg"
     },
     "n319": {
-      "cg": "assets/Illustrations/Épisode 4/Illustration 3 - Aaron + sucrette.png",
+      "cg": "assets/Illustrations/Épisode 4/Illustration 3 - Aaron et sucrette.png",
       "next": "n325",
       "text": "(Il se rapproche légèrement de l’écran. Je sens son épaule contre la mienne)",
       "type": "line",
@@ -5684,7 +5684,7 @@
       "background": "assets/Décors/Intérieur magasin vinyles.png"
     },
     "n484": {
-      "cg": "assets/Illustrations/Épisode 4/Illustration 4 - Camel + sucrette.png",
+      "cg": "assets/Illustrations/Épisode 4/Illustration 4 - Camel et sucrette.png",
       "next": "n485",
       "text": "(Je dois avouer que la musique est pas mal...)",
       "type": "line",
@@ -7689,7 +7689,7 @@
       "background": "assets/Décors/Intérieur magasin vinyles.png"
     },
     "n645": {
-      "cg": "assets/Illustrations/Épisode 4/Illustration 4 - Mehdi + sucrette.png",
+      "cg": "assets/Illustrations/Épisode 4/Illustration 4 - Mehdi et sucrette.png",
       "next": "n646",
       "text": "Toi, par exemple... t'es déjà moins dangereuse.",
       "type": "line",
