@@ -11,7 +11,7 @@
     },
     "s1_2": {
       "next": "s1_3",
-      "text": "{playerName}, ça y est, tu es prête ?\nOn va devoir y aller, on a 2h de route d'ici à ton nouveau campus.",
+      "text": "{playerName}, ça y dzedzedezest, tu es prête ?\nOn va devoir y aller, on a 2h de route d'ici à ton nouveau campus.",
       "type": "line",
       "speaker": "mere",
       "onScreen": [
