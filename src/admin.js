@@ -1,4 +1,17 @@
-import { listEpisodes, saveEpisode, publishEpisode, unpublishEpisode, listMedia, addMediaEntry, uploadMedia, deleteMedia, listCharacters } from "./services/adminRepository.js";
+import {
+  listEpisodes,
+  saveEpisode,
+  publishEpisode,
+  unpublishEpisode,
+  listMedia,
+  addMediaEntry,
+  uploadMedia,
+  deleteMedia,
+  listCharactersRaw,
+  saveCharacter,
+  deleteCharacter,
+  uploadCharacterSprite,
+} from "./services/adminRepository.js";
 import { connexionAdmin, obtenirSessionAdmin } from "./services/adminAuth.js";
 import { definirSeSouvenir } from "./services/supabaseClient.js";
 import { parseDocxVersEpisode } from "./services/docxImportService.js";
@@ -70,7 +83,8 @@ let mediaLabels = {};
 let mediaAssetIndex = {};
 
 let people = [];
-let extraPeople = [];
+// id -> { isPlayer, isSecondary, data } : nécessaire pour ré-enregistrer un personnage existant en base.
+let personIndex = {};
 let episodes = {};
 let episodeId = "";
 let shop = { currency: { name: "Gemmes", id: "gemmes" }, items: [] };
@@ -78,7 +92,6 @@ let activeTab = "episodes";
 
 const WARDROBE_SLOTS = ["haut", "bas", "coiffure", "accessoire", "chaussures"];
 const SHOP_STORE = "otome-admin-shop-v1";
-const PEOPLE_STORE = "otome-admin-people-v1";
 
 const currentEpisode = () => episodes[episodeId];
 
@@ -234,15 +247,6 @@ function slugify(value) {
   );
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
 // Lit le listing HTML d'un dossier (fourni par ex. par `python3 -m http.server`) pour trouver les fichiers ajoutés.
 async function discoverFolder(folderPath) {
   try {
@@ -315,39 +319,177 @@ async function removeMediaItem(category, value) {
   renderSceneFlow();
 }
 
-function loadPeopleExtras() {
+// --- Fenêtres modales génériques (ajout personnage / décor / illustration) ---
+
+function closeModal() {
+  document.querySelector(".modal-overlay")?.remove();
+}
+
+function openModal(titre, corpsHtml, { onMount } = {}) {
+  closeModal();
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.innerHTML = `<form class="modal" novalidate><h2>${esc(titre)}</h2>${corpsHtml}</form>`;
+  overlay.addEventListener("mousedown", (event) => {
+    if (event.target === overlay) closeModal();
+  });
+  document.body.appendChild(overlay);
+  const formulaire = overlay.querySelector("form");
+  formulaire.addEventListener("submit", (event) => event.preventDefault());
+  document.addEventListener(
+    "keydown",
+    function fermerAvecEchap(event) {
+      if (event.key === "Escape") {
+        closeModal();
+        document.removeEventListener("keydown", fermerAvecEchap);
+      }
+    },
+    { once: true }
+  );
+  onMount?.(formulaire);
+  return formulaire;
+}
+
+function modalErreur(formulaire, message) {
+  formulaire.querySelector(".modal-error")?.remove();
+  if (!message) return;
+  const erreur = document.createElement("p");
+  erreur.className = "modal-error";
+  erreur.textContent = message;
+  formulaire.querySelector(".modal-actions").insertAdjacentElement("beforebegin", erreur);
+}
+
+// Recharge les personnages depuis la base (source de vérité) et reconstruit `people`/`personIndex`.
+async function refreshPeopleFromDb() {
+  const rows = await listCharactersRaw();
+  personIndex = {};
+  people = rows.map((row) => {
+    personIndex[row.id] = { isPlayer: row.is_player, isSecondary: row.is_secondary, data: row.data };
+    return { id: row.id, name: row.data.name || row.data.defaultName || row.id, sprite: row.data.sprite || "" };
+  });
+  renderMedia();
+  renderSceneFlow();
+}
+
+function openPersonModal(existingId) {
+  const existant = existingId ? personIndex[existingId] : null;
+  const donnees = existant?.data || {};
+  let spriteChoisi = donnees.sprite || "";
+
+  const formulaire = openModal(existingId ? "Modifier le personnage" : "Ajouter un personnage", `
+    <label>Nom
+      <input type="text" name="name" value="${esc(donnees.name || "")}" required />
+    </label>
+    <label>Rôle
+      <select name="role" ${existingId ? "disabled" : ""}>
+        <option value="crush" ${!existant?.isSecondary ? "selected" : ""}>Crush (route romantique)</option>
+        <option value="secondary" ${existant?.isSecondary ? "selected" : ""}>Personnage secondaire</option>
+      </select>
+    </label>
+    <label>Sprite
+      <input type="file" name="sprite-file" accept="image/*" />
+    </label>
+    <label>Âge
+      <input type="number" name="age" min="0" value="${esc(donnees.age ?? "")}" />
+    </label>
+    <label>Filière / rôle
+      <input type="text" name="field" value="${esc(donnees.field || donnees.role || "")}" />
+    </label>
+    <label>Accroche
+      <input type="text" name="tagline" value="${esc(donnees.tagline || "")}" />
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn-light" data-modal-cancel>Annuler</button>
+      <button type="submit" class="primary-action">${existingId ? "Enregistrer" : "Créer"}</button>
+    </div>
+  `);
+
+  formulaire.querySelector("[data-modal-cancel]").onclick = closeModal;
+
+  formulaire.addEventListener("submit", async () => {
+    const nom = formulaire.elements.name.value.trim();
+    if (!nom) return modalErreur(formulaire, "Le nom est obligatoire.");
+
+    const bouton = formulaire.querySelector('button[type="submit"]');
+    bouton.disabled = true;
+    try {
+      const fichier = formulaire["sprite-file"].files?.[0];
+      if (fichier) spriteChoisi = await uploadCharacterSprite(fichier);
+
+      const isSecondary = formulaire.role.value === "secondary";
+      const id = existingId || uniqueId(slugify(nom), new Set(Object.keys(personIndex)));
+      const age = formulaire.age.value ? Number(formulaire.age.value) : undefined;
+      const donneesMaj = {
+        ...donnees,
+        id,
+        name: nom,
+        sprite: spriteChoisi,
+        portraits: spriteChoisi ? { ...(donnees.portraits || {}), default: spriteChoisi } : donnees.portraits,
+        age,
+        field: formulaire.field.value.trim() || undefined,
+        tagline: formulaire.tagline.value.trim() || undefined,
+        gauges: donnees.gauges || (isSecondary ? undefined : { amour: 0, amitie: 0 }),
+      };
+      Object.keys(donneesMaj).forEach((cle) => donneesMaj[cle] === undefined && delete donneesMaj[cle]);
+
+      await saveCharacter(id, false, isSecondary, donneesMaj);
+      await refreshPeopleFromDb();
+      closeModal();
+    } catch (erreur) {
+      modalErreur(formulaire, "Impossible d'enregistrer : " + (erreur.message || "erreur inconnue."));
+    } finally {
+      bouton.disabled = false;
+    }
+  });
+}
+
+async function confirmDeletePerson(id) {
+  if (personIndex[id]?.isPlayer) {
+    alert("Le personnage joueur ne peut pas être supprimé.");
+    return;
+  }
+  if (!confirm("Supprimer ce personnage ? Les scènes qui le référencent ne le trouveront plus.")) return;
   try {
-    const saved = JSON.parse(localStorage.getItem(PEOPLE_STORE) || "null");
-    extraPeople = ensureArray(saved?.people).filter((person) => person && person.id && person.name);
-  } catch {
-    extraPeople = [];
+    await deleteCharacter(id);
+    await refreshPeopleFromDb();
+  } catch (erreur) {
+    alert("Suppression impossible : " + (erreur.message || "erreur inconnue."));
   }
 }
 
-function savePeopleExtras() {
-  localStorage.setItem(PEOPLE_STORE, JSON.stringify({ people: extraPeople }));
-}
+function openMediaModal(category, { titre, placeholder, accept }) {
+  const formulaire = openModal(titre, `
+    <label>Fichier à uploader
+      <input type="file" name="file" accept="${esc(accept)}" />
+    </label>
+    <label>Ou chemin déjà existant (ex : ${esc(placeholder)})
+      <input type="text" name="path" placeholder="${esc(placeholder)}" />
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn-light" data-modal-cancel>Annuler</button>
+      <button type="submit" class="primary-action">Ajouter</button>
+    </div>
+  `);
 
-function addPerson(name, sprite) {
-  const trimmedName = (name || "").trim();
-  if (!trimmedName) return;
-  const existingIds = new Set(people.map((person) => person.id));
-  const id = uniqueId(slugify(trimmedName), existingIds);
-  const person = { id, name: trimmedName, sprite: sprite || "" };
-  people.push(person);
-  extraPeople.push(person);
-  savePeopleExtras();
-  renderMedia();
-  renderSceneFlow();
-}
+  formulaire.querySelector("[data-modal-cancel]").onclick = closeModal;
 
-function removePerson(id) {
-  if (!extraPeople.some((person) => person.id === id)) return;
-  people = people.filter((person) => person.id !== id);
-  extraPeople = extraPeople.filter((person) => person.id !== id);
-  savePeopleExtras();
-  renderMedia();
-  renderSceneFlow();
+  formulaire.addEventListener("submit", async () => {
+    const fichier = formulaire.file.files?.[0];
+    const chemin = formulaire.path.value.trim();
+    if (!fichier && !chemin) return modalErreur(formulaire, "Choisis un fichier ou indique un chemin.");
+
+    const bouton = formulaire.querySelector('button[type="submit"]');
+    bouton.disabled = true;
+    try {
+      if (fichier) await ajouterFichierMedia(fichier, category);
+      else await ajouterReferenceMedia(category, chemin);
+      closeModal();
+    } catch (erreur) {
+      modalErreur(formulaire, "Ajout impossible : " + (erreur.message || "erreur inconnue."));
+    } finally {
+      bouton.disabled = false;
+    }
+  });
 }
 
 let minuteurSynchronisation = null;
@@ -441,23 +583,29 @@ function renderMedia() {
     </div>`;
 
   $("#media-content").innerHTML = `
-    <p class="branch-help">Ajoute ici tes décors, illustrations, musiques et personnages : ils apparaîtront ensuite dans les menus de l'onglet Épisodes. Pour une image, choisis un fichier ou indique son chemin dans <code>assets/</code>.</p>
+    <p class="branch-help">Ajoute ici tes décors, illustrations, musiques et personnages : ils apparaîtront ensuite dans les menus de l'onglet Épisodes.</p>
     <section class="media-section">
-      <h2>Décors (${backgrounds.length})</h2>
-      ${renderMediaAddRow("backgrounds", { placeholder: "assets/Décors/mon-decor.png", accept: "image/*" })}
+      <div class="media-section-header">
+        <h2>Décors (${backgrounds.length})</h2>
+        <button type="button" class="primary-action" data-open-media-modal="backgrounds">+ Nouveau décor</button>
+      </div>
       <div class="media-grid">
         ${backgrounds.map((path) => mediaCard("backgrounds", path)).join("")}
       </div>
     </section>
     <section class="media-section">
-      <h2>Illustrations (${illustrations.length})</h2>
-      ${renderMediaAddRow("illustrations", { placeholder: "assets/Illustrations/mon-illustration.png", accept: "image/*" })}
+      <div class="media-section-header">
+        <h2>Illustrations (${illustrations.length})</h2>
+        <button type="button" class="primary-action" data-open-media-modal="illustrations">+ Nouvelle illustration</button>
+      </div>
       <div class="media-grid">
         ${illustrations.map((path) => mediaCard("illustrations", path)).join("")}
       </div>
     </section>
     <section class="media-section">
-      <h2>Musiques (${music.length})</h2>
+      <div class="media-section-header">
+        <h2>Musiques (${music.length})</h2>
+      </div>
       ${renderMediaAddRow("music", { placeholder: "Nom du morceau", withFile: false })}
       <ul class="media-list">
         ${music
@@ -476,11 +624,9 @@ function renderMedia() {
       </ul>
     </section>
     <section class="media-section">
-      <h2>Personnages (${people.length})</h2>
-      <div class="media-add-row" data-category="people">
-        <input type="text" class="media-add-path" placeholder="Nom du personnage" />
-        <label class="btn btn-light media-file-label">Choisir un sprite<input type="file" class="media-add-file" accept="image/*" hidden /></label>
-        <button type="button" class="primary-action media-add-btn">+ Ajouter</button>
+      <div class="media-section-header">
+        <h2>Personnages (${people.length})</h2>
+        <button type="button" class="primary-action" data-open-person-modal>+ Nouveau personnage</button>
       </div>
       <div class="media-grid">
         ${people
@@ -489,11 +635,14 @@ function renderMedia() {
           <div class="media-card">
             ${person.sprite ? `<img src="${esc(person.sprite)}" alt="${esc(person.name)}" loading="lazy" />` : `<img alt="" />`}
             <div class="media-name">${esc(person.name)}</div>
-            ${
-              extraPeople.some((extra) => extra.id === person.id)
-                ? `<button class="delete media-remove" data-remove-person="${esc(person.id)}">Supprimer</button>`
-                : ""
-            }
+            <div class="media-actions">
+              <button class="btn-light" data-edit-person="${esc(person.id)}">Modifier</button>
+              ${
+                personIndex[person.id]?.isPlayer
+                  ? ""
+                  : `<button class="delete" data-remove-person="${esc(person.id)}">Supprimer</button>`
+              }
+            </div>
           </div>`
           )
           .join("")}
@@ -505,6 +654,29 @@ function renderMedia() {
 }
 
 function bindMedia() {
+  document.querySelectorAll("[data-open-media-modal]").forEach((button) => {
+    button.onclick = () => {
+      const category = button.dataset.openMediaModal;
+      openMediaModal(category, {
+        titre: category === "backgrounds" ? "Ajouter un décor" : "Ajouter une illustration",
+        placeholder: category === "backgrounds" ? "assets/Décors/mon-decor.png" : "assets/Illustrations/mon-illustration.png",
+        accept: "image/*",
+      });
+    };
+  });
+
+  document.querySelectorAll("[data-open-person-modal]").forEach((button) => {
+    button.onclick = () => openPersonModal();
+  });
+
+  document.querySelectorAll("[data-edit-person]").forEach((button) => {
+    button.onclick = () => openPersonModal(button.dataset.editPerson);
+  });
+
+  document.querySelectorAll("[data-remove-person]").forEach((button) => {
+    button.onclick = () => confirmDeletePerson(button.dataset.removePerson);
+  });
+
   document.querySelectorAll("#media-content .media-add-row").forEach((row) => {
     const category = row.dataset.category;
     const pathInput = row.querySelector(".media-add-path");
@@ -515,15 +687,10 @@ function bindMedia() {
       fileInput.onchange = async () => {
         const file = fileInput.files?.[0];
         if (!file) return;
-        if (category === "people") {
-          const dataUrl = await readFileAsDataUrl(file);
-          addPerson(pathInput.value.trim() || file.name, dataUrl);
-        } else {
-          try {
-            await ajouterFichierMedia(file, category);
-          } catch (erreur) {
-            alert("Upload impossible : " + (erreur.message || "erreur inconnue."));
-          }
+        try {
+          await ajouterFichierMedia(file, category);
+        } catch (erreur) {
+          alert("Upload impossible : " + (erreur.message || "erreur inconnue."));
         }
         fileInput.value = "";
         pathInput.value = "";
@@ -531,14 +698,10 @@ function bindMedia() {
     }
 
     addBtn.onclick = async () => {
-      if (category === "people") {
-        addPerson(pathInput.value.trim(), "");
-      } else {
-        try {
-          await ajouterReferenceMedia(category, pathInput.value.trim());
-        } catch (erreur) {
-          alert("Ajout impossible : " + (erreur.message || "erreur inconnue."));
-        }
+      try {
+        await ajouterReferenceMedia(category, pathInput.value.trim());
+      } catch (erreur) {
+        alert("Ajout impossible : " + (erreur.message || "erreur inconnue."));
       }
       pathInput.value = "";
     };
@@ -552,10 +715,6 @@ function bindMedia() {
         alert("Suppression impossible : " + (erreur.message || "erreur inconnue."));
       }
     };
-  });
-
-  document.querySelectorAll("[data-remove-person]").forEach((button) => {
-    button.onclick = () => removePerson(button.dataset.removePerson);
   });
 }
 
@@ -1376,9 +1535,9 @@ function importFile(event) {
 }
 
 async function init() {
-  const [characters, dbEpisodes, publishedShop] = await Promise.all([
+  const [characterRows, dbEpisodes, publishedShop] = await Promise.all([
     // Personnages lus depuis la base (source de vérité) pour ne plus être désynchronisé du jeu.
-    listCharacters(),
+    listCharactersRaw(),
     listEpisodes(),
     fetch("data/shop.json").then((response) => (response.ok ? response.json() : null)),
   ]);
@@ -1393,21 +1552,15 @@ async function init() {
     }
   }
 
-  people = [
-    ...(characters.player ? [characters.player] : []),
-    ...ensureArray(characters.crushs),
-    ...ensureArray(characters.secondary),
-  ].map((person) => ({
-    id: person.id,
-    name: person.name || person.defaultName,
-    sprite: person.sprite || "",
-  }));
+  personIndex = {};
+  people = characterRows.map((row) => {
+    personIndex[row.id] = { isPlayer: row.is_player, isSecondary: row.is_secondary, data: row.data };
+    return { id: row.id, name: row.data.name || row.data.defaultName || row.id, sprite: row.data.sprite || "" };
+  });
 
   await discoverMedia();
   BASE_FILES = copy(files);
   await loadMediaLibrary();
-  loadPeopleExtras();
-  people = [...people, ...extraPeople];
 
   // La base est la source de vérité : les épisodes (brouillons et publiés) viennent tous de là.
   episodes = Object.fromEntries(

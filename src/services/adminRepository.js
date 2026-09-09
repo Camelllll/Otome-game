@@ -19,6 +19,35 @@ export async function listCharacters() {
   return { player, crushs, secondary };
 }
 
+// Liste brute (avec is_player/is_secondary) : nécessaire pour éditer/supprimer un personnage précis.
+export async function listCharactersRaw() {
+  const { data, error } = await supabase.from("characters").select("id, is_player, is_secondary, data");
+  if (error) throw error;
+  return data;
+}
+
+// Crée ou met à jour un personnage (fiche complète en jsonb). Réservé à l'admin (policy is_admin()).
+export async function saveCharacter(id, isPlayer, isSecondary, data) {
+  const { error } = await supabase
+    .from("characters")
+    .upsert({ id, is_player: isPlayer, is_secondary: isSecondary, data });
+  if (error) throw error;
+}
+
+export async function deleteCharacter(id) {
+  const { error } = await supabase.from("characters").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// Upload un sprite/portrait de personnage vers le bucket Storage "media" (dossier "characters/").
+export async function uploadCharacterSprite(file) {
+  const cheminStockage = `characters/${Date.now()}-${file.name}`;
+  const { error } = await supabase.storage.from("media").upload(cheminStockage, file);
+  if (error) throw error;
+  const { data } = supabase.storage.from("media").getPublicUrl(cheminStockage);
+  return data.publicUrl;
+}
+
 // Enregistre un épisode (brouillon par défaut). Passe status="published" pour publier directement.
 export async function saveEpisode(id, title, data, status = "draft") {
   const { error } = await supabase.from("episodes").upsert({ id, title, status, data });
