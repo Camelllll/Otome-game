@@ -1,4 +1,4 @@
-import { listEpisodes, saveEpisode, publishEpisode, unpublishEpisode, listMedia, addMediaEntry, uploadMedia, deleteMedia } from "./services/adminRepository.js";
+import { listEpisodes, saveEpisode, publishEpisode, unpublishEpisode, listMedia, addMediaEntry, uploadMedia, deleteMedia, listCharacters } from "./services/adminRepository.js";
 import { connexionAdmin, obtenirSessionAdmin } from "./services/adminAuth.js";
 import { definirSeSouvenir } from "./services/supabaseClient.js";
 import { parseDocxVersEpisode } from "./services/docxImportService.js";
@@ -767,7 +767,7 @@ function buildTargetOptionsIndex(episode) {
       .map((id, nodeIndex) => {
         const node = episode.nodes[id];
         if (!node) return null;
-        const kind = node.type === "choice" ? "Choix" : node.type === "end" ? "Fin" : "Dialogue";
+        const kind = node.type === "choice" ? "Choix" : node.type === "end" ? "Fin" : node.type === "branch" ? "Aiguillage" : "Dialogue";
         const preview = (node.text || "").replaceAll("\n", " ").slice(0, 28);
         const label = `${kind} ${nodeIndex + 1}${preview ? " — " + preview : ""}`;
         return { id, html: `<option value="${esc(id)}" label="${esc(`${sceneLabel(scene, sceneIndex)} - ${label}`)}"></option>` };
@@ -812,17 +812,42 @@ function onScreenCheckboxes(node) {
 
 function renderNodeCard(episode, node, id, index, indexCibles) {
   if (!node) return "";
+  // Un nœud "branch" est un aiguillage automatique géré par le moteur (lovomètres, choix passés) :
+  // carte en lecture seule pour ne pas risquer de le casser en éditant la scène alentour.
+  if (node.type === "branch") {
+    const destinations = [
+      ...(node.branches || []).map((branche) => branche.next),
+      node.fallback ? `${node.fallback} (par défaut)` : null,
+    ].filter(Boolean);
+    return `
+      <div class="node-card branch" data-node="${esc(id)}">
+        <div class="node-card-head">
+          <span class="node-index">${index + 1}. Aiguillage automatique</span>
+          <button class="node-delete" data-delete-node="${esc(id)}" title="Supprimer">×</button>
+        </div>
+        <small class="branch-help">Ce nœud dirige automatiquement le joueur selon ses lovomètres et ses choix passés. Il n'est pas modifiable ici. Destinations : ${destinations.map((cible) => esc(cible)).join(", ") || "—"}.</small>
+      </div>
+    `;
+  }
   const kind = node.type === "choice" ? "Choix" : node.type === "end" ? "Fin" : "Dialogue";
   const speakerOptions = [
     `<option value="narration" ${node.speaker === "narration" ? "selected" : ""}>Narration</option>`,
     ...people.map((person) => `<option value="${esc(person.id)}" ${person.id === node.speaker ? "selected" : ""}>${esc(person.name)}</option>`),
   ].join("");
 
+  // La scission n'a de sens qu'à partir du 2e nœud d'une scène (couper avant le 1er ne change rien).
+  const sceneDuNoeud = episode.scenes.find((scene) => scene.nodeIds.includes(id));
+  const positionDansScene = sceneDuNoeud ? sceneDuNoeud.nodeIds.indexOf(id) : 0;
+  const peutScinder = positionDansScene > 0;
+
   return `
     <div class="node-card ${node.type === "choice" ? "choice" : ""}" data-node="${esc(id)}">
       <div class="node-card-head">
         <span class="node-index">${index + 1}. ${kind}</span>
-        <button class="node-delete" data-delete-node="${esc(id)}" title="Supprimer">×</button>
+        <span class="node-head-actions">
+          ${peutScinder ? `<button class="node-split" data-split-node="${esc(id)}" title="Couper la scène en deux à partir de ce dialogue">✂ Scinder ici</button>` : ""}
+          <button class="node-delete" data-delete-node="${esc(id)}" title="Supprimer">×</button>
+        </span>
       </div>
       <div class="node-grid">
         <label>Personnage<select data-field="speaker">${speakerOptions}</select></label>
@@ -1012,8 +1037,10 @@ function bindSceneFlow() {
     const deleteOption = event.target.closest("[data-delete-option]");
     const addEffect = event.target.closest("[data-add-effect]");
     const deleteEffect = event.target.closest("[data-delete-effect]");
+    const splitNode = event.target.closest("[data-split-node]");
 
-    if (addLine) newNode(addLine.dataset.addLine, "line");
+    if (splitNode) scinderScene(splitNode.dataset.splitNode);
+    else if (addLine) newNode(addLine.dataset.addLine, "line");
     else if (addChoice) newNode(addChoice.dataset.addChoice, "choice");
     else if (deleteScene) removeScene(deleteScene.dataset.deleteScene);
     else if (deleteNode) removeNode(deleteNode.dataset.deleteNode);
@@ -1085,6 +1112,40 @@ function newScene() {
   }
 
   episode.start = episode.start || firstNodeId;
+  save();
+  renderEpisodeTab();
+}
+
+// Coupe une scène en deux juste AVANT le nœud indiqué : les nœuds précédents restent dans
+// la scène d'origine, le nœud indiqué et tous les suivants partent dans une nouvelle scène
+// insérée juste après. Les liens "next" entre nœuds ne changent pas (la chaîne est continue) :
+// seule la répartition en scènes (regroupement visuel / décor) est modifiée.
+function scinderScene(nodeId) {
+  const episode = currentEpisode();
+  const scene = episode.scenes.find((item) => item.nodeIds.includes(nodeId));
+  if (!scene) return;
+
+  const indexCoupure = scene.nodeIds.indexOf(nodeId);
+  if (indexCoupure <= 0) return; // rien à couper avant le premier nœud
+
+  const sceneIndex = episode.scenes.indexOf(scene);
+  const noeudCoupure = episode.nodes[nodeId];
+
+  // Les nœuds qui déménagent dans la nouvelle scène.
+  const nodeIdsDeplaces = scene.nodeIds.slice(indexCoupure);
+  scene.nodeIds = scene.nodeIds.slice(0, indexCoupure);
+
+  const nouvelleScene = {
+    id: uniqueId("scene", new Set(episode.scenes.map((item) => item.id))),
+    title: `${scene.title || "Scène"} (suite)`,
+    // La nouvelle scène reprend le décor/musique du nœud de coupure (modifiable ensuite).
+    background: noeudCoupure?.background || scene.background || "",
+    music: noeudCoupure?.music || scene.music || "",
+    nodeIds: nodeIdsDeplaces,
+  };
+
+  episode.scenes.splice(sceneIndex + 1, 0, nouvelleScene);
+
   save();
   renderEpisodeTab();
 }
@@ -1316,7 +1377,8 @@ function importFile(event) {
 
 async function init() {
   const [characters, dbEpisodes, publishedShop] = await Promise.all([
-    fetch("data/characters.json").then((response) => response.json()),
+    // Personnages lus depuis la base (source de vérité) pour ne plus être désynchronisé du jeu.
+    listCharacters(),
     listEpisodes(),
     fetch("data/shop.json").then((response) => (response.ok ? response.json() : null)),
   ]);

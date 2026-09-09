@@ -1,5 +1,5 @@
-// Écran d'accueil du jeu : logo Pomme d'Amour, intro, boutons de lancement, crushs en arrière-plan.
-import { chargerSauvegarde, reinitialiserSauvegarde } from "../engine/saveSystem.js";
+// Écran d'accueil du jeu : bannière illustrée officielle, intro et boutons de lancement.
+import { chargerSauvegarde, reinitialiserSauvegarde, aUneProgression } from "../engine/saveSystem.js";
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
 
 export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }) {
@@ -9,19 +9,24 @@ export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }
   const accueil = document.createElement("div");
   accueil.className = "ecran-accueil";
 
-  // Fond décoratif avec dégradé
+  // Fond décoratif de secours (pendant le chargement de la bannière)
   const fond = document.createElement("div");
   fond.className = "fond-accueil";
   accueil.appendChild(fond);
 
-  // Image de campus douce en filigrane
+  // Bannière officielle : campus + les 4 prétendants + logo intégré
   const fondImage = document.createElement("img");
   fondImage.className = "fond-accueil-image";
-  fondImage.src = "assets/Décors/Cour Campus.jpg";
-  fondImage.alt = "Campus Université Aster";
+  fondImage.src = "assets/Décors/page d'accueil 2.png";
+  fondImage.alt = "Pomme d'Amour — Université Aster";
   accueil.appendChild(fondImage);
 
-  // Particules cœurs romantiques flottantes
+  // Voile dégradé bas d'écran pour la lisibilité du panneau de boutons
+  const voile = document.createElement("div");
+  voile.className = "voile-accueil";
+  accueil.appendChild(voile);
+
+  // Particules cœurs / pommes romantiques flottantes
   const zoneParticules = document.createElement("div");
   zoneParticules.className = "particules-flottantes";
   for (let i = 0; i < 14; i++) {
@@ -35,85 +40,33 @@ export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }
   }
   accueil.appendChild(zoneParticules);
 
-  // Zone personnages dispersés (arrière-plan)
-  const zonePersonnagesArriere = document.createElement("div");
-  zonePersonnagesArriere.className = "zone-personnages-arriere";
-
-  const personnages = [
-    { name: "Isaac", top: "8%", left: "5%", width: "22%" },
-    { name: "Aaron", top: "15%", right: "8%", width: "26%" },
-    { name: "Sasha", top: "45%", left: "2%", width: "20%" },
-    { name: "Camel", top: "40%", right: "5%", width: "23%" },
-    { name: "Mehdi", bottom: "5%", left: "40%", transform: "translateX(-50%)", width: "24%" }
-  ];
-
-  personnages.forEach((perso) => {
-    const imgContainer = document.createElement("div");
-    imgContainer.className = "perso-arriere";
-    if (perso.top) imgContainer.style.top = perso.top;
-    if (perso.bottom) imgContainer.style.bottom = perso.bottom;
-    if (perso.left) imgContainer.style.left = perso.left;
-    if (perso.right) imgContainer.style.right = perso.right;
-    if (perso.transform) imgContainer.style.transform = perso.transform;
-
-    const img = document.createElement("img");
-    img.src = `assets/Personnages/Crushs/PNG/${perso.name}.png`;
-    img.alt = perso.name;
-    img.style.width = perso.width;
-    img.style.height = "auto";
-    img.onerror = () => {
-      imgContainer.style.display = "none";
-    };
-
-    imgContainer.appendChild(img);
-    zonePersonnagesArriere.appendChild(imgContainer);
-  });
-
-  accueil.appendChild(zonePersonnagesArriere);
-
-  // Voile semi-transparent pour lisibilité du texte
-  const voile = document.createElement("div");
-  voile.className = "voile-accueil";
-  accueil.appendChild(voile);
-
-  // Contenu principal (superposé)
+  // Contenu principal (panneau bas d'écran)
   const contenu = document.createElement("div");
   contenu.className = "contenu-accueil";
 
-  // Logo principal Pomme d'Amour
-  const wrapperLogo = document.createElement("div");
-  wrapperLogo.className = "logo-accueil-wrapper";
-  const logo = document.createElement("img");
-  logo.className = "logo-accueil";
-  logo.src = "assets/logo/Logo Pomme d'Amour.png";
-  logo.alt = "Pomme d'Amour — Otome Game";
-  wrapperLogo.appendChild(logo);
-  contenu.appendChild(wrapperLogo);
-
-  // Badge campus
-  const badgeUni = document.createElement("div");
-  badgeUni.className = "badge-universite-accueil";
-  badgeUni.innerHTML = "<span>🎓</span> Université Aster";
-  contenu.appendChild(badgeUni);
+  // Étiquette ruban façon marque-page de jeu
+  const ruban = document.createElement("div");
+  ruban.className = "ruban-accueil";
+  ruban.innerHTML = "<span>🎓</span> Université Aster";
+  contenu.appendChild(ruban);
 
   // Intro texte
   const intro = document.createElement("p");
   intro.className = "intro-accueil";
-  intro.innerHTML = "Bienvenue à l'Université Aster.<br/>Ici, chaque cœur a son histoire, et chaque choix change ton destin.";
+  intro.innerHTML = "Chaque cœur a son histoire, et chaque choix change ton destin.";
   contenu.appendChild(intro);
 
   // Zone boutons
   const zoneBoutons = document.createElement("div");
   zoneBoutons.className = "zone-boutons-accueil";
 
-  // Bouton Continuer
+  // Bouton Continuer : la progression vient de la base, pas du navigateur.
   const sauvegarde = await chargerSauvegarde(joueur.id);
-  const aDejaJoue = Boolean(sauvegarde.currentNode) || sauvegarde.playerName !== "Sucrette";
-  if (aDejaJoue) {
+  if (aUneProgression(sauvegarde)) {
     const btnContinuer = document.createElement("button");
     btnContinuer.className = "btn-accueil btn-continuer";
     btnContinuer.innerHTML = `<span>💖</span> Continuer (${sauvegarde.playerName || "Sucrette"})`;
-    btnContinuer.addEventListener("click", () => onDemarrer("continuer"));
+    btnContinuer.addEventListener("click", () => onDemarrer("continuer", sauvegarde));
     zoneBoutons.appendChild(btnContinuer);
   }
 
@@ -122,8 +75,16 @@ export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }
   btnNouvelle.className = "btn-accueil btn-nouvelle";
   btnNouvelle.innerHTML = "<span>✨</span> Nouvelle partie";
   btnNouvelle.addEventListener("click", async () => {
-    await reinitialiserSauvegarde(joueur.id);
-    onDemarrer("nouvelle");
+    if (aUneProgression(sauvegarde) && !window.confirm("Commencer une nouvelle partie effacera ta progression actuelle. Continuer ?")) {
+      return;
+    }
+    btnNouvelle.disabled = true;
+    try {
+      const nouvelleSauvegarde = await reinitialiserSauvegarde(joueur.id);
+      onDemarrer("nouvelle", nouvelleSauvegarde);
+    } finally {
+      btnNouvelle.disabled = false;
+    }
   });
   zoneBoutons.appendChild(btnNouvelle);
 

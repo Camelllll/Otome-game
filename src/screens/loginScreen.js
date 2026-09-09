@@ -7,11 +7,11 @@ export function lancerEcranConnexion(conteneurRacine, { onConnecte }) {
   const ecran = document.createElement("div");
   ecran.className = "ecran-connexion";
 
-  // Fond immersif campus avec flou doux
+  // Fond immersif : jardin du campus + portraits de Sasha, Stella et Aaron
   const fondDecor = document.createElement("img");
   fondDecor.className = "decor-fond-connexion";
-  fondDecor.src = "assets/Décors/Entrée campus.png";
-  fondDecor.alt = "Entrée du campus de l'Université Aster";
+  fondDecor.src = "assets/Décors/Page connexion.png";
+  fondDecor.alt = "Jardin de l'Université Aster";
   ecran.appendChild(fondDecor);
 
   // Voile coloré teinté rouge pomme
@@ -36,6 +36,12 @@ export function lancerEcranConnexion(conteneurRacine, { onConnecte }) {
   // Boîte principale style Amour Sucré
   const carte = document.createElement("div");
   carte.className = "carte-connexion";
+
+  // Étiquette suspendue façon marque-page
+  const etiquette = document.createElement("div");
+  etiquette.className = "etiquette-bienvenue";
+  etiquette.innerHTML = "<span>🌸</span> Bienvenue, future Sucrette";
+  carte.appendChild(etiquette);
 
   // Logo du jeu Pomme d'Amour
   const wrapperLogo = document.createElement("div");

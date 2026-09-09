@@ -3,6 +3,7 @@ import { jaugeEnPourcentageAffichage } from "../engine/relationManager.js";
 
 export function creerBarreDeJauge(nom, valeur) {
   const pourcentage = jaugeEnPourcentageAffichage(valeur);
+  const remplissageVisible = Math.max(0, pourcentage);
   const conteneur = document.createElement("div");
   conteneur.className = "jauge";
 
@@ -14,7 +15,7 @@ export function creerBarreDeJauge(nom, valeur) {
   barre.className = "jauge-barre";
   const remplissage = document.createElement("div");
   remplissage.className = "jauge-remplissage";
-  remplissage.style.width = `${pourcentage}%`;
+  remplissage.style.width = `${remplissageVisible}%`;
   barre.appendChild(remplissage);
 
   conteneur.appendChild(etiquette);
@@ -34,6 +35,7 @@ export function afficherLovometre(conteneur, personnage) {
   const typeJauge = personnage.gauges.amour !== undefined ? "amour" : "amitie";
   const valeur = personnage.gauges[typeJauge] ?? 0;
   const pourcentage = jaugeEnPourcentageAffichage(valeur);
+  const remplissageVisible = Math.max(0, pourcentage);
 
   const cadre = document.createElement("div");
   cadre.className = "lovometre-cadre";
@@ -52,7 +54,7 @@ export function afficherLovometre(conteneur, personnage) {
   barre.classList.add(`niveau-${niveau}`);
   const remplissage = document.createElement("div");
   remplissage.className = "lovometre-remplissage";
-  remplissage.style.width = `${pourcentage}%`;
+  remplissage.style.width = `${remplissageVisible}%`;
   barre.appendChild(remplissage);
 
   const pourcentageTexte = document.createElement("span");

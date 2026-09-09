@@ -1,5 +1,5 @@
 // Point d'entrée du jeu : connecte le joueur, affiche l'écran d'accueil, puis charge l'épisode courant.
-import { chargerSauvegarde, sauvegarder, recalculerActionPoints } from "./engine/saveSystem.js";
+import { chargerSauvegarde, sauvegarder, sauvegarderMaintenant, recalculerActionPoints } from "./engine/saveSystem.js";
 import { DialogueEngine, aplatirPersonnages } from "./engine/dialogueEngine.js";
 import { getCharacters, getEpisode, getPublishedEpisodesList } from "./services/gameRepository.js";
 import { obtenirSessionJoueur } from "./services/playerRepository.js";
@@ -37,8 +37,10 @@ async function lancerEpisode(idEpisode, sauvegarde, joueur) {
       sauvegarde.currentEpisode = prochainEpisode;
       sauvegarde.currentNode = null;
       sauvegarde.currentBackground = null;
-      sauvegarder(sauvegarde);
-      lancerEpisode(sauvegarde.currentEpisode, sauvegarde, joueur);
+      // Transition d'épisode : on attend la confirmation du serveur avant de charger la suite.
+      sauvegarderMaintenant(sauvegarde).finally(() => {
+        lancerEpisode(sauvegarde.currentEpisode, sauvegarde, joueur);
+      });
     }
   });
 }
@@ -76,8 +78,8 @@ async function afficherSelectionEpisode(sauvegarde, joueur) {
 async function afficherAccueil(joueur) {
   lancerEcranAccueil(conteneurJeu, {
     joueur,
-    onDemarrer: async (type) => {
-      const sauvegarde = await chargerSauvegarde(joueur.id);
+    onDemarrer: async (type, sauvegardeChargee) => {
+      const sauvegarde = sauvegardeChargee || (await chargerSauvegarde(joueur.id));
       recalculerActionPoints(sauvegarde);
 
       // Pour une nouvelle partie, demander le prénom
@@ -88,7 +90,7 @@ async function afficherAccueil(joueur) {
         } catch (erreur) {
           console.warn("Saisie du prénom indisponible, valeur par défaut conservée.", erreur);
         }
-        sauvegarder(sauvegarde);
+        await sauvegarderMaintenant(sauvegarde);
       }
 
       // Si une partie est déjà en cours, on reprend directement le dialogue là où elle s'est arrêtée
@@ -104,7 +106,13 @@ async function afficherAccueil(joueur) {
 }
 
 async function demarrer() {
-  const joueurExistant = await obtenirSessionJoueur();
+  let joueurExistant = null;
+  try {
+    joueurExistant = await obtenirSessionJoueur();
+  } catch (erreur) {
+    // Session illisible (jeton expiré, stockage bloqué) : on repasse par l'écran de connexion.
+    console.warn("Session joueur indisponible, retour à la connexion.", erreur);
+  }
   if (joueurExistant) {
     afficherAccueil(joueurExistant);
     return;

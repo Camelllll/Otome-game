@@ -48,94 +48,117 @@ async function obtenirFicheJoueur(userId, email) {
   return { id: userId, pseudo: email };
 }
 
-function sauvegardeParDefaut(playerId) {
+// Emplacements de sauvegarde : 0 = sauvegarde principale (autosave), 1..3 = emplacements manuels.
+export const SLOT_PRINCIPAL = 0;
+
+// Normalise la réponse du serveur vers l'objet de sauvegarde manipulé par le jeu.
+// Le serveur reste la source de vérité : tout ce qui manque est remplacé par une valeur sûre.
+function normaliserSauvegarde(brut, playerId, slot) {
+  const donnees = brut || {};
   return {
-    playerId,
-    playerName: "Sucrette",
-    currentEpisode: "episode1",
-    currentNode: null,
-    currentBackground: null,
-    gauges: {},
-    currency: 0,
-    inventory: [],
-    actionPoints: 25,
-    lastActionPointsTimestamp: Date.now(),
-    history: [],
-    completedEpisodes: [],
+    playerId: donnees.playerId || playerId,
+    slot: donnees.slot ?? slot,
+    label: donnees.label ?? null,
+    playerName: donnees.playerName || "Sucrette",
+    currentEpisode: donnees.currentEpisode || "episode1",
+    currentNode: donnees.currentNode ?? null,
+    currentBackground: donnees.currentBackground ?? null,
+    gauges: donnees.gauges && typeof donnees.gauges === "object" ? donnees.gauges : {},
+    flags: Array.isArray(donnees.flags) ? donnees.flags : [],
+    choices: Array.isArray(donnees.choices) ? donnees.choices : [],
+    stats: donnees.stats && typeof donnees.stats === "object" ? donnees.stats : {},
+    currency: Number(donnees.currency) || 0,
+    inventory: Array.isArray(donnees.inventory) ? donnees.inventory : [],
+    actionPoints: Number.isFinite(donnees.actionPoints) ? donnees.actionPoints : 25,
+    lastActionPointsTimestamp: Number(donnees.lastActionPointsTimestamp) || Date.now(),
+    history: Array.isArray(donnees.history) ? donnees.history : [],
+    completedEpisodes: Array.isArray(donnees.completedEpisodes) ? donnees.completedEpisodes : [],
+    revision: Number(donnees.revision) || 0,
+    updatedAt: donnees.updatedAt ?? null,
   };
 }
 
-// Charge la progression complète d'un joueur (fusion player_saves + player_gauges).
-export async function chargerProgressionDistante(playerId) {
-  const [{ data: sauvegarde, error: erreurSave }, { data: lignesJauges, error: erreurJauges }] = await Promise.all([
-    supabase.from("player_saves").select("*").eq("player_id", playerId).maybeSingle(),
-    supabase.from("player_gauges").select("character_id, amitie, amour").eq("player_id", playerId),
-  ]);
-  if (erreurSave) throw erreurSave;
-  if (erreurJauges) throw erreurJauges;
-
-  const gauges = {};
-  for (const ligne of lignesJauges || []) {
-    gauges[ligne.character_id] = { amitie: ligne.amitie, amour: ligne.amour };
-  }
-
-  if (!sauvegarde) return { ...sauvegardeParDefaut(playerId), gauges };
-
-  return {
-    playerId,
-    playerName: sauvegarde.player_name,
-    currentEpisode: sauvegarde.current_episode,
-    currentNode: sauvegarde.current_node,
-    currentBackground: sauvegarde.current_background,
-    gauges,
-    currency: sauvegarde.currency,
-    inventory: sauvegarde.inventory || [],
-    actionPoints: sauvegarde.action_points,
-    lastActionPointsTimestamp: new Date(sauvegarde.last_action_points_at).getTime(),
-    history: sauvegarde.history || [],
-    completedEpisodes: sauvegarde.completed_episodes || [],
-  };
+// Charge la progression d'un emplacement depuis la base (RPC serveur, jamais le localStorage).
+export async function chargerProgressionDistante(playerId, slot = SLOT_PRINCIPAL) {
+  const { data, error } = await supabase.rpc("game_load_save", { p_slot: slot });
+  if (error) throw error;
+  return normaliserSauvegarde(data, playerId, slot);
 }
 
-// Persiste la progression en base (best-effort : les erreurs réseau sont remontées à l'appelant).
+// Persiste la progression via l'API serveur, qui valide et borne les données critiques
+// (lovomètres, PA, monnaie). Retourne la sauvegarde telle qu'enregistrée en base.
 export async function sauvegarderProgressionDistante(sauvegarde) {
-  if (!sauvegarde.playerId) return;
+  if (!sauvegarde?.playerId) return null;
+  const slot = sauvegarde.slot ?? SLOT_PRINCIPAL;
 
-  const ligneSave = {
-    player_id: sauvegarde.playerId,
-    player_name: sauvegarde.playerName,
-    current_episode: sauvegarde.currentEpisode,
-    current_node: sauvegarde.currentNode,
-    current_background: sauvegarde.currentBackground,
-    currency: sauvegarde.currency,
+  const payload = {
+    playerName: sauvegarde.playerName,
+    label: sauvegarde.label ?? null,
+    currentEpisode: sauvegarde.currentEpisode,
+    currentNode: sauvegarde.currentNode,
+    currentBackground: sauvegarde.currentBackground,
+    gauges: sauvegarde.gauges || {},
+    flags: sauvegarde.flags || [],
+    choices: sauvegarde.choices || [],
+    stats: sauvegarde.stats || {},
+    currency: sauvegarde.currency ?? 0,
     inventory: sauvegarde.inventory || [],
-    action_points: sauvegarde.actionPoints,
-    last_action_points_at: new Date(sauvegarde.lastActionPointsTimestamp).toISOString(),
+    actionPoints: sauvegarde.actionPoints ?? 25,
     history: sauvegarde.history || [],
-    completed_episodes: sauvegarde.completedEpisodes || [],
+    completedEpisodes: sauvegarde.completedEpisodes || [],
   };
 
-  const lignesJauges = Object.entries(sauvegarde.gauges || {}).map(([characterId, valeurs]) => ({
-    player_id: sauvegarde.playerId,
-    character_id: characterId,
-    amitie: valeurs.amitie ?? 0,
-    amour: valeurs.amour ?? 0,
-  }));
-
-  const requetes = [supabase.from("player_saves").upsert(ligneSave)];
-  if (lignesJauges.length > 0) {
-    requetes.push(supabase.from("player_gauges").upsert(lignesJauges));
-  }
-
-  for (const { error } of await Promise.all(requetes)) {
-    if (error) throw error;
-  }
+  const { data, error } = await supabase.rpc("game_save_progress", { p_payload: payload, p_slot: slot });
+  if (error) throw error;
+  return normaliserSauvegarde(data, sauvegarde.playerId, slot);
 }
 
-export async function reinitialiserProgressionDistante(playerId) {
-  await Promise.all([
-    supabase.from("player_saves").delete().eq("player_id", playerId),
-    supabase.from("player_gauges").delete().eq("player_id", playerId),
-  ]);
-  return sauvegardeParDefaut(playerId);
+// Journalise un choix côté serveur (historique auditable, indépendant du navigateur).
+export async function enregistrerChoixDistant({
+  episodeId,
+  nodeId,
+  optionIndex,
+  optionLabel = null,
+  flags = [],
+  effects = {},
+  slot = SLOT_PRINCIPAL,
+}) {
+  const { error } = await supabase.rpc("game_record_choice", {
+    p_episode_id: episodeId ?? null,
+    p_node_id: nodeId ?? null,
+    p_option_index: optionIndex ?? null,
+    p_option_label: optionLabel,
+    p_flags: flags,
+    p_effects: effects,
+    p_slot: slot,
+  });
+  if (error) throw error;
+}
+
+export async function listerSauvegardesDistantes() {
+  const { data, error } = await supabase.rpc("game_list_saves");
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+}
+
+export async function listerChoixDistants(slot = SLOT_PRINCIPAL, limite = 200) {
+  const { data, error } = await supabase.rpc("game_list_choices", { p_slot: slot, p_limit: limite });
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+}
+
+export async function copierSauvegardeDistante(slotSource, slotCible, label = null) {
+  const { data, error } = await supabase.rpc("game_copy_save", {
+    p_source: slotSource,
+    p_cible: slotCible,
+    p_label: label,
+  });
+  if (error) throw error;
+  return normaliserSauvegarde(data, data?.playerId, slotCible);
+}
+
+export async function reinitialiserProgressionDistante(playerId, slot = SLOT_PRINCIPAL, playerName = null) {
+  const { data, error } = await supabase.rpc("game_reset_save", { p_slot: slot, p_player_name: playerName });
+  if (error) throw error;
+  return normaliserSauvegarde(data, playerId, slot);
 }

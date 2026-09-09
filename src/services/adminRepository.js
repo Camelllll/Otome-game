@@ -8,6 +8,17 @@ export async function listEpisodes() {
   return data;
 }
 
+// Liste les personnages depuis la base (source de vérité), reconstruits en { player, crushs, secondary }.
+// Avant, l'admin lisait data/characters.json, qui se désynchronisait de la base (Liv/Montrose absents).
+export async function listCharacters() {
+  const { data, error } = await supabase.from("characters").select("id, is_player, is_secondary, data");
+  if (error) throw error;
+  const player = data.find((row) => row.is_player)?.data;
+  const crushs = data.filter((row) => !row.is_player && !row.is_secondary).map((row) => row.data);
+  const secondary = data.filter((row) => !row.is_player && row.is_secondary).map((row) => row.data);
+  return { player, crushs, secondary };
+}
+
 // Enregistre un épisode (brouillon par défaut). Passe status="published" pour publier directement.
 export async function saveEpisode(id, title, data, status = "draft") {
   const { error } = await supabase.from("episodes").upsert({ id, title, status, data });

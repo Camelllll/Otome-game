@@ -1,4 +1,5 @@
 // Menu de jeu en haut à droite : musique, fiches des personnages et retour à la sélection d'épisodes.
+import { jaugeEnPourcentageAffichage } from "../engine/relationManager.js";
 
 function ligneFiche(titre, valeur) {
   if (!valeur) return "";
@@ -6,21 +7,48 @@ function ligneFiche(titre, valeur) {
   return `<p class="fiche-ligne"><span class="fiche-label">${titre}</span> ${contenu}</p>`;
 }
 
-function carteFiche(personnage) {
+function barreRelation(nom, valeur) {
+  const pourcentage = jaugeEnPourcentageAffichage(valeur);
+  const remplissage = Math.max(0, pourcentage);
+  return `
+    <div class="fiche-jauge fiche-jauge-${nom}">
+      <div class="fiche-jauge-entete">
+        <span>Amour</span>
+        <strong>${pourcentage}%</strong>
+      </div>
+      <div class="fiche-jauge-barre" aria-hidden="true">
+        <span style="width: ${remplissage}%"></span>
+      </div>
+    </div>
+  `;
+}
+
+function carteFiche(personnage, getInfosPersonnage) {
+  const infos = getInfosPersonnage?.(personnage.id) || {};
+  const jauges = infos.gauges || personnage.gauges || {};
   return `
     <article class="fiche-personnage">
-      ${personnage.sprite ? `<img class="fiche-portrait" src="${personnage.sprite}" alt="${personnage.name}">` : ""}
+      <div class="fiche-visuel">
+        ${personnage.sprite ? `<img class="fiche-portrait" src="${personnage.sprite}" alt="${personnage.name}">` : ""}
+      </div>
       <div class="fiche-corps">
-        <h3>${personnage.name}${personnage.age ? ` · ${personnage.age} ans` : ""}</h3>
-        ${personnage.tagline ? `<p class="fiche-tagline">« ${personnage.tagline} »</p>` : ""}
-        ${ligneFiche("🎓 Filière", personnage.field)}
-        ${ligneFiche("📏 Taille", personnage.height)}
-        ${ligneFiche("✨ Caractère", personnage.personality)}
-        ${ligneFiche("💖 Aime", personnage.likes)}
-        ${ligneFiche("💔 N’aime pas", personnage.dislikes)}
-        ${ligneFiche("🎨 Passion", personnage.passion)}
-        ${ligneFiche("🎯 Objectif", personnage.goal)}
-        ${ligneFiche("📍 Lieu préféré", personnage.favoritePlace)}
+        <div class="fiche-identite">
+          <p class="fiche-role">${personnage.field || "Campus"}</p>
+          <h3>${personnage.name}${personnage.age ? ` · ${personnage.age} ans` : ""}</h3>
+          ${personnage.tagline ? `<p class="fiche-tagline">« ${personnage.tagline} »</p>` : ""}
+        </div>
+        <div class="fiche-jauges" aria-label="Lovomètres de ${personnage.name}">
+          ${barreRelation("amour", jauges.amour)}
+        </div>
+        <div class="fiche-details">
+          ${ligneFiche("Taille", personnage.height)}
+          ${ligneFiche("Caractère", personnage.personality)}
+          ${ligneFiche("Aime", personnage.likes)}
+          ${ligneFiche("N'aime pas", personnage.dislikes)}
+          ${ligneFiche("Passion", personnage.passion)}
+          ${ligneFiche("Objectif", personnage.goal)}
+          ${ligneFiche("Lieu préféré", personnage.favoritePlace)}
+        </div>
       </div>
     </article>
   `;
@@ -28,13 +56,13 @@ function carteFiche(personnage) {
 
 /**
  * @param {HTMLElement} scene - conteneur de l'écran de jeu.
- * @param {object} options - { musique, fiches, onRetourEpisodes, onRetourAccueil }
+ * @param {object} options - { musique, fiches, getInfosPersonnage, onRetourEpisodes, onRetourAccueil }
  */
-export function installerMenuJeu(scene, { musique, fiches = [], onRetourEpisodes, onRetourAccueil } = {}) {
+export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonnage, onRetourEpisodes, onRetourAccueil } = {}) {
   const bouton = document.createElement("button");
   bouton.className = "bouton-menu";
   bouton.type = "button";
-  bouton.innerHTML = "<span>🍎</span> Menu";
+  bouton.innerHTML = "Menu";
   bouton.setAttribute("aria-haspopup", "true");
   bouton.setAttribute("aria-expanded", "false");
 
@@ -76,12 +104,13 @@ export function installerMenuJeu(scene, { musique, fiches = [], onRetourEpisodes
   voile.innerHTML = `
     <div class="fenetre-personnages" role="dialog" aria-label="Présentation des personnages">
       <div class="fenetre-personnages-head">
-        <h2><span>🍎</span> Les Personnages</h2>
+        <div>
+          <p class="fenetre-personnages-surtitre">Carnet de relations</p>
+          <h2>Les personnages</h2>
+        </div>
         <button class="fermer-personnages" type="button" aria-label="Fermer">×</button>
       </div>
-      <div class="liste-fiches">
-        ${fiches.length ? fiches.map(carteFiche).join("") : "<p>Aucune fiche disponible.</p>"}
-      </div>
+      <div class="liste-fiches"></div>
     </div>
   `;
 
@@ -96,6 +125,13 @@ export function installerMenuJeu(scene, { musique, fiches = [], onRetourEpisodes
   function ouvrirMenu(ouvert) {
     panneau.classList.toggle("visible", ouvert);
     bouton.setAttribute("aria-expanded", String(ouvert));
+  }
+
+  function rendreFiches() {
+    const liste = voile.querySelector(".liste-fiches");
+    liste.innerHTML = fiches.length
+      ? fiches.map((personnage) => carteFiche(personnage, getInfosPersonnage)).join("")
+      : "<p class=\"fiche-vide\">Aucune fiche disponible.</p>";
   }
 
   bouton.addEventListener("click", (event) => {
@@ -114,6 +150,7 @@ export function installerMenuJeu(scene, { musique, fiches = [], onRetourEpisodes
   });
 
   optionPersonnages.addEventListener("click", () => {
+    rendreFiches();
     voile.classList.add("visible");
     ouvrirMenu(false);
   });

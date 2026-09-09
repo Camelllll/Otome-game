@@ -474,6 +474,28 @@ textarea{
   padding:.1rem .3rem;
 }
 
+.node-head-actions{
+  display:flex;
+  align-items:center;
+  gap:.35rem;
+}
+
+.node-split{
+  border:1px dashed #ee8fac;
+  border-radius:10px;
+  background:#fff;
+  color:#b62d5b;
+  padding:.2rem .55rem;
+  font-weight:700;
+  font-size:.75rem;
+  cursor:pointer;
+  transition:background .15s ease;
+}
+
+.node-split:hover{
+  background:#ffeef4;
+}
+
 .node-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));

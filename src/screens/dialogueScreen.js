@@ -9,7 +9,13 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
   const scene = document.createElement("div");
   scene.className = "ecran-dialogue";
 
-  installerMenuJeu(scene, { musique, fiches: fichesPersonnages, onRetourEpisodes, onRetourAccueil });
+  installerMenuJeu(scene, {
+    musique,
+    fiches: fichesPersonnages,
+    getInfosPersonnage: (id) => moteur.obtenirInfosPersonnages([id])[0],
+    onRetourEpisodes,
+    onRetourAccueil
+  });
 
   // Le premier clic dans le jeu est nécessaire pour que les navigateurs autorisent le son.
   scene.addEventListener("pointerdown", () => musique.demarrer(), { once: true });

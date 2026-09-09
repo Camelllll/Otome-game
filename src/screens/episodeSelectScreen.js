@@ -103,9 +103,10 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
   liste.className = "liste-episodes";
 
   episodes.forEach(({ id, title, complete, verrouille }) => {
+    const indisponible = Boolean(verrouille || complete);
     const carte = document.createElement("article");
     carte.className = "carte-episode";
-    if (id === episodeActuel) carte.classList.add("actif");
+    if (id === episodeActuel && !complete) carte.classList.add("actif");
     if (complete) carte.classList.add("termine");
     if (verrouille) carte.classList.add("verrouille");
 
@@ -132,12 +133,12 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
 
     const statutBadge = document.createElement("div");
     statutBadge.className = "badge-statut-episode";
-    if (id === episodeActuel) {
-      statutBadge.classList.add("en-cours");
-      statutBadge.textContent = "▶ En cours";
-    } else if (complete) {
+    if (complete) {
       statutBadge.classList.add("termine");
       statutBadge.textContent = "✨ Terminé";
+    } else if (id === episodeActuel) {
+      statutBadge.classList.add("en-cours");
+      statutBadge.textContent = "▶ En cours";
     } else if (verrouille) {
       statutBadge.classList.add("verrouille");
       statutBadge.textContent = "🔒 Verrouillé";
@@ -164,19 +165,19 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
     const bouton = document.createElement("button");
     bouton.type = "button";
     bouton.className = "bouton-jouer-episode";
-    bouton.disabled = Boolean(verrouille);
+    bouton.disabled = indisponible;
     
-    if (id === episodeActuel) {
+    if (complete) {
+      bouton.innerHTML = "<span>✓</span> Épisode terminé";
+    } else if (id === episodeActuel) {
       bouton.innerHTML = "<span>▶</span> Continuer l'épisode";
-    } else if (complete) {
-      bouton.innerHTML = "<span>↺</span> Rejouer l'épisode";
     } else if (verrouille) {
       bouton.innerHTML = "<span>🔒</span> Épisode verrouillé";
     } else {
       bouton.innerHTML = "<span>🌸</span> Commencer l'épisode";
     }
 
-    if (!verrouille) {
+    if (!indisponible) {
       carte.addEventListener("click", (e) => {
         onSelect(id);
       });

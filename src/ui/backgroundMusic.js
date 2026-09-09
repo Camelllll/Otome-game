@@ -1,8 +1,14 @@
 // Petite boucle instrumentale générée dans le navigateur : aucun fichier audio externe n'est requis.
 const STORAGE_KEY = "otome-musique-active";
 
+// Instance unique partagée par tout le jeu : sans ça, chaque écran crée son propre
+// AudioContext et les musiques se superposent (et le bouton du menu n'en coupe qu'une).
+let instancePartagee = null;
+
 export class MusiqueAmbiance {
   constructor() {
+    if (instancePartagee) return instancePartagee;
+    instancePartagee = this;
     this.context = null;
     this.master = null;
     this.timer = null;

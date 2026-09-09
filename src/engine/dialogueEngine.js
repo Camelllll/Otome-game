@@ -1,6 +1,6 @@
 // Moteur de dialogue générique : lit un épisode JSON et fait avancer la progression nœud par nœud.
-import { appliquerEffets } from "./relationManager.js";
-import { sauvegarder } from "./saveSystem.js";
+import { appliquerEffets, poserFlags, resoudreBranche } from "./relationManager.js";
+import { sauvegarder, sauvegarderMaintenant, enregistrerChoix } from "./saveSystem.js";
 
 export class DialogueEngine {
   /**
@@ -17,6 +17,8 @@ export class DialogueEngine {
     this.nodeId = sauvegarde.currentNode || episodeData.start;
     // Pagination : un texte trop long est découpé en pages de 3 lignes maximum, affichées une par une.
     this.pageIndex = 0;
+    // Sécurité : si une sauvegarde pointe sur un nœud d'aiguillage, on le résout immédiatement.
+    this.resoudreBranchements();
   }
 
   get noeudCourant() {
@@ -144,23 +146,54 @@ export class DialogueEngine {
     const option = noeud.options[indexOption];
     if (!option) return this.obtenirAffichage();
     appliquerEffets(this.sauvegarde, option.effects);
-    this.aller(option.next);
+    // Marqueurs de choix (ex. bonne réponse clé) : consultables par les nœuds "branch" plus loin.
+    poserFlags(this.sauvegarde, option.flags);
+    // Journal serveur du choix : conservé même si la sauvegarde évolue ensuite.
+    enregistrerChoix(this.sauvegarde, {
+      episodeId: this.episodeData.id,
+      nodeId: this.nodeId,
+      optionIndex: indexOption,
+      optionLabel: option.text || null,
+      flags: option.flags || [],
+      effects: option.effects || {}
+    });
+    this.aller(option.next, { immediat: true });
     return this.obtenirAffichage();
   }
 
-  aller(nodeId) {
+  // Traverse les nœuds "branch" (jamais affichés) jusqu'à retomber sur un nœud affichable.
+  resoudreBranchements() {
+    for (let securite = 0; securite < 20; securite++) {
+      const noeud = this.noeudCourant;
+      if (!noeud || noeud.type !== "branch") return;
+      const cible = resoudreBranche(noeud, this.sauvegarde);
+      if (!cible || !this.episodeData.nodes[cible]) return;
+      this.nodeId = cible;
+    }
+  }
+
+  aller(nodeId, { immediat = false } = {}) {
     this.nodeId = nodeId;
     this.pageIndex = 0;
-    this.sauvegarde.currentNode = nodeId;
+    // Un nœud "branch" ne s'affiche jamais : on le résout aussitôt vers sa destination.
+    this.resoudreBranchements();
+    this.sauvegarde.currentNode = this.nodeId;
     // Marque l'épisode terminé dès qu'on atteint un nœud "end" (débloque l'épisode suivant).
-    const noeud = this.episodeData.nodes[nodeId];
+    const noeud = this.episodeData.nodes[this.nodeId];
+    let finEpisode = false;
     if (noeud?.type === "end") {
+      finEpisode = true;
       this.sauvegarde.completedEpisodes ||= [];
       if (!this.sauvegarde.completedEpisodes.includes(this.episodeData.id)) {
         this.sauvegarde.completedEpisodes.push(this.episodeData.id);
       }
     }
-    sauvegarder(this.sauvegarde);
+    // Choix et fins d'épisode partent sans attendre le regroupement des autosaves.
+    if (immediat || finEpisode) {
+      sauvegarderMaintenant(this.sauvegarde);
+    } else {
+      sauvegarder(this.sauvegarde);
+    }
   }
 
   estTermine() {

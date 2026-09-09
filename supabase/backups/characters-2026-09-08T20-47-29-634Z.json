@@ -1,0 +1,623 @@
+[
+  {
+    "id": "moi",
+    "is_player": true,
+    "is_secondary": false,
+    "data": {
+      "id": "moi",
+      "sprite": "assets/Personnages/Perso principal.png",
+      "defaultName": "Sucrette",
+      "customizable": true
+    }
+  },
+  {
+    "id": "isaac",
+    "is_player": false,
+    "is_secondary": false,
+    "data": {
+      "id": "isaac",
+      "age": 19,
+      "flaw": "Il repousse les personnes qui commencent à compter pour lui, par peur d'être abandonné à son tour.",
+      "goal": "Trouver un métier qui ait du sens, plutôt qu'un métier prestigieux.",
+      "name": "Isaac",
+      "field": "L1 Information-Communication",
+      "likes": [
+        "Les gens honnêtes",
+        "Les discussions profondes",
+        "Le calme",
+        "Les balades de nuit",
+        "Les motos anciennes",
+        "Les chats"
+      ],
+      "gauges": {
+        "amour": 0,
+        "amitie": 0
+      },
+      "height": "1m80",
+      "sprite": "assets/Personnages/Crushs/PNG/Isaac.png",
+      "passion": "Les motos, le bricolage, les balades de nuit et les chats.",
+      "tagline": "Le garçon que tout le monde juge avant de le connaître.",
+      "dislikes": [
+        "Les personnes superficielles",
+        "Les mensonges",
+        "Les gens qui promettent sans agir"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Crushs/PNG/Isaac.png"
+      },
+      "routeTheme": "L'abandon. Comment apprendre à faire confiance quand quelqu'un est déjà parti une fois.",
+      "personality": [
+        "sarcastique",
+        "observateur",
+        "protecteur",
+        "extrêmement loyal",
+        "rancunier",
+        "têtu"
+      ],
+      "favoritePlace": "Le toit de la résidence."
+    }
+  },
+  {
+    "id": "aaron",
+    "is_player": false,
+    "is_secondary": false,
+    "data": {
+      "id": "aaron",
+      "age": 20,
+      "flaw": "Il garde tout pour lui et refuse presque systématiquement qu'on l'aide.",
+      "goal": "Ouvrir un studio de tatouage.",
+      "name": "Aaron",
+      "field": "L1 com",
+      "likes": [
+        "Le rock",
+        "La randonnée",
+        "Les chiens",
+        "Les vieux films",
+        "Le café"
+      ],
+      "gauges": {
+        "amour": 0,
+        "amitie": 0
+      },
+      "height": "1m92",
+      "sprite": "assets/Personnages/Crushs/PNG/Aaron.png",
+      "passion": "Le tatouage, le rock, la randonnée, la cuisine et les chiens.",
+      "tagline": "Le géant qui fait peur à tout le monde.",
+      "dislikes": [
+        "La violence gratuite",
+        "Les gens qui parlent fort",
+        "Les disputes"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Crushs/PNG/Aaron.png"
+      },
+      "routeTheme": "Le deuil.",
+      "personality": [
+        "très calme",
+        "ne se met jamais en colère",
+        "attentif aux autres"
+      ],
+      "favoritePlace": "La salle de sport, où il évacue son stress en silence."
+    }
+  },
+  {
+    "id": "sasha",
+    "is_player": false,
+    "is_secondary": false,
+    "data": {
+      "id": "sasha",
+      "age": 19,
+      "flaw": "Il transforme tout en blague et évite les discussions sérieuses.",
+      "goal": "Vivre de la création de contenu ou de l'événementiel.",
+      "name": "Sasha",
+      "field": "L1 com",
+      "likes": [
+        "Les jeux vidéo",
+        "Les concerts",
+        "Le skate",
+        "Les soirées",
+        "La musique"
+      ],
+      "gauges": {
+        "amour": 0,
+        "amitie": 0
+      },
+      "height": "1m78",
+      "sprite": "assets/Personnages/Crushs/PNG/Sasha.png",
+      "passion": "Les jeux vidéo, les concerts, le skate, les soirées et la musique.",
+      "tagline": "La personne qui fait rire tout le monde.",
+      "dislikes": [
+        "Le silence",
+        "La solitude"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Crushs/PNG/Sasha.png"
+      },
+      "routeTheme": "La solitude derrière l'humour.",
+      "personality": [
+        "drôle",
+        "impulsif",
+        "créatif",
+        "très tactile",
+        "immature parfois"
+      ],
+      "favoritePlace": "La cafétéria."
+    }
+  },
+  {
+    "id": "camel",
+    "is_player": false,
+    "is_secondary": false,
+    "data": {
+      "id": "camel",
+      "age": 19,
+      "flaw": "Il séduit facilement mais coupe court aux relations dès qu'elles deviennent trop sérieuses.",
+      "goal": "Composer des musiques pour le cinéma et les jeux vidéo.",
+      "name": "Camel",
+      "field": "L1 dev",
+      "likes": [
+        "La guitare électrique",
+        "Les jeux vidéo narratifs",
+        "Les vinyles",
+        "La composition"
+      ],
+      "gauges": {
+        "amour": 0,
+        "amitie": 0
+      },
+      "height": "1m85",
+      "sprite": "assets/Personnages/Crushs/PNG/Camel.png",
+      "passion": "La guitare électrique, les jeux vidéo narratifs, les vinyles et la composition.",
+      "tagline": "Le garçon qui séduit tout le monde sans jamais s'attacher.",
+      "dislikes": [
+        "Dépendre de quelqu'un",
+        "S'engager"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Crushs/PNG/Camel.png"
+      },
+      "routeTheme": "La peur de l'engagement.",
+      "personality": [
+        "très sociable",
+        "confiant",
+        "flatteur",
+        "passionné de guitare",
+        "très cultivé musicalement"
+      ],
+      "favoritePlace": "Sa chambre, où il passe des heures à composer seul."
+    }
+  },
+  {
+    "id": "mehdi",
+    "is_player": false,
+    "is_secondary": false,
+    "data": {
+      "id": "mehdi",
+      "age": 19,
+      "flaw": "Il ne sait pas demander de l'aide et s'oublie constamment au profit des autres.",
+      "goal": "Créer sa propre agence de photographie et voyager pour raconter des histoires humaines.",
+      "name": "Mehdi",
+      "field": "L1 Information-Communication",
+      "likes": [
+        "La photographie",
+        "Les couchers de soleil",
+        "Le basket",
+        "Les repas en famille",
+        "Les voyages improvisés"
+      ],
+      "gauges": {
+        "amour": 0,
+        "amitie": 0
+      },
+      "height": "1m80",
+      "sprite": "assets/Personnages/Crushs/PNG/Mehdi.png",
+      "passion": "La photographie, les voyages, le basket et les couchers de soleil.",
+      "tagline": "Le rayon de soleil.",
+      "dislikes": [
+        "Décevoir les gens",
+        "Les conflits",
+        "Voir quelqu'un souffrir sans pouvoir l'aider"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Crushs/PNG/Mehdi.png",
+        "sansVeste": "assets/Personnages/Crushs/PNG/Mehdi sans veste.png"
+      },
+      "spriteAlt": "assets/Personnages/Crushs/PNG/Mehdi sans veste.png",
+      "routeTheme": "Le poids des responsabilités et la santé mentale.",
+      "personality": [
+        "toujours souriant",
+        "optimiste",
+        "sociable",
+        "créatif",
+        "spontané"
+      ],
+      "favoritePlace": "Le terrain de basket derrière le campus."
+    }
+  },
+  {
+    "id": "stella",
+    "is_player": false,
+    "is_secondary": false,
+    "data": {
+      "id": "stella",
+      "age": 20,
+      "flaw": "Elle est tellement perfectionniste qu'elle peut devenir cassante sans s'en rendre compte.",
+      "goal": "Créer sa propre entreprise et devenir une entrepreneuse reconnue.",
+      "name": "Stella",
+      "field": "L1 commerce",
+      "likes": [
+        "Les défis",
+        "Les musées",
+        "La mode",
+        "Les débats",
+        "Les personnes franches"
+      ],
+      "gauges": {
+        "amour": 0,
+        "amitie": 0
+      },
+      "height": "1m72",
+      "sprite": "assets/Personnages/Crushs/PNG/Stella.png",
+      "passion": "L'entrepreneuriat, la mode, les musées, les débats et la stratégie.",
+      "tagline": "La fille que tout le monde admire.",
+      "dislikes": [
+        "Les préjugés",
+        "Les faux-semblants",
+        "Qu'on décide à sa place",
+        "Perdre son temps"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Crushs/PNG/Stella.png"
+      },
+      "routeTheme": "L'acceptation de soi et le besoin de reconnaissance.",
+      "personality": [
+        "ambitieuse",
+        "perfectionniste",
+        "très organisée",
+        "directe",
+        "exigeante",
+        "profondément loyale"
+      ],
+      "favoritePlace": "La bibliothèque."
+    }
+  },
+  {
+    "id": "liam",
+    "is_player": false,
+    "is_secondary": false,
+    "data": {
+      "id": "liam",
+      "age": 21,
+      "flaw": "Il porte toutes les responsabilités seul et refuse de montrer la moindre faiblesse.",
+      "goal": "Devenir enseignant-chercheur à l'université.",
+      "name": "Liam",
+      "field": "L2 com",
+      "likes": [
+        "La littérature",
+        "Les vieux appareils photo argentiques",
+        "L'histoire",
+        "Les promenades matinales"
+      ],
+      "gauges": {
+        "amour": 0,
+        "amitie": 0
+      },
+      "height": "1m86",
+      "sprite": "assets/Personnages/Crushs/PNG/Liam.png",
+      "passion": "La littérature, les vieux appareils photo argentiques, l'histoire et les promenades matinales.",
+      "tagline": "L'homme que personne ne connaît vraiment.",
+      "dislikes": [
+        "L'injustice",
+        "Le bruit",
+        "Les promesses qu'on ne tient pas"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Crushs/PNG/Liam.png"
+      },
+      "routeTheme": "Les aidants familiaux.",
+      "personality": [
+        "très mature",
+        "très calme",
+        "très observateur",
+        "parle peu",
+        "toujours juste"
+      ],
+      "favoritePlace": "Le hall principal du campus, ou la bibliothèque tôt le matin.",
+      "stagePosition": "center"
+    }
+  },
+  {
+    "id": "leonie",
+    "is_player": false,
+    "is_secondary": true,
+    "data": {
+      "id": "leonie",
+      "flaw": "Elle réfléchit après avoir parlé.",
+      "goal": "Ouvrir son propre salon de tatouage artistique.",
+      "name": "Léonie",
+      "role": "Colocataire du perso principal, future meilleure amie.",
+      "likes": [
+        "Les concerts",
+        "Le maquillage",
+        "Halloween",
+        "Les films d'horreur",
+        "Les chats"
+      ],
+      "gauges": {
+        "amitie": 0
+      },
+      "sprite": "assets/Personnages/Persos secondaires/PNG/Léonie.png",
+      "tagline": "Les apparences sont parfois très trompeuses.",
+      "dislikes": [
+        "Les araignées",
+        "Les personnes qui jugent au premier regard",
+        "Les conflits"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Persos secondaires/PNG/Léonie.png"
+      },
+      "routeTheme": "Les préjugés et l'apparence.",
+      "personality": [
+        "extravertie",
+        "drôle",
+        "spontanée"
+      ],
+      "favoritePlace": "Sa chambre, qui devient rapidement le QG du groupe.",
+      "stagePosition": "left"
+    }
+  },
+  {
+    "id": "zoe",
+    "is_player": false,
+    "is_secondary": true,
+    "data": {
+      "id": "zoe",
+      "flaw": "Elle est incapable de garder un secret.",
+      "goal": "Travailler dans l'événementiel ou les relations publiques.",
+      "name": "Zoé",
+      "role": "Connaît absolument tout le monde sur le campus.",
+      "likes": [
+        "Les soirées",
+        "Les potins",
+        "Les cafés",
+        "Organiser des sorties"
+      ],
+      "gauges": {
+        "amitie": 0
+      },
+      "sprite": "assets/Personnages/Persos secondaires/PNG/Zoé.png",
+      "dislikes": [
+        "Les silences gênants",
+        "Les gens qui restent dans leur coin"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Persos secondaires/PNG/Zoé.png"
+      },
+      "routeTheme": "Le besoin d'appartenir à un groupe.",
+      "personality": [
+        "énergique",
+        "sociable",
+        "optimiste",
+        "bavarde"
+      ],
+      "favoritePlace": "La cafétéria."
+    }
+  },
+  {
+    "id": "victoria",
+    "is_player": false,
+    "is_secondary": true,
+    "data": {
+      "id": "victoria",
+      "flaw": "Elle manque énormément de tact.",
+      "goal": "Diriger une grande entreprise ou une agence de communication.",
+      "name": "Victoria",
+      "role": "Rivale de l'héroïne au début, finit par devenir une alliée.",
+      "likes": [
+        "Les débats",
+        "Les défis",
+        "Gagner"
+      ],
+      "gauges": {
+        "amitie": 0
+      },
+      "sprite": "assets/Personnages/Persos secondaires/PNG/Victoria.png",
+      "tagline": "La rivale.",
+      "dislikes": [
+        "L'improvisation",
+        "Perdre",
+        "Qu'on la sous-estime"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Persos secondaires/PNG/Victoria.png"
+      },
+      "routeTheme": "Le perfectionnisme et la comparaison permanente.",
+      "personality": [
+        "intelligente",
+        "ambitieuse",
+        "perfectionniste",
+        "très sûre d'elle"
+      ],
+      "favoritePlace": "La bibliothèque."
+    }
+  },
+  {
+    "id": "nathan",
+    "is_player": false,
+    "is_secondary": true,
+    "data": {
+      "id": "nathan",
+      "flaw": "Il dit toujours \"oui\", même lorsqu'il n'en a pas envie.",
+      "goal": "Créer son propre studio de développement de jeux vidéo.",
+      "name": "Nathan",
+      "role": "Le geek timide, se fait bully mais devient rapidement ami avec l'héroïne.",
+      "likes": [
+        "Les jeux vidéo",
+        "La programmation",
+        "Les puzzles",
+        "Les mangas"
+      ],
+      "gauges": {
+        "amitie": 0
+      },
+      "sprite": "assets/Personnages/Persos secondaires/PNG/Nathan.png",
+      "dislikes": [
+        "Les conflits",
+        "Parler devant un groupe",
+        "Être le centre de l'attention"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Persos secondaires/PNG/Nathan.png"
+      },
+      "routeTheme": "Le manque de confiance en soi.",
+      "personality": [
+        "timide",
+        "poli",
+        "serviable",
+        "un peu maladroit socialement"
+      ],
+      "favoritePlace": "Coin informatique de la bibliothèque."
+    }
+  },
+  {
+    "id": "charlie",
+    "is_player": false,
+    "is_secondary": true,
+    "data": {
+      "id": "charlie",
+      "age": 19,
+      "flaw": "Mélange réalité et fiction, source de ragots incertains.",
+      "name": "Charlie",
+      "role": "Transmet des informations (vraies, déformées ou fausses) sur les autres étudiants.",
+      "field": "L1 com",
+      "likes": [
+        "Écrire des histoires",
+        "Observer les gens",
+        "Imaginer la vie des inconnus"
+      ],
+      "gauges": {
+        "amitie": 0
+      },
+      "height": "1m60",
+      "sprite": "assets/Personnages/Persos secondaires/PNG/Charlie.png",
+      "tagline": "La mythomane.",
+      "dislikes": [
+        "Qu'on lui demande de parler sérieusement d'elle-même"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Persos secondaires/PNG/Charlie.png"
+      },
+      "routeTheme": "Réapprendre à être elle-même sans avoir besoin de s'inventer une autre vie.",
+      "personality": [
+        "calme",
+        "imaginative",
+        "toujours souriante",
+        "mythomane"
+      ]
+    }
+  },
+  {
+    "id": "mere",
+    "is_player": false,
+    "is_secondary": true,
+    "data": {
+      "id": "mere",
+      "name": "Mère",
+      "role": "Mère de l'héroïne, douce mais peu complice avec elle.",
+      "sprite": "assets/Personnages/Persos secondaires/PNG/Mère.png",
+      "portraits": {
+        "default": "assets/Personnages/Persos secondaires/PNG/Mère.png"
+      },
+      "stagePosition": "left"
+    }
+  },
+  {
+    "id": "pere",
+    "is_player": false,
+    "is_secondary": true,
+    "data": {
+      "id": "pere",
+      "name": "Père",
+      "role": "Père de l'héroïne, assez froid et distant.",
+      "sprite": "assets/Personnages/Persos secondaires/PNG/Père.png",
+      "portraits": {
+        "default": "assets/Personnages/Persos secondaires/PNG/Père.png"
+      },
+      "stagePosition": "right"
+    }
+  },
+  {
+    "id": "liv",
+    "is_player": false,
+    "is_secondary": false,
+    "data": {
+      "id": "liv_1",
+      "flaw": "Elle est incapable de garder un secret.",
+      "goal": "Travailler dans l'événementiel ou les relations publiques.",
+      "name": "Zoé",
+      "role": "Connaît absolument tout le monde sur le campus.",
+      "likes": [
+        "Les soirées",
+        "Les potins",
+        "Les cafés",
+        "Organiser des sorties"
+      ],
+      "gauges": {
+        "amitie": 0
+      },
+      "sprite": "assets/Personnages/Persos secondaires/PNG/Liv.png",
+      "dislikes": [
+        "Les silences gênants",
+        "Les gens qui restent dans leur coin"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Persos secondaires/PNG/Liv.png"
+      },
+      "routeTheme": "Le besoin d'appartenir à un groupe.",
+      "personality": [
+        "énergique",
+        "sociable",
+        "optimiste",
+        "bavarde"
+      ],
+      "favoritePlace": "La cafétéria."
+    }
+  },
+  {
+    "id": "montrose",
+    "is_player": false,
+    "is_secondary": false,
+    "data": {
+      "id": "mme_montrose_1",
+      "flaw": "Elle est incapable de garder un secret.",
+      "goal": "Travailler dans l'événementiel ou les relations publiques.",
+      "name": "Mme Montrose",
+      "role": "Connaît absolument tout le monde sur le campus.",
+      "likes": [
+        "Les soirées",
+        "Les potins",
+        "Les cafés",
+        "Organiser des sorties"
+      ],
+      "gauges": {
+        "amitie": 0
+      },
+      "sprite": "assets/Personnages/Persos secondaires/PNG/Mme Montrose.png",
+      "dislikes": [
+        "Les silences gênants",
+        "Les gens qui restent dans leur coin"
+      ],
+      "portraits": {
+        "default": "assets/Personnages/Persos secondaires/PNG/Mme Montrose.png"
+      },
+      "routeTheme": "Le besoin d'appartenir à un groupe.",
+      "personality": [
+        "énergique",
+        "sociable",
+        "optimiste",
+        "bavarde"
+      ],
+      "favoritePlace": "La cafétéria."
+    }
+  }
+]
