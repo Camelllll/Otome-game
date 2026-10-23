@@ -4,7 +4,7 @@ import { afficherLovometre, animerGainLovo, animerPerteLovo } from "../ui/gaugeB
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
 import { installerMenuJeu } from "../ui/gameMenu.js";
 
-export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onRetourEpisodes, onRetourAccueil, fichesPersonnages = [] } = {}) {
+export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onRetourEpisodes, onRetourAccueil, onIllustrations, onIllustrationDebloquee, fichesPersonnages = [] } = {}) {
   const musique = new MusiqueAmbiance();
   const scene = document.createElement("div");
   scene.className = "ecran-dialogue";
@@ -14,7 +14,8 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     fiches: fichesPersonnages,
     getInfosPersonnage: (id) => moteur.obtenirInfosPersonnages([id])[0],
     onRetourEpisodes,
-    onRetourAccueil
+    onRetourAccueil,
+    onIllustrations
   });
 
   // Le premier clic dans le jeu est nécessaire pour que les navigateurs autorisent le son.
@@ -81,6 +82,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
   let decorActuel = null;
   let illustrationFermee = null;
   let affichageCourant = null;
+  const illustrationsSignalees = new Set();
 
   fermerIllustration.addEventListener("click", () => {
     illustrationFermee = moteur.nodeId;
@@ -274,6 +276,14 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     if (affichage.cg && illustrationFermee !== affichage.nodeId) {
       illustrationCg.src = affichage.cg;
       voileIllustration.classList.add("visible");
+      if (!illustrationsSignalees.has(affichage.nodeId)) {
+        illustrationsSignalees.add(affichage.nodeId);
+        onIllustrationDebloquee?.({
+          path: affichage.cg,
+          episodeId: moteur.episodeData.id,
+          nodeId: affichage.nodeId,
+        });
+      }
     } else {
       voileIllustration.classList.remove("visible");
     }

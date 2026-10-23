@@ -151,6 +151,13 @@ section.tab-panel.active{
   word-break:break-word;
 }
 
+.media-card .media-description{
+  padding:0 .6rem .6rem;
+  color:var(--muted);
+  font-size:.72rem;
+  word-break:break-word;
+}
+
 .media-card .media-remove{
   display:block;
   width:calc(100% - 1.2rem);
@@ -747,6 +754,20 @@ textarea{
   border:1px solid var(--border);
   border-radius:10px;
   font-weight:400;
+}
+
+.modal .modal-checkbox{
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+  padding:.7rem;
+  border:1px solid var(--border);
+  border-radius:10px;
+}
+
+.modal .modal-checkbox input{
+  width:auto;
+  margin:0;
 }
 
 .modal-actions{

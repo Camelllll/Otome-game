@@ -102,6 +102,35 @@ export async function uploadMedia(file, category) {
   return data;
 }
 
+export async function updateMediaAsset(id, category, oldPath, label, file) {
+  let path = oldPath;
+  let nouveauCheminStockage = "";
+
+  if (file) {
+    nouveauCheminStockage = `${category}/${Date.now()}-${crypto.randomUUID()}/${file.name}`;
+    const { error } = await supabase.storage.from("media").upload(nouveauCheminStockage, file);
+    if (error) throw error;
+    path = supabase.storage.from("media").getPublicUrl(nouveauCheminStockage).data.publicUrl;
+  }
+
+  const requete = id
+    ? supabase.from("media_assets").update({ category, path, label }).eq("id", id)
+    : supabase.from("media_assets").insert({ category, path, label });
+  const { data, error } = await requete.select("id, category, path, label").single();
+  if (error) {
+    if (nouveauCheminStockage) await supabase.storage.from("media").remove([nouveauCheminStockage]);
+    throw error;
+  }
+  return { ...data, oldPath };
+}
+
+export async function deleteMediaStorageFile(path) {
+  const cheminStockage = path.split("/media/")[1];
+  if (!cheminStockage) return;
+  const { error } = await supabase.storage.from("media").remove([cheminStockage]);
+  if (error) throw error;
+}
+
 export async function deleteMedia(id, path) {
   // Le chemin de stockage est tout ce qui suit "/media/" dans l'URL publique.
   const cheminStockage = path.split("/media/")[1];

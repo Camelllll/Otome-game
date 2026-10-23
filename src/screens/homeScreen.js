@@ -1,6 +1,7 @@
 // Écran d'accueil du jeu : bannière illustrée officielle, intro et boutons de lancement.
 import { chargerSauvegarde, reinitialiserSauvegarde, aUneProgression } from "../engine/saveSystem.js";
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
+import { demanderConfirmation } from "../ui/gameModal.js";
 
 export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }) {
   // Lancer la musique d'ambiance
@@ -75,7 +76,12 @@ export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }
   btnNouvelle.className = "btn-accueil btn-nouvelle";
   btnNouvelle.innerHTML = "<span>✨</span> Nouvelle partie";
   btnNouvelle.addEventListener("click", async () => {
-    if (aUneProgression(sauvegarde) && !window.confirm("Commencer une nouvelle partie effacera ta progression actuelle. Continuer ?")) {
+    if (aUneProgression(sauvegarde) && !(await demanderConfirmation({
+      titre: "Recommencer l'histoire ?",
+      message: "Ta progression actuelle sera effacée. Les illustrations déjà débloquées resteront dans ta collection.",
+      confirmer: "Nouvelle partie",
+      annuler: "Garder ma partie",
+    }))) {
       return;
     }
     btnNouvelle.disabled = true;

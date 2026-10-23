@@ -6,6 +6,8 @@ import {
   listMedia,
   addMediaEntry,
   uploadMedia,
+  updateMediaAsset,
+  deleteMediaStorageFile,
   deleteMedia,
   listCharactersRaw,
   saveCharacter,
@@ -359,6 +361,15 @@ function modalErreur(formulaire, message) {
   formulaire.querySelector(".modal-actions").insertAdjacentElement("beforebegin", erreur);
 }
 
+function texteListe(valeur) {
+  return Array.isArray(valeur) ? valeur.join("\n") : valeur || "";
+}
+
+function lireListe(valeur) {
+  const elements = valeur.split("\n").map((element) => element.trim()).filter(Boolean);
+  return elements.length ? elements : undefined;
+}
+
 // Recharge les personnages depuis la base (source de vérité) et reconstruit `people`/`personIndex`.
 async function refreshPeopleFromDb() {
   const rows = await listCharactersRaw();
@@ -398,6 +409,37 @@ function openPersonModal(existingId) {
     <label>Accroche
       <input type="text" name="tagline" value="${esc(donnees.tagline || "")}" />
     </label>
+    <label class="modal-checkbox">
+      <input type="checkbox" name="show-in-characters-menu" ${donnees.showInCharactersMenu !== false ? "checked" : ""} />
+      Afficher dans le menu « Les personnages »
+    </label>
+    <label>Taille
+      <input type="text" name="height" value="${esc(donnees.height || "")}" placeholder="Ex. 1m80" />
+    </label>
+    <label>Caractère <small>(un élément par ligne)</small>
+      <textarea name="personality" rows="3">${esc(texteListe(donnees.personality))}</textarea>
+    </label>
+    <label>Aime <small>(un élément par ligne)</small>
+      <textarea name="likes" rows="3">${esc(texteListe(donnees.likes))}</textarea>
+    </label>
+    <label>N'aime pas <small>(un élément par ligne)</small>
+      <textarea name="dislikes" rows="3">${esc(texteListe(donnees.dislikes))}</textarea>
+    </label>
+    <label>Passion
+      <textarea name="passion" rows="2">${esc(donnees.passion || "")}</textarea>
+    </label>
+    <label>Objectif
+      <textarea name="goal" rows="2">${esc(donnees.goal || "")}</textarea>
+    </label>
+    <label>Défaut
+      <textarea name="flaw" rows="2">${esc(donnees.flaw || "")}</textarea>
+    </label>
+    <label>Lieu préféré
+      <input type="text" name="favoritePlace" value="${esc(donnees.favoritePlace || "")}" />
+    </label>
+    <label>Thème de sa route
+      <textarea name="routeTheme" rows="2">${esc(donnees.routeTheme || "")}</textarea>
+    </label>
     <div class="modal-actions">
       <button type="button" class="btn-light" data-modal-cancel>Annuler</button>
       <button type="submit" class="primary-action">${existingId ? "Enregistrer" : "Créer"}</button>
@@ -428,6 +470,16 @@ function openPersonModal(existingId) {
         age,
         field: formulaire.field.value.trim() || undefined,
         tagline: formulaire.tagline.value.trim() || undefined,
+        showInCharactersMenu: formulaire["show-in-characters-menu"].checked,
+        height: formulaire.height.value.trim() || undefined,
+        personality: lireListe(formulaire.personality.value),
+        likes: lireListe(formulaire.likes.value),
+        dislikes: lireListe(formulaire.dislikes.value),
+        passion: formulaire.passion.value.trim() || undefined,
+        goal: formulaire.goal.value.trim() || undefined,
+        flaw: formulaire.flaw.value.trim() || undefined,
+        favoritePlace: formulaire.favoritePlace.value.trim() || undefined,
+        routeTheme: formulaire.routeTheme.value.trim() || undefined,
         gauges: donnees.gauges || (isSecondary ? undefined : { amour: 0, amitie: 0 }),
       };
       Object.keys(donneesMaj).forEach((cle) => donneesMaj[cle] === undefined && delete donneesMaj[cle]);
@@ -549,7 +601,118 @@ function saveFile(data, fileName) {
 function mediaLabel(path) {
   if (!path) return "";
   if (path.startsWith("data:")) return mediaLabels[path] || "Image importée";
-  return path.split("/").pop();
+  const name = path.split("/").pop();
+  try {
+    return decodeURIComponent(name);
+  } catch {
+    return name;
+  }
+}
+
+function mediaFileName(path) {
+  const lastPart = path.split("/").pop().split("?")[0];
+  try {
+    return decodeURIComponent(lastPart);
+  } catch {
+    return lastPart;
+  }
+}
+
+async function replaceMediaReferences(oldPath, newPath) {
+  if (oldPath === newPath) return;
+
+  for (const episode of Object.values(episodes)) {
+    let modified = false;
+    Object.values(episode.nodes || {}).forEach((node) => {
+      if (node.background === oldPath) {
+        node.background = newPath;
+        modified = true;
+      }
+      if (node.cg === oldPath) {
+        node.cg = newPath;
+        modified = true;
+      }
+    });
+    episode.scenes.forEach((scene) => {
+      if (scene.background === oldPath) scene.background = newPath;
+    });
+    if (modified) {
+      await saveEpisode(episode.id, episode.title, exportEpisodeData(episode), episode.status);
+    }
+  }
+}
+
+function openMediaEditModal(category, path) {
+  const reference = mediaAssetIndex[path];
+  const fileName = mediaFileName(path);
+  const description = mediaLabels[path] === fileName ? "" : mediaLabels[path] || "";
+  const formulaire = openModal("Modifier le média", `
+    <label>Nom du fichier
+      <input type="text" name="file-name" value="${esc(fileName)}" required />
+    </label>
+    <label>Nouvelle image <small>(facultatif)</small>
+      <input type="file" name="file" accept="image/*" />
+    </label>
+    <label>Description
+      <textarea name="description" rows="3">${esc(description)}</textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn-light" data-modal-cancel>Annuler</button>
+      <button type="submit" class="primary-action">Enregistrer</button>
+    </div>
+  `);
+
+  formulaire.querySelector("[data-modal-cancel]").onclick = closeModal;
+  formulaire.addEventListener("submit", async () => {
+    const filename = formulaire.elements["file-name"].value.trim();
+    if (!filename) return modalErreur(formulaire, "Le nom du fichier est obligatoire.");
+    if (/[\\/]/.test(filename)) return modalErreur(formulaire, "Indique uniquement un nom de fichier, sans dossier.");
+
+    const bouton = formulaire.querySelector('button[type="submit"]');
+    bouton.disabled = true;
+    try {
+      let file = formulaire.file.files?.[0] || null;
+      if (!file && filename !== fileName) {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error("Impossible de récupérer le fichier actuel pour le renommer.");
+        const blob = await response.blob();
+        file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
+      } else if (file) {
+        file = new File([file], filename, { type: file.type, lastModified: file.lastModified });
+      }
+
+      const updated = await updateMediaAsset(
+        reference?.id,
+        category,
+        path,
+        formulaire.elements.description.value.trim(),
+        file
+      );
+      await replaceMediaReferences(path, updated.path);
+      if (updated.path !== path) {
+        files[category] = files[category].map((item) => (item === path ? updated.path : item));
+        mediaLabels[updated.path] = updated.label;
+        mediaAssetIndex[updated.path] = { id: updated.id, category };
+        delete mediaLabels[path];
+        delete mediaAssetIndex[path];
+        try {
+          await deleteMediaStorageFile(path);
+        } catch (erreur) {
+          console.warn("L'ancien fichier média n'a pas pu être supprimé.", erreur);
+        }
+      } else {
+        mediaLabels[path] = updated.label;
+        mediaAssetIndex[path] = { id: updated.id, category };
+      }
+      renderMedia();
+      renderSceneFlow();
+      closeModal();
+    } catch (erreur) {
+      modalErreur(formulaire, "Modification impossible : " + (erreur.message || "erreur inconnue."));
+    } finally {
+      bouton.disabled = false;
+    }
+  });
 }
 
 function renderMediaAddRow(category, { placeholder, withFile = true, accept = "" } = {}) {
@@ -575,11 +738,15 @@ function renderMedia() {
     <div class="media-card">
       <img src="${esc(path)}" alt="${esc(mediaLabel(path))}" loading="lazy" />
       <div class="media-name">${esc(mediaLabel(path))}</div>
-      ${
-        BASE_FILES[category].includes(path)
-          ? ""
-          : `<button class="delete media-remove" data-remove-media="${esc(category)}" data-value="${esc(path)}">Supprimer</button>`
-      }
+      ${mediaLabels[path] && mediaLabels[path] !== mediaLabel(path) ? `<div class="media-description">${esc(mediaLabels[path])}</div>` : ""}
+      <div class="media-actions">
+        <button type="button" class="btn-light" data-edit-media="${esc(category)}" data-value="${esc(path)}">Modifier</button>
+        ${
+          BASE_FILES[category].includes(path)
+            ? ""
+            : `<button class="delete media-remove" data-remove-media="${esc(category)}" data-value="${esc(path)}">Supprimer</button>`
+        }
+      </div>
     </div>`;
 
   $("#media-content").innerHTML = `
@@ -654,6 +821,10 @@ function renderMedia() {
 }
 
 function bindMedia() {
+  document.querySelectorAll("[data-edit-media]").forEach((button) => {
+    button.onclick = () => openMediaEditModal(button.dataset.editMedia, button.dataset.value);
+  });
+
   document.querySelectorAll("[data-open-media-modal]").forEach((button) => {
     button.onclick = () => {
       const category = button.dataset.openMediaModal;

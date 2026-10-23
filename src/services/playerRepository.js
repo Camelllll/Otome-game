@@ -147,6 +147,23 @@ export async function listerChoixDistants(slot = SLOT_PRINCIPAL, limite = 200) {
   return Array.isArray(data) ? data : [];
 }
 
+export async function debloquerIllustration({ path, episodeId, nodeId }) {
+  if (!path) return null;
+  const { data, error } = await supabase.rpc("game_unlock_illustration", {
+    p_path: path,
+    p_episode_id: episodeId ?? null,
+    p_node_id: nodeId ?? null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function listerIllustrationsDebloquees() {
+  const { data, error } = await supabase.rpc("game_list_illustrations");
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+}
+
 export async function copierSauvegardeDistante(slotSource, slotCible, label = null) {
   const { data, error } = await supabase.rpc("game_copy_save", {
     p_source: slotSource,

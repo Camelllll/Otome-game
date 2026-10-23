@@ -47,7 +47,9 @@ function carteFiche(personnage, getInfosPersonnage) {
           ${ligneFiche("N'aime pas", personnage.dislikes)}
           ${ligneFiche("Passion", personnage.passion)}
           ${ligneFiche("Objectif", personnage.goal)}
+          ${ligneFiche("Défaut", personnage.flaw)}
           ${ligneFiche("Lieu préféré", personnage.favoritePlace)}
+          ${ligneFiche("Thème de sa route", personnage.routeTheme)}
         </div>
       </div>
     </article>
@@ -56,9 +58,9 @@ function carteFiche(personnage, getInfosPersonnage) {
 
 /**
  * @param {HTMLElement} scene - conteneur de l'écran de jeu.
- * @param {object} options - { musique, fiches, getInfosPersonnage, onRetourEpisodes, onRetourAccueil }
+ * @param {object} options - { musique, fiches, getInfosPersonnage, onRetourEpisodes, onRetourAccueil, onIllustrations }
  */
-export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonnage, onRetourEpisodes, onRetourAccueil } = {}) {
+export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonnage, onRetourEpisodes, onRetourAccueil, onIllustrations } = {}) {
   const bouton = document.createElement("button");
   bouton.className = "bouton-menu";
   bouton.type = "button";
@@ -85,7 +87,13 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
   optionEpisodes.innerHTML = "<span>📖</span> Journal des épisodes";
   optionEpisodes.disabled = !onRetourEpisodes;
 
-  panneau.append(optionMusique, optionPersonnages, optionEpisodes);
+  const optionIllustrations = document.createElement("button");
+  optionIllustrations.className = "option-menu";
+  optionIllustrations.type = "button";
+  optionIllustrations.innerHTML = "<span>▣</span> Mes illustrations";
+  optionIllustrations.disabled = !onIllustrations;
+
+  panneau.append(optionMusique, optionPersonnages, optionIllustrations, optionEpisodes);
 
   if (onRetourAccueil) {
     const optionAccueil = document.createElement("button");
@@ -153,6 +161,11 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
     rendreFiches();
     voile.classList.add("visible");
     ouvrirMenu(false);
+  });
+
+  optionIllustrations.addEventListener("click", () => {
+    ouvrirMenu(false);
+    onIllustrations?.();
   });
 
   voile.querySelector(".fermer-personnages").addEventListener("click", () => voile.classList.remove("visible"));

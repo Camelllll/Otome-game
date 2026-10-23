@@ -2,11 +2,13 @@
 import { chargerSauvegarde, sauvegarder, sauvegarderMaintenant, recalculerActionPoints } from "./engine/saveSystem.js";
 import { DialogueEngine, aplatirPersonnages } from "./engine/dialogueEngine.js";
 import { getCharacters, getEpisode, getPublishedEpisodesList } from "./services/gameRepository.js";
-import { obtenirSessionJoueur } from "./services/playerRepository.js";
+import { debloquerIllustration, listerIllustrationsDebloquees, obtenirSessionJoueur } from "./services/playerRepository.js";
 import { lancerEcranDialogue } from "./screens/dialogueScreen.js";
 import { lancerEcranAccueil } from "./screens/homeScreen.js";
 import { lancerEcranSelectionEpisode } from "./screens/episodeSelectScreen.js";
 import { lancerEcranConnexion } from "./screens/loginScreen.js";
+import { lancerEcranGalerie } from "./screens/illustrationGalleryScreen.js";
+import { demanderTexte } from "./ui/gameModal.js";
 
 const conteneurJeu = document.getElementById("jeu");
 
@@ -23,11 +25,19 @@ async function lancerEpisode(idEpisode, sauvegarde, joueur) {
 
   const personnagesParId = aplatirPersonnages(charactersData);
   const moteur = new DialogueEngine(episodeData, personnagesParId, sauvegarde);
+  const fichesPersonnages = [...(charactersData.crushs || []), ...(charactersData.secondary || [])]
+    .filter((personnage) => personnage.showInCharactersMenu !== false);
 
   lancerEcranDialogue(conteneurJeu, moteur, {
-    fichesPersonnages: [...(charactersData.crushs || []), ...(charactersData.secondary || [])],
+    fichesPersonnages,
     onRetourEpisodes: () => afficherSelectionEpisode(sauvegarde, joueur),
     onRetourAccueil: joueur ? () => afficherAccueil(joueur) : null,
+    onIllustrations: joueur ? () => afficherGalerie(joueur, () => lancerEpisode(idEpisode, sauvegarde, joueur)) : null,
+    onIllustrationDebloquee: (illustration) => {
+      debloquerIllustration(illustration).catch((erreur) => {
+        console.warn("Illustration non enregistrée dans la galerie.", erreur);
+      });
+    },
     onFinEpisode: (prochainEpisode) => {
       if (!prochainEpisode) {
         // Pas d'épisode suivant défini : retour à l'écran de sélection plutôt que de rester bloqué.
@@ -43,6 +53,16 @@ async function lancerEpisode(idEpisode, sauvegarde, joueur) {
       });
     }
   });
+}
+
+async function afficherGalerie(joueur, onRetour = () => afficherAccueil(joueur)) {
+  let illustrations = [];
+  try {
+    illustrations = await listerIllustrationsDebloquees();
+  } catch (erreur) {
+    console.warn("Galerie distante indisponible.", erreur);
+  }
+  lancerEcranGalerie(conteneurJeu, { illustrations, onRetour });
 }
 
 async function afficherSelectionEpisode(sauvegarde, joueur) {
@@ -84,12 +104,14 @@ async function afficherAccueil(joueur) {
 
       // Pour une nouvelle partie, demander le prénom
       if (type === "nouvelle") {
-        try {
-          const nomSaisi = window.prompt("Quel est le prénom de ton héroïne ?", "Sucrette");
-          if (nomSaisi) sauvegarde.playerName = nomSaisi.trim();
-        } catch (erreur) {
-          console.warn("Saisie du prénom indisponible, valeur par défaut conservée.", erreur);
-        }
+        const nomSaisi = await demanderTexte({
+          titre: "Ton héroïne",
+          message: "Quel prénom veux-tu lui donner ?",
+          valeur: sauvegarde.playerName || "Sucrette",
+          placeholder: "Sucrette",
+          confirmer: "Commencer",
+        });
+        if (nomSaisi) sauvegarde.playerName = nomSaisi;
         await sauvegarderMaintenant(sauvegarde);
       }
 

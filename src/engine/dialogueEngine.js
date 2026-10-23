@@ -85,6 +85,7 @@ export class DialogueEngine {
     if (!noeud.next || noeud.type !== "line" || noeud.speaker === "moi" || noeud.speaker === "narration") return null;
     const suivant = this.episodeData.nodes[noeud.next];
     if (!suivant || suivant.type !== "line" || !suivant.text || !suivant.next) return null;
+    if (suivant.cg) return null;
     if (suivant.speaker !== "moi" && suivant.speaker !== "narration") return null;
     // Un texte long garde ses pages : on ne le fusionne pas dans la bulle courante.
     if (suivant.text.split("\n").length > 3) return null;
