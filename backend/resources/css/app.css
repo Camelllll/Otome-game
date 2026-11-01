@@ -1,0 +1,166 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer base {
+    body { @apply m-0 text-slate-800; background: #faf8f5; font-family: ui-sans-serif, system-ui, sans-serif; }
+    h1 { @apply text-4xl font-semibold tracking-tight; font-family: Georgia, serif; line-height: 1.2; margin: 12px 0; }
+    h2 { @apply text-lg font-semibold; margin: 0 0 12px; }
+    h3 { @apply text-base font-semibold; }
+    label { @apply block text-sm font-medium; }
+    input:not([type=checkbox]), textarea, select { @apply mt-2 w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    button { cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .55; }
+    a { text-decoration: none; color: inherit; }
+    hr { @apply my-5 border-stone-200; }
+}
+
+@layer components {
+    .studio-shell { @apply min-h-screen; }
+    .sidebar { @apply fixed inset-y-0 left-0 flex w-60 flex-col border-r border-stone-200 bg-white p-6; }
+    .brand { @apply mb-14 flex items-center gap-3 text-sm font-semibold; }
+    .brand small { @apply mt-1 block text-[9px] tracking-[.22em] text-stone-400; }
+    .brand-mark { @apply flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-xl text-rose-800; font-family: Georgia, serif; }
+    .nav-label, .eyebrow { @apply text-[10px] font-semibold tracking-[.16em] text-stone-500; }
+    .nav-active { @apply mt-4 flex justify-between rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800; }
+    .nav-link { @apply mt-3 flex justify-between rounded-xl px-4 py-3 text-sm font-semibold hover:bg-rose-50; }
+    .sidebar-note { @apply mt-12 text-lg text-stone-600; font-family: Georgia, serif; }
+    .sidebar-note p { @apply mt-4 text-xs leading-6 text-stone-400; font-family: ui-sans-serif, system-ui, sans-serif; }
+    .account { @apply mt-auto border-t border-stone-100 pt-5 text-sm; }
+    .account small { @apply my-1 block text-xs text-stone-400; }
+    .workspace { @apply ml-60 p-10; }
+    .page-header { @apply mb-9 flex flex-wrap items-center justify-between gap-5; }
+    .muted { @apply text-sm leading-6 text-stone-500; }
+    .pill { @apply rounded-full border border-stone-200 px-4 py-2 text-[9px] font-semibold tracking-widest text-stone-500; }
+    .summary-grid { @apply mb-10 grid grid-cols-3 gap-5; }
+    .summary { @apply rounded-2xl border border-stone-200 bg-white p-6; }
+    .summary strong { @apply block text-3xl font-medium; font-family: Georgia, serif; }
+    .summary span { @apply mt-3 block text-xs text-stone-500; }
+    .summary.accent { background: #f1e8e2; }
+    .summary.accent strong { @apply text-2xl; }
+    .section-heading { @apply mb-4 flex items-center justify-between gap-3; }
+    .section-heading h2 { @apply mb-0; }
+    .episode-grid { @apply grid grid-cols-3 gap-5; }
+    .episode-card { @apply overflow-hidden rounded-2xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-lg; }
+    .card-art { @apply relative h-36 overflow-hidden p-6; background: linear-gradient(135deg, #e9d4cf, #f4e9db); }
+    .episode-card:nth-child(3n+2) .card-art { background: linear-gradient(135deg, #d8dfd7, #ede8d7); }
+    .episode-card:nth-child(3n) .card-art { background: linear-gradient(135deg, #dcd7e7, #e9e4eb); }
+    .card-art > span { @apply relative z-10 text-5xl text-white; font-family: Georgia, serif; }
+    .card-orbit { @apply absolute -right-4 -top-12 h-56 w-56 rounded-full border border-white/50; box-shadow: 0 0 0 25px #ffffff20, 0 0 0 50px #ffffff15; }
+    .card-body { @apply p-5; }
+    .card-body h3 { @apply mt-3; }
+    .badge { @apply inline-block rounded-md bg-stone-100 px-2 py-1 text-[10px] font-semibold text-stone-500; }
+    .card-footer { @apply mt-5 flex justify-between border-t border-stone-100 pt-4 text-xs font-semibold text-rose-800; }
+    .create-panel { @apply mt-8 grid grid-cols-2 gap-8 rounded-2xl border border-dashed border-stone-300 p-7; }
+    .create-form, .stack { @apply flex flex-col gap-4; }
+    .button { @apply inline-flex items-center justify-center rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-xs font-semibold transition hover:bg-stone-50; }
+    .button.primary { @apply border-rose-800 bg-rose-800 text-white hover:bg-rose-900; }
+    .text-button { @apply text-xs font-medium text-rose-800 underline-offset-4 hover:underline; }
+    .actions { @apply flex flex-wrap items-center gap-2; }
+    .login-panel { @apply mx-auto mt-12 max-w-lg; }
+    .login-panel .stack { @apply my-8; }
+    .check { @apply flex items-center gap-2 text-stone-500; }
+    .error { @apply text-sm text-red-700; }
+    .error-box { @apply my-4 whitespace-pre-line rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800; }
+    .notice { @apply my-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800; }
+    .editor-toolbar { @apply mb-5 flex flex-wrap items-end justify-between gap-5 rounded-xl border border-stone-200 bg-white p-4; }
+    .editor-toolbar label { @apply min-w-64 flex-1; }
+    .editor-grid { display: grid; grid-template-columns: 240px minmax(0, 1fr) 210px; gap: 16px; }
+    .node-panel, .writing-panel, .inspector { @apply min-w-0 rounded-xl border border-stone-200 bg-white p-5; }
+    .node-panel h2 { @apply text-sm; }
+    .node-list { @apply my-4 flex max-h-[55vh] flex-col gap-1 overflow-y-auto; }
+    .node-item { @apply w-full rounded-lg p-3 text-left hover:bg-stone-50; }
+    .node-item small { @apply mb-1 block text-[10px] text-stone-400; }
+    .node-item span { @apply block text-xs leading-5; }
+    .node-item.selected { @apply bg-rose-50 text-rose-900; }
+    .dialogue-input { @apply min-h-72; line-height: 1.9; }
+    .code-editor { @apply min-h-[55vh] font-mono text-xs; tab-size: 2; }
+    .full-code { @apply min-h-[65vh]; }
+    .inspector { background: #f4eee8; }
+    .inspector h2 { @apply mt-5; font-family: Georgia, serif; }
+    .inspector p { @apply text-xs leading-6 text-stone-500; }
+    .preview-panel { @apply mx-auto max-w-3xl rounded-2xl border border-stone-200 bg-white p-10; }
+    .preview-panel h2 { @apply mt-6; }
+    .preview-text { @apply my-8 whitespace-pre-wrap text-lg leading-9; }
+    .preview-panel > .text-button { @apply mt-8; }
+    .media-tabs { @apply mb-7 flex flex-wrap gap-3; }
+    .tab-count { @apply ml-3 rounded bg-black/5 px-2 py-0.5; }
+    .library-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; }
+    .library-filters { @apply mb-5 flex items-center gap-5; }
+    .library-filters input[type=search] { @apply mt-0; }
+    .library-filters .check { @apply shrink-0; }
+    .media-grid { @apply grid grid-cols-2 gap-5; }
+    .media-card { @apply overflow-hidden rounded-2xl border border-stone-200 bg-white; }
+    .media-preview { @apply flex h-48 flex-col items-center justify-center overflow-hidden bg-stone-100; }
+    .media-preview img { @apply h-full w-full object-contain; }
+    .audio-art { @apply text-6xl text-rose-800; font-family: Georgia, serif; }
+    .media-preview audio { @apply mt-3 w-full px-3; }
+    .media-description { @apply my-3 whitespace-pre-wrap break-words; }
+    .library-form { @apply self-start rounded-2xl border border-stone-200 bg-white p-6; }
+    .library-form h2 { @apply mt-3; }
+    .library-form .stack { @apply mt-5; }
+    .library-empty { @apply col-span-full rounded-2xl border border-dashed border-stone-300 p-10 text-center; }
+    .pagination { @apply mt-6; }
+    .scene-media-fields { @apply grid gap-3; }
+    .flow-toolbar { @apply rounded-2xl border border-stone-200 bg-white p-5; }
+    .flow-toolbar > label { @apply my-4; }
+    .flow-picker { @apply flex flex-wrap items-end gap-4; }
+    .flow-picker label { @apply min-w-64 flex-1; }
+    .flow-help { @apply my-6; }
+    .legacy-flow #flow-error[hidden] { display: none; }
+    .legacy-flow .scene-block { @apply mb-7 rounded-2xl border border-stone-200 bg-white p-5; }
+    .legacy-flow .scene-block-head { @apply mb-4 flex flex-wrap items-center justify-between gap-4; }
+    .legacy-flow .scene-title-row { @apply flex flex-1 items-center gap-4; }
+    .legacy-flow .scene-index { @apply shrink-0 text-xs font-semibold text-rose-800; }
+    .legacy-flow .scene-settings { @apply mb-5 rounded-xl bg-stone-50 p-4; }
+    .legacy-flow .node-card { @apply my-4 rounded-xl border border-stone-200 bg-stone-50 p-4; }
+    .legacy-flow .node-card.choice { @apply border-rose-200 bg-rose-50/40; }
+    .legacy-flow .node-card.branch { @apply bg-amber-50; }
+    .legacy-flow .node-card-head { @apply mb-4 flex flex-wrap justify-between gap-3 text-sm font-semibold; }
+    .legacy-flow .node-head-actions { @apply flex gap-4; }
+    .legacy-flow .node-grid { @apply grid grid-cols-2 gap-4; }
+    .legacy-flow .node-card > label { @apply my-4; }
+    .legacy-flow .onscreen-list { @apply mt-3 flex flex-wrap gap-x-4 gap-y-2; }
+    .legacy-flow .onscreen-check { @apply flex items-center gap-2 text-xs font-normal; }
+    .legacy-flow .onscreen-check input { @apply m-0; width: auto; }
+    .legacy-flow .effect-help, .legacy-flow .branch-help { @apply block text-xs leading-6 text-stone-500; }
+    .legacy-flow .node-warning { @apply block text-xs text-amber-800; }
+    .legacy-flow .choice-option { @apply relative my-4 rounded-xl border border-rose-200 bg-white p-4; }
+    .legacy-flow .choice-option-grid { @apply my-4 grid grid-cols-[1fr_1fr_100px_30px] items-end gap-3; }
+    .legacy-flow .scene-node-actions { @apply mt-4 flex gap-3; }
+    .legacy-flow .primary-action, .legacy-flow .choice-btn, .legacy-flow .add-option, .legacy-flow .add-effect { @apply rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-50; }
+    .legacy-flow .delete, .legacy-flow .node-delete, .legacy-flow .delete-effect, .legacy-flow .delete-option { @apply text-xs font-semibold text-red-700; }
+    .legacy-flow .delete-option { @apply float-right; }
+    .legacy-flow .node-split { @apply text-xs text-rose-800; }
+    .legacy-flow .node-end-toggle { @apply flex items-center gap-2; }
+    .legacy-flow #flow-status { @apply mt-4; }
+    .legacy-flow #new-scene-main { @apply mb-10; }
+}
+
+@media (max-width: 1200px) {
+    .editor-grid { grid-template-columns: 220px minmax(0, 1fr); }
+    .inspector { grid-column: 1 / -1; }
+    .episode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .library-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 800px) {
+    .sidebar { position: static; width: 100%; padding: 16px; }
+    .brand { margin-bottom: 12px; }
+    .sidebar-note, .nav-label { display: none; }
+    .account { margin-top: 16px; }
+    .workspace { margin-left: 0; padding: 20px; }
+    .summary-grid, .episode-grid, .create-panel, .editor-grid { grid-template-columns: 1fr; }
+    .media-grid { grid-template-columns: 1fr; }
+    .legacy-flow .node-grid, .legacy-flow .choice-option-grid { grid-template-columns: 1fr; }
+    .node-list { max-height: 240px; }
+    h1 { font-size: 30px; }
+}

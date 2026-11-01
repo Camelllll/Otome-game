@@ -1,6 +1,6 @@
 // Sauvegarde de la progression du joueur.
 //
-// Source de vérité = la base (Supabase, via les RPC serveur `game_*`). Le localStorage n'est
+// Source de vérité = la base (API Laravel, routes `/api/saves`). Le localStorage n'est
 // utilisé que comme cache d'affichage et tampon hors-ligne : il ne sert jamais à décider seul
 // de la progression et il est réécrit par la réponse du serveur dès qu'elle arrive.
 //

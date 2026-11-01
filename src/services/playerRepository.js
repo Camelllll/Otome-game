@@ -1,54 +1,52 @@
-// Comptes joueurs via Supabase Auth (email + mot de passe) et persistance de la progression
-// (player_saves + player_gauges) dans Supabase.
-import { supabase } from "./supabaseClient.js";
+// Comptes joueurs et persistance de la progression via l'API Laravel (jeton Bearer Sanctum).
+// Le serveur valide et borne toutes les données : le client ne fait que les transmettre.
+import { appelApi, lireJeton, memoriserJeton, oublierJeton, ApiError } from "./apiClient.js";
 
-// Crée un compte (email + mot de passe) et sa fiche joueur associée.
+// Crée un compte (email + mot de passe) et connecte directement le joueur.
 export async function creerCompteJoueur(email, motDePasse, pseudo) {
-  const { data, error } = await supabase.auth.signUp({ email, password: motDePasse });
-  if (error) throw error;
-  if (!data.session) {
-    // La confirmation par e-mail est activée côté Supabase : à désactiver pour l'instant
-    // (Authentication > Providers > Email > "Confirm email").
-    throw new Error("Compte créé, mais la confirmation par e-mail est requise pour l'instant.");
-  }
-  const { error: erreurFiche } = await supabase
-    .from("players")
-    .upsert({ id: data.user.id, pseudo: pseudo.trim() || null });
-  if (erreurFiche) throw erreurFiche;
-  return { id: data.user.id, pseudo: pseudo.trim() || email };
+  const pseudoNettoye = (pseudo || "").trim();
+  const donnees = await appelApi("/auth/register", {
+    method: "POST",
+    authentifie: false,
+    corps: { email: email.trim(), password: motDePasse, pseudo: pseudoNettoye || null },
+  });
+  memoriserJeton(donnees.token);
+  return donnees.player;
 }
 
 export async function connexionJoueur(email, motDePasse) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: motDePasse });
-  if (error) throw error;
-  return obtenirFicheJoueur(data.user.id, data.user.email);
+  const donnees = await appelApi("/auth/login", {
+    method: "POST",
+    authentifie: false,
+    corps: { email: email.trim(), password: motDePasse },
+  });
+  memoriserJeton(donnees.token);
+  return donnees.player;
 }
 
-// Retrouve le joueur déjà connecté (session Supabase Auth persistée), ou null si personne n'est connecté.
+// Retrouve le joueur déjà connecté (jeton conservé), ou null si personne n'est connecté.
 export async function obtenirSessionJoueur() {
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  if (!data.session) return null;
-  return obtenirFicheJoueur(data.session.user.id, data.session.user.email);
+  if (!lireJeton()) return null;
+  try {
+    const donnees = await appelApi("/auth/me");
+    return donnees.player;
+  } catch (erreur) {
+    if (erreur instanceof ApiError && erreur.statut === 401) return null;
+    throw erreur;
+  }
 }
 
 export async function deconnecterJoueur() {
-  await supabase.auth.signOut();
+  try {
+    await appelApi("/auth/logout", { method: "POST" });
+  } catch (erreur) {
+    console.warn("Déconnexion côté serveur impossible, le jeton local est effacé quand même.", erreur);
+  } finally {
+    oublierJeton();
+  }
 }
 
-// Retrouve la fiche joueur ; la crée si elle manque (ex. compte Auth existant sans ligne "players",
-// sinon les écritures de sauvegarde échouent avec une violation de clé étrangère).
-async function obtenirFicheJoueur(userId, email) {
-  const { data: joueur, error } = await supabase.from("players").select("id, pseudo").eq("id", userId).maybeSingle();
-  if (error) throw error;
-  if (joueur) return joueur;
-
-  const { error: erreurCreation } = await supabase.from("players").upsert({ id: userId, pseudo: email });
-  if (erreurCreation) throw erreurCreation;
-  return { id: userId, pseudo: email };
-}
-
-// Emplacements de sauvegarde : 0 = sauvegarde principale (autosave), 1..3 = emplacements manuels.
+// Emplacements de sauvegarde : 0 = sauvegarde principale (autosave), 1..9 = emplacements manuels.
 export const SLOT_PRINCIPAL = 0;
 
 // Normalise la réponse du serveur vers l'objet de sauvegarde manipulé par le jeu.
@@ -78,11 +76,10 @@ function normaliserSauvegarde(brut, playerId, slot) {
   };
 }
 
-// Charge la progression d'un emplacement depuis la base (RPC serveur, jamais le localStorage).
+// Charge la progression d'un emplacement depuis la base (jamais depuis le localStorage).
 export async function chargerProgressionDistante(playerId, slot = SLOT_PRINCIPAL) {
-  const { data, error } = await supabase.rpc("game_load_save", { p_slot: slot });
-  if (error) throw error;
-  return normaliserSauvegarde(data, playerId, slot);
+  const donnees = await appelApi(`/saves/${slot}`);
+  return normaliserSauvegarde(donnees, playerId, slot);
 }
 
 // Persiste la progression via l'API serveur, qui valide et borne les données critiques
@@ -108,9 +105,8 @@ export async function sauvegarderProgressionDistante(sauvegarde) {
     completedEpisodes: sauvegarde.completedEpisodes || [],
   };
 
-  const { data, error } = await supabase.rpc("game_save_progress", { p_payload: payload, p_slot: slot });
-  if (error) throw error;
-  return normaliserSauvegarde(data, sauvegarde.playerId, slot);
+  const donnees = await appelApi(`/saves/${slot}`, { method: "PUT", corps: payload });
+  return normaliserSauvegarde(donnees, sauvegarde.playerId, slot);
 }
 
 // Journalise un choix côté serveur (historique auditable, indépendant du navigateur).
@@ -123,59 +119,51 @@ export async function enregistrerChoixDistant({
   effects = {},
   slot = SLOT_PRINCIPAL,
 }) {
-  const { error } = await supabase.rpc("game_record_choice", {
-    p_episode_id: episodeId ?? null,
-    p_node_id: nodeId ?? null,
-    p_option_index: optionIndex ?? null,
-    p_option_label: optionLabel,
-    p_flags: flags,
-    p_effects: effects,
-    p_slot: slot,
+  await appelApi(`/saves/${slot}/choices`, {
+    method: "POST",
+    corps: {
+      episodeId: episodeId ?? null,
+      nodeId: nodeId ?? null,
+      optionIndex: optionIndex ?? null,
+      optionLabel,
+      flags,
+      effects,
+    },
   });
-  if (error) throw error;
 }
 
 export async function listerSauvegardesDistantes() {
-  const { data, error } = await supabase.rpc("game_list_saves");
-  if (error) throw error;
-  return Array.isArray(data) ? data : [];
+  const donnees = await appelApi("/saves");
+  return Array.isArray(donnees) ? donnees : [];
 }
 
 export async function listerChoixDistants(slot = SLOT_PRINCIPAL, limite = 200) {
-  const { data, error } = await supabase.rpc("game_list_choices", { p_slot: slot, p_limit: limite });
-  if (error) throw error;
-  return Array.isArray(data) ? data : [];
+  const donnees = await appelApi(`/saves/${slot}/choices?limit=${encodeURIComponent(limite)}`);
+  return Array.isArray(donnees) ? donnees : [];
 }
 
 export async function debloquerIllustration({ path, episodeId, nodeId }) {
   if (!path) return null;
-  const { data, error } = await supabase.rpc("game_unlock_illustration", {
-    p_path: path,
-    p_episode_id: episodeId ?? null,
-    p_node_id: nodeId ?? null,
+  return appelApi("/illustrations", {
+    method: "POST",
+    corps: { path, episodeId: episodeId ?? null, nodeId: nodeId ?? null },
   });
-  if (error) throw error;
-  return data;
 }
 
 export async function listerIllustrationsDebloquees() {
-  const { data, error } = await supabase.rpc("game_list_illustrations");
-  if (error) throw error;
-  return Array.isArray(data) ? data : [];
+  const donnees = await appelApi("/illustrations");
+  return Array.isArray(donnees) ? donnees : [];
 }
 
 export async function copierSauvegardeDistante(slotSource, slotCible, label = null) {
-  const { data, error } = await supabase.rpc("game_copy_save", {
-    p_source: slotSource,
-    p_cible: slotCible,
-    p_label: label,
+  const donnees = await appelApi(`/saves/${slotSource}/copy`, {
+    method: "POST",
+    corps: { target: slotCible, label },
   });
-  if (error) throw error;
-  return normaliserSauvegarde(data, data?.playerId, slotCible);
+  return normaliserSauvegarde(donnees, donnees?.playerId, slotCible);
 }
 
 export async function reinitialiserProgressionDistante(playerId, slot = SLOT_PRINCIPAL, playerName = null) {
-  const { data, error } = await supabase.rpc("game_reset_save", { p_slot: slot, p_player_name: playerName });
-  if (error) throw error;
-  return normaliserSauvegarde(data, playerId, slot);
+  const donnees = await appelApi(`/saves/${slot}/reset`, { method: "POST", corps: { playerName } });
+  return normaliserSauvegarde(donnees, playerId, slot);
 }

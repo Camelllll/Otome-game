@@ -1,0 +1,10 @@
+{
+    "id": 6,
+    "slug": "liam",
+    "name": "Liam",
+    "is_player": 0,
+    "is_secondary": 0,
+    "data": "{\"id\":\"liam\",\"age\":21,\"flaw\":\"Il porte toutes les responsabilités seul et refuse de montrer la moindre faiblesse.\",\"goal\":\"Devenir enseignant-chercheur à l'université.\",\"name\":\"Liam\",\"field\":\"L2 com\",\"likes\":[\"La littérature\",\"Les vieux appareils photo argentiques\",\"L'histoire\",\"Les promenades matinales\"],\"gauges\":{\"amour\":0,\"amitie\":0},\"height\":\"1m86\",\"sprite\":\"https://pnprcoithzjpdwzoglea.supabase.co/storage/v1/object/public/media/characters/1791280744396-IMG_1117.PNG\",\"passion\":\"La littérature, les vieux appareils photo argentiques, l'histoire et les promenades matinales.\",\"tagline\":\"L'homme que personne ne connaît vraiment.\",\"dislikes\":[\"L'injustice\",\"Le bruit\",\"Les promesses qu'on ne tient pas\"],\"portraits\":{\"default\":\"https://pnprcoithzjpdwzoglea.supabase.co/storage/v1/object/public/media/characters/1791280744396-IMG_1117.PNG\"},\"routeTheme\":\"Les aidants familiaux.\",\"personality\":[\"très mature\",\"très calme\",\"très observateur\",\"parle peu\",\"toujours juste\"],\"favoritePlace\":\"Le hall principal du campus, ou la bibliothèque tôt le matin.\",\"stagePosition\":\"center\",\"showInCharactersMenu\":true}",
+    "created_at": "2026-10-23 23:10:34",
+    "updated_at": "2026-10-23 23:10:34"
+}
