@@ -7,9 +7,12 @@ export class DialogueEngine {
    * @param {object} episodeData - JSON de l'épisode (voir data/episodes/episode1.json)
    * @param {Map<string, object>} personnagesParId - map id -> fiche personnage (characters.json aplati)
    * @param {object} sauvegarde - objet de sauvegarde courant (modifié en place)
+   * @param {{calques: Array, canvas: {width: number, height: number}}|null} [apparenceSucrette] - calques de
+   *   l'apparence de Sucrette (voir engine/appearance.js) ; null = on garde le sprite statique de characters.json
    */
-  constructor(episodeData, personnagesParId, sauvegarde) {
+  constructor(episodeData, personnagesParId, sauvegarde, apparenceSucrette = null) {
     this.episodeData = episodeData;
+    this.apparenceSucrette = apparenceSucrette;
     this.personnagesParId = personnagesParId;
     this.sauvegarde = sauvegarde;
     // Restaure le dernier décor connu pour ne pas repartir sur un fond vide après une reprise de partie.
@@ -68,6 +71,7 @@ export class DialogueEngine {
       cg: noeud.cg || null,
       background: this.background,
       playerAvatar: this.personnagesParId.get("moi")?.sprite || null,
+      playerCalques: this.apparenceSucrette,
       options: noeud.type === "choice"
         ? noeud.options.map((option, index) => ({ index, text: this.interpoler(option.text) }))
         : null,

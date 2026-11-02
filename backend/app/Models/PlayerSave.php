@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class PlayerSave extends Model
 {
     protected $fillable = [
-        'user_id', 'slot', 'label', 'player_name', 'current_episode', 'current_node', 'current_background',
+        'user_id', 'slot', 'label', 'player_name', 'appearance', 'current_episode', 'current_node', 'current_background',
         'gauges', 'flags', 'choices', 'stats', 'currency', 'inventory', 'action_points',
         'last_action_points_at', 'history', 'completed_episodes', 'revision',
     ];
@@ -17,6 +17,7 @@ class PlayerSave extends Model
         return [
             'user_id' => 'integer',
             'slot' => 'integer',
+            'appearance' => 'array',
             'gauges' => 'array',
             'flags' => 'array',
             'choices' => 'array',

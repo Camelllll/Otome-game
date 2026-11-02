@@ -58,9 +58,9 @@ function carteFiche(personnage, getInfosPersonnage) {
 
 /**
  * @param {HTMLElement} scene - conteneur de l'écran de jeu.
- * @param {object} options - { musique, fiches, getInfosPersonnage, onRetourEpisodes, onRetourAccueil, onIllustrations }
+ * @param {object} options - { musique, fiches, getInfosPersonnage, onRetourEpisodes, onRetourAccueil, onIllustrations, onDressing }
  */
-export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonnage, onRetourEpisodes, onRetourAccueil, onIllustrations } = {}) {
+export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonnage, onRetourEpisodes, onRetourAccueil, onIllustrations, onDressing } = {}) {
   const bouton = document.createElement("button");
   bouton.className = "bouton-menu";
   bouton.type = "button";
@@ -93,7 +93,13 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
   optionIllustrations.innerHTML = "<span>▣</span> Mes illustrations";
   optionIllustrations.disabled = !onIllustrations;
 
-  panneau.append(optionMusique, optionPersonnages, optionIllustrations, optionEpisodes);
+  const optionDressing = document.createElement("button");
+  optionDressing.className = "option-menu";
+  optionDressing.type = "button";
+  optionDressing.innerHTML = "<span>👗</span> Mon dressing";
+  optionDressing.disabled = !onDressing;
+
+  panneau.append(optionMusique, optionPersonnages, optionDressing, optionIllustrations, optionEpisodes);
 
   if (onRetourAccueil) {
     const optionAccueil = document.createElement("button");
@@ -166,6 +172,11 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
   optionIllustrations.addEventListener("click", () => {
     ouvrirMenu(false);
     onIllustrations?.();
+  });
+
+  optionDressing.addEventListener("click", () => {
+    ouvrirMenu(false);
+    onDressing?.();
   });
 
   voile.querySelector(".fermer-personnages").addEventListener("click", () => voile.classList.remove("visible"));

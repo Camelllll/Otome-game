@@ -57,6 +57,7 @@ function creerSauvegardeParDefaut(playerId, slot = SLOT_PRINCIPAL) {
     slot,
     label: null,
     playerName: "Sucrette",
+    appearance: null, // apparence de Sucrette (voir engine/appearance.js) ; null = apparence par défaut du catalogue
     currentEpisode: "episode1",
     currentNode: null,
     currentBackground: null,

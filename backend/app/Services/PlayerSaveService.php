@@ -70,6 +70,7 @@ class PlayerSaveService
             'slot' => $slot,
             'label' => null,
             'playerName' => mb_substr($name !== '' ? $name : 'Sucrette', 0, 40),
+            'appearance' => null,
             'currentEpisode' => 'episode1',
             'currentNode' => null,
             'currentBackground' => null,
@@ -98,6 +99,7 @@ class PlayerSaveService
             'playerName' => $s->player_name,
             'currentEpisode' => $s->current_episode,
             'currentNode' => $s->current_node,
+            'appearance' => $s->appearance,
             'currentBackground' => $s->current_background,
             'gauges' => $this->asObject($s->gauges),
             'flags' => $s->flags ?? [],
@@ -153,6 +155,10 @@ class PlayerSaveService
             $attributes = [
                 'label' => $this->text($payload['label'] ?? null, 60) ?? $old?->label,
                 'player_name' => $this->text($payload['playerName'] ?? null, 40) ?? $old?->player_name ?? 'Sucrette',
+                // Clé présente avec null = retour au sprite d'origine ; clé absente ou invalide = on garde l'ancienne valeur.
+                'appearance' => array_key_exists('appearance', $payload) && $payload['appearance'] === null
+                    ? null
+                    : ($this->sanitizeAppearance($payload['appearance'] ?? null) ?? $old?->appearance),
                 'current_episode' => $this->text($payload['currentEpisode'] ?? null, 80) ?? $old?->current_episode,
                 'current_node' => $this->text($payload['currentNode'] ?? null, 120),
                 'current_background' => $this->text($payload['currentBackground'] ?? null, 300) ?? $old?->current_background,
@@ -180,6 +186,28 @@ class PlayerSaveService
         });
     }
 
+    private const APPEARANCE_KEYS = ['skin', 'hair', 'eyes', 'eyebrows', 'mouth', 'outfit', 'top', 'bottom', 'accessory'];
+
+    /**
+     * Apparence de Sucrette : ne conserve que les clés connues et des identifiants de forme sûre.
+     * Le contenu exact (existence de l'élément, déblocage) est revalidé par le catalogue côté client.
+     * Renvoie null si la valeur reçue n'est pas une apparence (l'appelant décide alors de conserver l'ancienne valeur).
+     */
+    private function sanitizeAppearance(mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $clean = ['version' => 1];
+        foreach (self::APPEARANCE_KEYS as $key) {
+            $id = $value[$key] ?? null;
+            $clean[$key] = is_string($id) && preg_match('/^[a-z0-9][a-z0-9-]{0,59}$/', $id) === 1 ? $id : null;
+        }
+
+        return $clean;
+    }
+
     /** Copie une sauvegarde vers un autre emplacement (base des slots manuels). */
     public function copy(User $user, int $source, int $target, ?string $label): PlayerSave
     {
@@ -200,7 +228,7 @@ class PlayerSaveService
                 ->first();
 
             $attributes = $origin->only([
-                'player_name', 'current_episode', 'current_node', 'current_background', 'gauges', 'flags', 'choices',
+                'player_name', 'appearance', 'current_episode', 'current_node', 'current_background', 'gauges', 'flags', 'choices',
                 'stats', 'currency', 'inventory', 'action_points', 'last_action_points_at', 'history', 'completed_episodes',
             ]);
             $attributes['label'] = $this->text($label, 60) ?? $destination?->label;

@@ -1,0 +1,107 @@
+{
+  "version": 2,
+  "basePath": "assets/Personnages/Sucrette/v2/",
+  "canvas": { "width": 600, "height": 1200 },
+  "base": { "file": "corps/peau-claire.png" },
+  "defaults": {
+    "skin": "peau-claire",
+    "hair": "coupe1-chatain",
+    "eyes": "bleu",
+    "eyebrows": "chatains",
+    "mouth": "nude",
+    "outfit": null,
+    "top": "pull1-rayures",
+    "bottom": "pantalon1-bleu",
+    "accessory": null
+  },
+  "thumbFocus": {
+    "skin": { "x": 0.48, "y": 0.52, "w": 1.95 },
+    "hair": { "x": 0.444, "y": 0.205, "w": 0.55 },
+    "eyes": { "x": 0.472, "y": 0.151, "w": 0.2 },
+    "eyebrows": { "x": 0.463, "y": 0.142, "w": 0.2 },
+    "mouth": { "x": 0.49, "y": 0.175, "w": 0.2 },
+    "top": { "x": 0.48, "y": 0.33, "w": 0.55 },
+    "bottom": { "x": 0.532, "y": 0.626, "w": 1.2 },
+    "outfit": { "x": 0.48, "y": 0.52, "w": 1.95 },
+    "accessory": { "x": 0.48, "y": 0.15, "w": 0.5 }
+  },
+  "items": [
+    {
+      "id": "peau-claire",
+      "category": "skin",
+      "label": "Peau claire",
+      "layers": [{ "slot": "body", "file": "corps/peau-claire.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "peau-metisse",
+      "category": "skin",
+      "label": "Peau métisse",
+      "layers": [{ "slot": "body", "file": "corps/peau-metisse.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "peau-noire",
+      "category": "skin",
+      "label": "Peau noire",
+      "layers": [{ "slot": "body", "file": "corps/peau-noire.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "coupe1-chatain",
+      "category": "hair",
+      "label": "Châtain ondulé",
+      "layers": [{ "slot": "hair-front", "file": "cheveux/coupe1-chatain.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "bleu",
+      "category": "eyes",
+      "label": "Bleus",
+      "layers": [{ "slot": "eyes", "file": "yeux/bleu.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "verts",
+      "category": "eyes",
+      "label": "Verts",
+      "layers": [{ "slot": "eyes", "file": "yeux/verts.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "chatains",
+      "category": "eyebrows",
+      "label": "Châtains",
+      "layers": [{ "slot": "eyebrows", "file": "sourcils/chatains.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "nude",
+      "category": "mouth",
+      "label": "Nude",
+      "layers": [{ "slot": "mouth", "file": "bouche/nude.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "pull1-rayures",
+      "category": "top",
+      "label": "Pull rayé",
+      "layers": [{ "slot": "top", "file": "hauts/pull1-rayures.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "pantalon1-bleu",
+      "category": "bottom",
+      "label": "Pantalon bleu",
+      "layers": [{ "slot": "bottom", "file": "bas/pantalon1-bleu.png" }],
+      "unlock": { "type": "default" }
+    },
+    {
+      "id": "pantalon1-blanc",
+      "category": "bottom",
+      "label": "Pantalon blanc",
+      "layers": [{ "slot": "bottom", "file": "bas/pantalon1-blanc.png" }],
+      "unlock": { "type": "default" }
+    }
+  ]
+}

@@ -58,6 +58,7 @@ function normaliserSauvegarde(brut, playerId, slot) {
     slot: donnees.slot ?? slot,
     label: donnees.label ?? null,
     playerName: donnees.playerName || "Sucrette",
+    appearance: donnees.appearance && typeof donnees.appearance === "object" ? donnees.appearance : null,
     currentEpisode: donnees.currentEpisode || "episode1",
     currentNode: donnees.currentNode ?? null,
     currentBackground: donnees.currentBackground ?? null,
@@ -90,6 +91,7 @@ export async function sauvegarderProgressionDistante(sauvegarde) {
 
   const payload = {
     playerName: sauvegarde.playerName,
+    appearance: sauvegarde.appearance ?? null,
     label: sauvegarde.label ?? null,
     currentEpisode: sauvegarde.currentEpisode,
     currentNode: sauvegarde.currentNode,

@@ -31,7 +31,8 @@ const ICONES = {
   lock: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M7 10V8a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V8a3 3 0 0 0-6 0v2z"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
   home: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 2 12h3v8h5v-5h4v5h5v-8h3z"/></svg>',
-  star: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.1 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>'
+  star: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.1 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>',
+  hanger: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.6 18.2 13 11.75v-.91c1.65-.49 2.8-2.17 2.43-4.05-.26-1.31-1.3-2.4-2.61-2.7C10.54 3.57 8.5 5.3 8.5 7.5h2c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5c0 .84-.69 1.52-1.53 1.5-.54-.01-.97.45-.97.99v1.76L2.4 18.2c-.77.58-.36 1.8.6 1.8h18c.96 0 1.37-1.22.6-1.8zM6 18l6-4.5 6 4.5H6z"/></svg>'
 };
 
 const LIBELLES_STATUT = {
@@ -87,7 +88,7 @@ function statutDe({ id, complete, verrouille }, episodeActuel) {
   return "disponible";
 }
 
-function creerHud({ sauvegarde, joueur, onRetourAccueil }) {
+function creerHud({ sauvegarde, joueur, onRetourAccueil, onDressing }) {
   const hud = creer("header", "hud-journal");
 
   const marque = creer("div", "hud-marque");
@@ -115,6 +116,14 @@ function creerHud({ sauvegarde, joueur, onRetourAccueil }) {
   poserIconeEtTexte(chipPa, ICONES.bolt, `${pa} PA`);
   infos.appendChild(chipPa);
 
+  if (typeof onDressing === "function") {
+    const dressing = creer("button", "hud-accueil hud-dressing");
+    dressing.type = "button";
+    poserIconeEtTexte(dressing, ICONES.hanger, "Dressing");
+    dressing.addEventListener("click", () => onDressing());
+    infos.appendChild(dressing);
+  }
+
   if (typeof onRetourAccueil === "function") {
     const accueil = creer("button", "hud-accueil");
     accueil.type = "button";
@@ -127,7 +136,7 @@ function creerHud({ sauvegarde, joueur, onRetourAccueil }) {
   return hud;
 }
 
-export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episodeActuel, joueur, sauvegarde, onSelect, onRetourAccueil }) {
+export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episodeActuel, joueur, sauvegarde, onSelect, onRetourAccueil, onDressing }) {
   const liste = Array.isArray(episodes) ? episodes : [];
 
   const entrees = liste.map((episode) => {
@@ -152,7 +161,7 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
   fond.setAttribute("aria-hidden", "true");
   ecran.appendChild(fond);
 
-  ecran.appendChild(creerHud({ sauvegarde, joueur, onRetourAccueil }));
+  ecran.appendChild(creerHud({ sauvegarde, joueur, onRetourAccueil, onDressing }));
 
   const journal = creer("main", "journal");
 

@@ -1,3 +1,5 @@
+import { creerAvatarSucrette } from "./sucretteAvatar.js";
+
 // Bulle semi-transparente posée à côté du personnage qui parle (jamais par-dessus lui).
 export function afficherBullePersonnage(conteneur, affichage, cote = "droite") {
   // La bulle précédente disparaît à chaque clic, même si le nœud courant n'en affiche aucune.
@@ -26,7 +28,14 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
   // Une seule barre pleine largeur pour tous les textes : elle ne recouvre jamais le décor utile.
   barre.className = "barre-narration";
 
-  if (affichage.playerAvatar) {
+  if (affichage.playerCalques) {
+    // Apparence personnalisée : les calques sont empilés dans un cadre qui montre le haut du sprite.
+    const avatar = document.createElement("div");
+    avatar.className = "avatar-joueur avatar-joueur-calques";
+    const { calques, canvas } = affichage.playerCalques;
+    avatar.appendChild(creerAvatarSucrette(calques, canvas, { etiquette: "" }));
+    barre.appendChild(avatar);
+  } else if (affichage.playerAvatar) {
     const avatar = document.createElement("img");
     avatar.src = affichage.playerAvatar;
     avatar.className = "avatar-joueur";

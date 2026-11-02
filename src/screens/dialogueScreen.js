@@ -4,7 +4,7 @@ import { afficherLovometre, animerGainLovo, animerPerteLovo } from "../ui/gaugeB
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
 import { installerMenuJeu } from "../ui/gameMenu.js";
 
-export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onRetourEpisodes, onRetourAccueil, onIllustrations, onIllustrationDebloquee, fichesPersonnages = [] } = {}) {
+export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onRetourEpisodes, onRetourAccueil, onIllustrations, onDressing, onIllustrationDebloquee, fichesPersonnages = [] } = {}) {
   const musique = new MusiqueAmbiance();
   const scene = document.createElement("div");
   scene.className = "ecran-dialogue";
@@ -15,7 +15,8 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     getInfosPersonnage: (id) => moteur.obtenirInfosPersonnages([id])[0],
     onRetourEpisodes,
     onRetourAccueil,
-    onIllustrations
+    onIllustrations,
+    onDressing
   });
 
   // Le premier clic dans le jeu est nécessaire pour que les navigateurs autorisent le son.
