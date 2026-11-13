@@ -1,0 +1,1003 @@
+/* Carnet de relations : ivoire, rose poudré, bordeaux profond et touches de doré champagne. */
+.voile-personnages.voile-carnet {
+  padding: clamp(0.5rem, 2.5vw, 1.75rem);
+  background:
+    radial-gradient(circle at 20% 8%, rgba(255, 214, 224, 0.3), transparent 42%),
+    rgba(52, 14, 24, 0.36);
+  backdrop-filter: blur(5px) saturate(1.05);
+}
+
+.carnet {
+  --c-ivoire: #fffaf4;
+  --c-ivoire-fonce: #f8ece4;
+  --c-rose: #f6dde1;
+  --c-rose-doux: #fbeef0;
+  --c-rose-vif: #e58ea3;
+  --c-bordeaux: #5e1224;
+  --c-bordeaux-clair: #8a2640;
+  --c-champagne: #d7bb88;
+  --c-champagne-clair: #f4e8cd;
+  --c-texte: #3b1a22;
+  --c-texte-doux: #7b5a62;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(1280px, 100%);
+  height: min(90vh, 860px);
+  border: 1px solid var(--c-champagne);
+  border-radius: 24px;
+  background: var(--c-ivoire);
+  color: var(--c-texte);
+  box-shadow: 0 28px 80px rgba(52, 14, 24, 0.45);
+  overflow: hidden;
+  animation: apparition-carte-login 0.3s ease-out both;
+}
+
+.carnet .ico {
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+}
+
+.carnet .ico.plein {
+  fill: currentColor;
+}
+
+.carnet-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.carnet button {
+  font-family: inherit;
+  color: inherit;
+}
+
+.carnet button:focus-visible {
+  outline: 2px solid var(--c-champagne);
+  outline-offset: 2px;
+}
+
+/* En-tête */
+.carnet-entete {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.6rem, 2vw, 1.25rem);
+  padding: 0.9rem clamp(0.9rem, 2.5vw, 1.6rem);
+  background: linear-gradient(135deg, #4a0d1c, var(--c-bordeaux) 55%, var(--c-bordeaux-clair));
+  border-bottom: 2px solid var(--c-champagne);
+  color: #fff;
+}
+
+.carnet-titres {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.carnet-surtitre {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.15rem;
+  color: var(--c-champagne);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.carnet-entete h2 {
+  margin: 0;
+  font-family: var(--police-romance, Georgia, serif);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.carnet-retour,
+.carnet-fermer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(215, 187, 136, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.carnet-retour {
+  padding: 0.5rem 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.carnet-fermer {
+  width: 38px;
+  height: 38px;
+  font-size: 1.1rem;
+}
+
+.carnet-retour:hover,
+.carnet-fermer:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.carnet-fermer:hover {
+  transform: scale(1.08);
+}
+
+/* Corps en trois colonnes */
+.carnet-corps {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: minmax(210px, 270px) minmax(0, 1fr) minmax(220px, 290px);
+}
+
+.carnet-galerie,
+.carnet-fiche,
+.carnet-souvenirs {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.carnet-galerie {
+  padding: 1rem 0.9rem;
+  background: var(--c-rose-doux);
+  border-right: 1px solid rgba(215, 187, 136, 0.55);
+}
+
+.carnet-souvenirs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1rem 0.9rem;
+  background: var(--c-rose-doux);
+  border-left: 1px solid rgba(215, 187, 136, 0.55);
+}
+
+.carnet-fiche {
+  padding: clamp(1rem, 2.5vw, 1.6rem);
+  background: linear-gradient(180deg, #fffdfa, #fff8f3);
+}
+
+/* Onglets */
+.carnet-onglets {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+  padding: 0.3rem;
+  border: 1px solid rgba(215, 187, 136, 0.6);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.carnet-onglet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--c-texte-doux);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.carnet-onglet:hover {
+  background: var(--c-rose-doux);
+}
+
+.carnet-onglet.actif {
+  background: linear-gradient(135deg, var(--c-bordeaux), var(--c-bordeaux-clair));
+  color: #fff;
+}
+
+.carnet-compteur {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(215, 187, 136, 0.28);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.carnet-onglet.actif .carnet-compteur {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Galerie */
+.carnet-grille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.carnet-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border: 1px solid rgba(215, 187, 136, 0.45);
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.carnet-carte:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(138, 38, 64, 0.16);
+}
+
+.carnet-carte.selectionnee {
+  border-color: var(--c-champagne);
+  box-shadow: 0 0 0 2px var(--c-champagne), 0 8px 26px rgba(229, 142, 163, 0.5);
+}
+
+.carnet-carte-portrait {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--c-rose), var(--c-ivoire));
+  overflow: hidden;
+}
+
+.carnet-carte-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.carnet-carte-nom {
+  font-family: var(--police-romance, Georgia, serif);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--c-bordeaux);
+}
+
+.carnet-carte-affinite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  color: var(--c-bordeaux-clair);
+  font-size: 0.78rem;
+}
+
+.carnet-carte-affinite .ico {
+  color: var(--c-rose-vif);
+}
+
+.carnet-carte.verrouillee {
+  border-color: rgba(120, 110, 110, 0.3);
+  background: #efeceb;
+  filter: grayscale(1);
+}
+
+.carnet-carte.verrouillee .carnet-carte-portrait {
+  background: linear-gradient(180deg, #d8d3d2, #ebe8e7);
+}
+
+.carnet-carte.verrouillee .carnet-carte-nom {
+  color: #8a8483;
+}
+
+.carnet-carte-indice {
+  color: #8a8483;
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+
+.carnet-silhouette {
+  width: 100%;
+  height: 100%;
+  fill: rgba(94, 18, 36, 0.12);
+}
+
+.carnet-carte.verrouillee .carnet-silhouette {
+  fill: rgba(60, 50, 52, 0.22);
+}
+
+.carnet-cadenas {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.9rem;
+  color: var(--c-bordeaux);
+}
+
+.carnet-cadenas .ico {
+  box-sizing: content-box;
+  padding: 0.5rem;
+  border: 1px solid var(--c-champagne);
+  border-radius: 50%;
+  background: rgba(255, 250, 244, 0.9);
+  box-shadow: 0 4px 14px rgba(52, 14, 24, 0.18);
+}
+
+.carnet-vide {
+  margin: 0;
+  padding: 1rem;
+  color: var(--c-texte-doux);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+/* Fiche du personnage */
+.carnet-profil {
+  display: grid;
+  grid-template-columns: minmax(170px, 36%) minmax(0, 1fr);
+  gap: 1.25rem 1.5rem;
+  align-items: start;
+}
+
+.carnet-sprite {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  align-self: stretch;
+  min-height: 380px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fffefc, #fbf1ee);
+  border: 1px solid rgba(215, 187, 136, 0.4);
+}
+
+.carnet-sprite img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0.6rem 0.4rem 0;
+  box-sizing: border-box;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.carnet-sprite .carnet-silhouette {
+  width: 60%;
+  height: auto;
+}
+
+.carnet-role {
+  margin: 0 0 0.2rem;
+  color: #a67c2e;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.carnet-nom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.7rem;
+  margin: 0 0 0.7rem;
+  color: var(--c-bordeaux);
+  font-family: var(--police-romance, Georgia, serif);
+  font-size: clamp(1.7rem, 3.2vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.carnet-age {
+  color: var(--c-texte-doux);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.carnet-puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.carnet-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgba(215, 187, 136, 0.7);
+  border-radius: 999px;
+  background: var(--c-champagne-clair);
+  color: #6b4a1b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.carnet-citation {
+  position: relative;
+  margin: 0 0 1.1rem;
+  padding: 0.2rem 0 0.2rem 1rem;
+  border-left: 3px solid var(--c-champagne);
+  color: var(--c-bordeaux);
+  font-family: var(--police-romance, Georgia, serif);
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.carnet-citation::before {
+  content: "\201C";
+}
+
+.carnet-citation::after {
+  content: "\201D";
+}
+
+/* Lovomètre */
+.carnet-lovo {
+  padding: 0.85rem 1rem 1.7rem;
+  border: 1px solid rgba(229, 142, 163, 0.5);
+  border-radius: 16px;
+  background: var(--c-rose-doux);
+}
+
+.carnet-lovo-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+}
+
+.carnet-lovo-titre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--c-bordeaux);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.carnet-lovo-titre .ico {
+  color: var(--c-rose-vif);
+}
+
+.carnet-lovo-tete strong {
+  color: var(--c-bordeaux);
+  font-size: 1.25rem;
+}
+
+.carnet-lovo-barre {
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: inset 0 1px 3px rgba(94, 18, 36, 0.18);
+  overflow: hidden;
+}
+
+.carnet-lovo-barre span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f3a3b6, var(--c-rose-vif) 45%, var(--c-bordeaux-clair));
+  transition: width 0.4s ease;
+}
+
+.carnet-lovo-jalons {
+  position: relative;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.carnet-jalon {
+  position: absolute;
+  top: 0.4rem;
+  left: calc(var(--pos) * 1%);
+  transform: translateX(-50%);
+  color: #cdb9bd;
+  font-size: 1rem;
+}
+
+.carnet-jalon.dernier {
+  transform: translateX(-100%);
+}
+
+.carnet-jalon.atteint {
+  color: var(--c-bordeaux-clair);
+}
+
+.carnet-sans-affinite {
+  margin: 0;
+  color: var(--c-texte-doux);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Présentation et mode d'emploi */
+.carnet-presentation {
+  grid-column: 1 / -1;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(215, 187, 136, 0.55);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.carnet-description {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.carnet-presentation .carnet-description:last-child {
+  margin-bottom: 0;
+}
+
+/* Mode d'emploi placé sous le lovomètre, dans la colonne d'identité */
+.carnet-identite .carnet-mode {
+  margin-top: 0.9rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(215, 187, 136, 0.55);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.carnet-identite .carnet-mode-colonnes {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.carnet-mode h4 {
+  margin: 0 0 0.6rem;
+  color: var(--c-bordeaux);
+  font-family: var(--police-romance, Georgia, serif);
+  font-size: 1.05rem;
+}
+
+.carnet-mode-colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.6rem 1.2rem;
+}
+
+.carnet-mode-liste {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.carnet-mode-liste li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.carnet-mode-liste .ico {
+  margin-top: 0.15rem;
+  padding: 0.12rem;
+  box-sizing: content-box;
+  border-radius: 50%;
+}
+
+.carnet-mode-liste.faire .ico {
+  background: #e4f1e6;
+  color: #2f7a43;
+}
+
+.carnet-mode-liste.eviter .ico {
+  background: #f8dde1;
+  color: #a62340;
+}
+
+/* Personnage non rencontré */
+.carnet-fiche-verrouillee {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 100%;
+  text-align: center;
+  color: var(--c-texte-doux);
+}
+
+.carnet-silhouette-grande {
+  position: relative;
+  width: min(220px, 55%);
+  aspect-ratio: 3 / 4;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #e7e3e2, #f5f3f2);
+  filter: grayscale(1);
+}
+
+.carnet-silhouette-grande .carnet-silhouette {
+  fill: rgba(60, 50, 52, 0.2);
+}
+
+.carnet-fiche-verrouillee .carnet-nom {
+  margin: 0;
+  color: #8a8483;
+}
+
+.carnet-fiche-verrouillee p {
+  margin: 0;
+}
+
+/* Souvenirs partagés */
+.carnet-souvenirs-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.carnet-souvenirs-tete h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  color: var(--c-bordeaux);
+  font-family: var(--police-romance, Georgia, serif);
+  font-size: 1.1rem;
+}
+
+.carnet-souvenirs-liste {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.carnet-souvenir {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid rgba(215, 187, 136, 0.55);
+  border-radius: 16px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button.carnet-souvenir:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(138, 38, 64, 0.16);
+}
+
+.carnet-souvenir.verrouille {
+  cursor: default;
+  background: #f1eeed;
+}
+
+.carnet-vignette {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  border-radius: 11px;
+  background: var(--c-rose);
+  overflow: hidden;
+}
+
+.carnet-vignette img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carnet-souvenir.verrouille .carnet-vignette {
+  background: linear-gradient(135deg, #7a6a6e, #4a3b40);
+}
+
+.carnet-souvenir.verrouille .carnet-cadenas {
+  font-size: 1.5rem;
+}
+
+.carnet-souvenir-duo {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 250, 244, 0.92);
+  color: var(--c-bordeaux);
+  font-size: 0.85rem;
+}
+
+/* ─── Badges de rareté (carnet de relations) ─────────────────────────────── */
+.badge-rarete {
+  position: absolute;
+  bottom: 0.45rem;
+  left: 0.45rem;
+  padding: 0.15em 0.55em;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  pointer-events: none;
+  /* couleur par défaut (ne devrait pas s'afficher pour "common") */
+  background: rgba(120, 120, 120, 0.85);
+  color: #fff;
+}
+
+.badge-rarete.rarete-rare {
+  background: linear-gradient(120deg, #3d7cf4, #5b9eff);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(61, 124, 244, 0.45);
+}
+
+.badge-rarete.rarete-ultra_rare {
+  background: linear-gradient(120deg, #8a2be2, #c46eff);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(138, 43, 226, 0.5);
+}
+
+.badge-rarete.rarete-legendary {
+  background: linear-gradient(120deg, #b8860b, #ffd700, #b8860b);
+  background-size: 200% 100%;
+  color: #3a2200;
+  box-shadow: 0 2px 12px rgba(255, 215, 0, 0.55);
+  animation: badge-legendaire-shimmer 2.6s linear infinite;
+}
+
+@keyframes badge-legendaire-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Quand la vignette est verrouillée, le badge est légèrement transparent */
+.carnet-souvenir.verrouille .badge-rarete {
+  opacity: 0.7;
+}
+
+.carnet-souvenir-texte {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0 0.2rem 0.2rem;
+}
+
+.carnet-souvenir-texte strong {
+  color: var(--c-bordeaux);
+  font-size: 0.92rem;
+}
+
+.carnet-souvenir.verrouille strong {
+  color: #8a8483;
+}
+
+.carnet-souvenir-texte small {
+  color: var(--c-texte-doux);
+  font-size: 0.75rem;
+}
+
+.carnet-etat {
+  justify-self: start;
+  margin-top: 0.25rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: #e5e0df;
+  color: #7a7372;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.carnet-etat.ouvert {
+  background: var(--c-champagne-clair);
+  color: #7a5718;
+}
+
+.carnet-souvenirs-verrou {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.4rem 1rem;
+  border: 1px dashed rgba(154, 130, 134, 0.6);
+  border-radius: 16px;
+  color: #8a8483;
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.carnet-souvenirs-verrou p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.carnet-adecouvrir {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: auto;
+  padding: 0.8rem 0.9rem;
+  border: 1px dashed var(--c-champagne);
+  border-radius: 14px;
+  background: var(--c-champagne-clair);
+  color: #7a5718;
+}
+
+.carnet-adecouvrir > .ico {
+  font-size: 1.3rem;
+}
+
+.carnet-adecouvrir strong {
+  display: block;
+  font-family: var(--police-romance, Georgia, serif);
+}
+
+.carnet-adecouvrir p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+/* Lightbox */
+.carnet-lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: clamp(0.75rem, 3vw, 2rem);
+  background: rgba(30, 8, 14, 0.82);
+  backdrop-filter: blur(4px);
+}
+
+.carnet-lightbox[hidden] {
+  display: none;
+}
+
+.carnet-lightbox-cadre {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+}
+
+.carnet-lightbox-cadre img {
+  min-height: 0;
+  max-width: 100%;
+  max-height: calc(100vh - 12rem);
+  border: 2px solid var(--c-champagne);
+  border-radius: 14px;
+  object-fit: contain;
+  background: #000;
+}
+
+.carnet-lightbox figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.carnet-lightbox figcaption span {
+  color: var(--c-champagne);
+}
+
+.carnet-lightbox-avec {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.carnet-lightbox-fermer {
+  position: absolute;
+  top: -0.6rem;
+  right: -0.6rem;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--c-champagne);
+  border-radius: 50%;
+  background: var(--c-bordeaux);
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* Tablette et mobile : une seule colonne, galerie en bande horizontale */
+@media (max-width: 960px) {
+  .carnet {
+    height: 94vh;
+  }
+
+  .carnet-corps {
+    display: block;
+    overflow-y: auto;
+  }
+
+  .carnet-galerie,
+  .carnet-souvenirs {
+    overflow: visible;
+    border: 0;
+  }
+
+  .carnet-galerie {
+    border-bottom: 1px solid rgba(215, 187, 136, 0.55);
+  }
+
+  .carnet-souvenirs {
+    border-top: 1px solid rgba(215, 187, 136, 0.55);
+  }
+
+  .carnet-onglets {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .carnet-grille {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 0.4rem;
+  }
+
+  .carnet-carte {
+    flex: 0 0 118px;
+  }
+
+  .carnet-souvenirs-liste {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .carnet {
+    border-radius: 16px;
+  }
+
+  .carnet-retour span {
+    display: none;
+  }
+
+  .carnet-profil {
+    grid-template-columns: 1fr;
+  }
+
+  .carnet-sprite {
+    min-height: 340px;
+  }
+
+  .carnet-onglet {
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.45rem 0.4rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carnet-carte,
+  .carnet-souvenir,
+  .carnet-lovo-barre span {
+    transition: none;
+  }
+}

@@ -37,6 +37,8 @@ class SaveController extends Controller
             'inventory' => ['nullable', 'array'],
             'history' => ['nullable', 'array'],
             'completedEpisodes' => ['nullable', 'array'],
+            'discoveredCharacterIds' => ['nullable', 'array'],
+            'unlockedIllustrationIds' => ['nullable', 'array'],
             'currency' => ['nullable', 'numeric'],
             'actionPoints' => ['nullable', 'numeric'],
         ]);

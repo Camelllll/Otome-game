@@ -72,6 +72,8 @@ function normaliserSauvegarde(brut, playerId, slot) {
     lastActionPointsTimestamp: Number(donnees.lastActionPointsTimestamp) || Date.now(),
     history: Array.isArray(donnees.history) ? donnees.history : [],
     completedEpisodes: Array.isArray(donnees.completedEpisodes) ? donnees.completedEpisodes : [],
+    discoveredCharacterIds: Array.isArray(donnees.discoveredCharacterIds) ? donnees.discoveredCharacterIds : [],
+    unlockedIllustrationIds: Array.isArray(donnees.unlockedIllustrationIds) ? donnees.unlockedIllustrationIds : [],
     revision: Number(donnees.revision) || 0,
     updatedAt: donnees.updatedAt ?? null,
   };
@@ -105,6 +107,8 @@ export async function sauvegarderProgressionDistante(sauvegarde) {
     actionPoints: sauvegarde.actionPoints ?? 25,
     history: sauvegarde.history || [],
     completedEpisodes: sauvegarde.completedEpisodes || [],
+    discoveredCharacterIds: sauvegarde.discoveredCharacterIds || [],
+    unlockedIllustrationIds: sauvegarde.unlockedIllustrationIds || [],
   };
 
   const donnees = await appelApi(`/saves/${slot}`, { method: "PUT", corps: payload });

@@ -18,6 +18,11 @@ class PlayerSaveService
 {
     public const SLOT_MAX = 9;
 
+    /** Plafonds des listes du carnet de relations (personnages rencontrés, illustrations vues). */
+    public const MAX_DISCOVERED_CHARACTERS = 200;
+
+    public const MAX_UNLOCKED_ILLUSTRATIONS = 2000;
+
     public static function slot(mixed $slot): int
     {
         return max(0, min(self::SLOT_MAX, (int) $slot));
@@ -84,6 +89,8 @@ class PlayerSaveService
             'lastActionPointsTimestamp' => Carbon::now()->getTimestamp() * 1000,
             'history' => [],
             'completedEpisodes' => [],
+            'discoveredCharacterIds' => [],
+            'unlockedIllustrationIds' => [],
             'revision' => 0,
             'updatedAt' => null,
         ];
@@ -111,6 +118,8 @@ class PlayerSaveService
             'lastActionPointsTimestamp' => $s->last_action_points_at->getTimestamp() * 1000,
             'history' => $s->history ?? [],
             'completedEpisodes' => $s->completed_episodes ?? [],
+            'discoveredCharacterIds' => $s->discovered_character_ids ?? [],
+            'unlockedIllustrationIds' => $s->unlocked_illustration_ids ?? [],
             'revision' => $s->revision,
             'updatedAt' => $s->updated_at?->toIso8601String(),
         ];
@@ -172,6 +181,8 @@ class PlayerSaveService
                 'last_action_points_at' => $stamp,
                 'history' => $this->trimList($payload['history'] ?? null, $this->rule('maxHistory')),
                 'completed_episodes' => $this->trimList($payload['completedEpisodes'] ?? null, $this->rule('maxCompletedEpisodes')),
+                'discovered_character_ids' => $this->mergeIds($payload['discoveredCharacterIds'] ?? null, $old?->discovered_character_ids, self::MAX_DISCOVERED_CHARACTERS),
+                'unlocked_illustration_ids' => $this->mergeIds($payload['unlockedIllustrationIds'] ?? null, $old?->unlocked_illustration_ids, self::MAX_UNLOCKED_ILLUSTRATIONS),
             ];
 
             if ($old === null) {
@@ -186,7 +197,27 @@ class PlayerSaveService
         });
     }
 
-    private const APPEARANCE_KEYS = ['skin', 'hair', 'eyes', 'eyebrows', 'mouth', 'outfit', 'top', 'bottom', 'accessory'];
+    /**
+     * Identifiants du carnet (personnages rencontrés, illustrations vues) : on ne retire jamais une entrée
+     * déjà acquise, afin qu'une sauvegarde client en retard n'efface pas le carnet.
+     * Seuls des identifiants de forme sûre sont conservés, sans doublon, dans la limite du plafond.
+     */
+    private function mergeIds(mixed $new, mixed $old, int $max): array
+    {
+        $ids = is_array($old) ? $old : [];
+        if (is_array($new) && array_is_list($new)) {
+            $ids = [...$ids, ...$new];
+        }
+
+        $clean = array_filter(
+            $ids,
+            fn ($id) => is_string($id) && preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,119}$/', $id) === 1
+        );
+
+        return array_slice(array_values(array_unique($clean)), 0, $max);
+    }
+
+    private const APPEARANCE_KEYS = ['skin', 'hair', 'eyes', 'eyebrows', 'mouth', 'outfit', 'top', 'bottom', 'shoes', 'accessory'];
 
     /**
      * Apparence de Sucrette : ne conserve que les clés connues et des identifiants de forme sûre.
@@ -230,6 +261,7 @@ class PlayerSaveService
             $attributes = $origin->only([
                 'player_name', 'appearance', 'current_episode', 'current_node', 'current_background', 'gauges', 'flags', 'choices',
                 'stats', 'currency', 'inventory', 'action_points', 'last_action_points_at', 'history', 'completed_episodes',
+                'discovered_character_ids', 'unlocked_illustration_ids',
             ]);
             $attributes['label'] = $this->text($label, 60) ?? $destination?->label;
 

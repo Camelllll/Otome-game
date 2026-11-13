@@ -1,0 +1,18 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Pomme d'Amour : API locale",
+			"type": "shell",
+			"command": "php",
+			"args": [
+				"backend/artisan",
+				"serve",
+				"--host=127.0.0.1",
+				"--port=8001"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}

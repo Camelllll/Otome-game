@@ -1,111 +1,127 @@
-// Menu de jeu en haut à droite : musique, fiches des personnages et retour à la sélection d'épisodes.
-import { jaugeEnPourcentageAffichage } from "../engine/relationManager.js";
-
-function ligneFiche(titre, valeur) {
-  if (!valeur) return "";
-  const contenu = Array.isArray(valeur) ? valeur.join(" · ") : valeur;
-  return `<p class="fiche-ligne"><span class="fiche-label">${titre}</span> ${contenu}</p>`;
-}
-
-function barreRelation(nom, valeur) {
-  const pourcentage = jaugeEnPourcentageAffichage(valeur);
-  const remplissage = Math.max(0, pourcentage);
-  return `
-    <div class="fiche-jauge fiche-jauge-${nom}">
-      <div class="fiche-jauge-entete">
-        <span>Amour</span>
-        <strong>${pourcentage}%</strong>
-      </div>
-      <div class="fiche-jauge-barre" aria-hidden="true">
-        <span style="width: ${remplissage}%"></span>
-      </div>
-    </div>
-  `;
-}
-
-function carteFiche(personnage, getInfosPersonnage) {
-  const infos = getInfosPersonnage?.(personnage.id) || {};
-  const jauges = infos.gauges || personnage.gauges || {};
-  return `
-    <article class="fiche-personnage">
-      <div class="fiche-visuel">
-        ${personnage.sprite ? `<img class="fiche-portrait" src="${personnage.sprite}" alt="${personnage.name}">` : ""}
-      </div>
-      <div class="fiche-corps">
-        <div class="fiche-identite">
-          <p class="fiche-role">${personnage.field || "Campus"}</p>
-          <h3>${personnage.name}${personnage.age ? ` · ${personnage.age} ans` : ""}</h3>
-          ${personnage.tagline ? `<p class="fiche-tagline">« ${personnage.tagline} »</p>` : ""}
-        </div>
-        <div class="fiche-jauges" aria-label="Lovomètres de ${personnage.name}">
-          ${barreRelation("amour", jauges.amour)}
-        </div>
-        <div class="fiche-details">
-          ${ligneFiche("Taille", personnage.height)}
-          ${ligneFiche("Caractère", personnage.personality)}
-          ${ligneFiche("Aime", personnage.likes)}
-          ${ligneFiche("N'aime pas", personnage.dislikes)}
-          ${ligneFiche("Passion", personnage.passion)}
-          ${ligneFiche("Objectif", personnage.goal)}
-          ${ligneFiche("Défaut", personnage.flaw)}
-          ${ligneFiche("Lieu préféré", personnage.favoritePlace)}
-          ${ligneFiche("Thème de sa route", personnage.routeTheme)}
-        </div>
-      </div>
-    </article>
-  `;
-}
+// Menu de jeu en haut à droite : personnages, dressing, épisodes, retour accueil, musique.
+import { creerCarnet } from "./carnetRelations.js";
 
 /**
  * @param {HTMLElement} scene - conteneur de l'écran de jeu.
- * @param {object} options - { musique, fiches, getInfosPersonnage, onRetourEpisodes, onRetourAccueil, onIllustrations, onDressing }
+ * @param {object} options - { musique, fiches, getInfosPersonnage, getSauvegarde, onRetourEpisodes, onRetourAccueil, onDressing }
  */
-export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonnage, onRetourEpisodes, onRetourAccueil, onIllustrations, onDressing } = {}) {
+export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonnage, getSauvegarde, onRetourEpisodes, onRetourAccueil, onDressing } = {}) {
+
+  function rafraichirIconeMusique() {
+    const actif = !!musique?.active;
+
+    // Synchroniser l'option musique dans le panneau
+    if (optionMusique) {
+      optionMusique.classList.toggle("muet", !actif);
+      const iconeEl = optionMusique.querySelector(".option-menu-icone");
+      if (iconeEl) {
+        iconeEl.innerHTML = actif
+          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M9 18V5l12-2v13"/>
+               <circle cx="6" cy="18" r="3"/>
+               <circle cx="18" cy="16" r="3"/>
+             </svg>`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M9 18V5l12-2v13"/>
+               <circle cx="6" cy="18" r="3"/>
+               <circle cx="18" cy="16" r="3"/>
+               <line x1="2" y1="2" x2="22" y2="22"/>
+             </svg>`;
+      }
+      const labelEl = optionMusique.querySelector(".option-menu-label");
+      if (labelEl) labelEl.textContent = actif ? "Musique activée" : "Musique désactivée";
+      const badge = optionMusique.querySelector(".badge-muet");
+      if (badge) badge.textContent = actif ? "" : "muet";
+    }
+  }
+
+  // ── Bouton principal du menu (icône hamburger seule) ───────────────
   const bouton = document.createElement("button");
   bouton.className = "bouton-menu";
   bouton.type = "button";
-  bouton.innerHTML = "Menu";
   bouton.setAttribute("aria-haspopup", "true");
   bouton.setAttribute("aria-expanded", "false");
+  bouton.setAttribute("aria-label", "Menu");
+  bouton.innerHTML = `
+    <svg class="menu-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="4" y1="7"  x2="20" y2="7"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <line x1="4" y1="17" x2="20" y2="17"/>
+    </svg>`;
 
+  // ── Panneau menu ───────────────────────────────────────────────────
   const panneau = document.createElement("div");
   panneau.className = "panneau-menu";
   panneau.setAttribute("role", "menu");
 
-  const optionMusique = document.createElement("button");
-  optionMusique.className = "option-menu";
-  optionMusique.type = "button";
+  // Séparateur utilitaire
+  function creerSeparateur() {
+    const s = document.createElement("div");
+    s.className = "menu-separateur";
+    return s;
+  }
 
-  const optionPersonnages = document.createElement("button");
-  optionPersonnages.className = "option-menu";
-  optionPersonnages.type = "button";
-  optionPersonnages.innerHTML = "<span>👥</span> Les personnages";
+  // Titre de section
+  function creerSectionTitre(label) {
+    const t = document.createElement("div");
+    t.className = "menu-section-titre";
+    t.textContent = label;
+    return t;
+  }
 
-  const optionEpisodes = document.createElement("button");
-  optionEpisodes.className = "option-menu";
-  optionEpisodes.type = "button";
-  optionEpisodes.innerHTML = "<span>📖</span> Journal des épisodes";
-  optionEpisodes.disabled = !onRetourEpisodes;
+  // Option
+  function creerOption(icone, label, desactive = false) {
+    const btn = document.createElement("button");
+    btn.className = "option-menu";
+    btn.type = "button";
+    btn.disabled = desactive;
+    btn.innerHTML = `<span class="option-menu-icone">${icone}</span><span class="option-menu-label">${label}</span>`;
+    return btn;
+  }
 
-  const optionIllustrations = document.createElement("button");
-  optionIllustrations.className = "option-menu";
-  optionIllustrations.type = "button";
-  optionIllustrations.innerHTML = "<span>▣</span> Mes illustrations";
-  optionIllustrations.disabled = !onIllustrations;
+  const optionPersonnages = creerOption(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+    "Les personnages"
+  );
 
-  const optionDressing = document.createElement("button");
-  optionDressing.className = "option-menu";
-  optionDressing.type = "button";
-  optionDressing.innerHTML = "<span>👗</span> Mon dressing";
-  optionDressing.disabled = !onDressing;
+  const optionDressing = creerOption(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H7v10c0 1.1.9 2 2 2h6a2 2 0 0 0 2-2V10h3.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>`,
+    "Mon dressing",
+    !onDressing
+  );
 
-  panneau.append(optionMusique, optionPersonnages, optionDressing, optionIllustrations, optionEpisodes);
+  const optionEpisodes = creerOption(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+    "Journal des épisodes",
+    !onRetourEpisodes
+  );
+
+  // Option musique dans le panneau (état initial synchronisé après création)
+  const optionMusique = creerOption(
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       <path d="M9 18V5l12-2v13"/>
+       <circle cx="6" cy="18" r="3"/>
+       <circle cx="18" cy="16" r="3"/>
+     </svg>`,
+    "Musique activée"
+  );
+  // Ajouter la pastille muet (cachée par défaut si musique active)
+  optionMusique.innerHTML += `<span class="badge-muet"></span>`;
+
+  panneau.append(
+    creerSectionTitre("Histoire"),
+    optionPersonnages,
+    optionDressing,
+    creerSeparateur(),
+    creerSectionTitre("Navigation"),
+    optionEpisodes,
+  );
 
   if (onRetourAccueil) {
-    const optionAccueil = document.createElement("button");
-    optionAccueil.className = "option-menu";
-    optionAccueil.type = "button";
-    optionAccueil.innerHTML = "<span>🏠</span> Retour à l'accueil";
+    const optionAccueil = creerOption(
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+      "Retour à l'accueil"
+    );
     optionAccueil.addEventListener("click", () => {
       ouvrirMenu(false);
       onRetourAccueil();
@@ -113,39 +129,26 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
     panneau.appendChild(optionAccueil);
   }
 
-  const voile = document.createElement("div");
-  voile.className = "voile-personnages";
-  voile.innerHTML = `
-    <div class="fenetre-personnages" role="dialog" aria-label="Présentation des personnages">
-      <div class="fenetre-personnages-head">
-        <div>
-          <p class="fenetre-personnages-surtitre">Carnet de relations</p>
-          <h2>Les personnages</h2>
-        </div>
-        <button class="fermer-personnages" type="button" aria-label="Fermer">×</button>
-      </div>
-      <div class="liste-fiches"></div>
-    </div>
-  `;
+  // Section Paramètres (musique)
+  panneau.append(
+    creerSeparateur(),
+    creerSectionTitre("Paramètres"),
+    optionMusique,
+  );
 
-  scene.append(bouton, panneau, voile);
+  // ── Carnet de relations ────────────────────────────────────────────
+  const carnet = creerCarnet({ fiches, getInfosPersonnage, getSauvegarde });
 
-  function afficherEtatMusique() {
-    optionMusique.innerHTML = musique?.active ? "<span>🎵</span> Musique : Activée" : "<span>🔇</span> Musique : Coupée";
-    optionMusique.classList.toggle("muet", !musique?.active);
-  }
-  afficherEtatMusique();
+  scene.append(bouton, panneau, carnet.element);
 
+  // Synchroniser l'état initial de l'icône musique dans le panneau
+  rafraichirIconeMusique();
+
+  // ── Ouverture / fermeture ──────────────────────────────────────────
   function ouvrirMenu(ouvert) {
     panneau.classList.toggle("visible", ouvert);
     bouton.setAttribute("aria-expanded", String(ouvert));
-  }
-
-  function rendreFiches() {
-    const liste = voile.querySelector(".liste-fiches");
-    liste.innerHTML = fiches.length
-      ? fiches.map((personnage) => carteFiche(personnage, getInfosPersonnage)).join("")
-      : "<p class=\"fiche-vide\">Aucune fiche disponible.</p>";
+    bouton.classList.toggle("actif", ouvert);
   }
 
   bouton.addEventListener("click", (event) => {
@@ -153,25 +156,14 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
     ouvrirMenu(!panneau.classList.contains("visible"));
   });
 
-  // Un clic ailleurs dans la scène referme le menu sans faire avancer le dialogue.
   scene.addEventListener("pointerdown", (event) => {
     if (!panneau.contains(event.target) && event.target !== bouton) ouvrirMenu(false);
   });
 
-  optionMusique.addEventListener("click", async () => {
-    await musique?.basculer();
-    afficherEtatMusique();
-  });
-
+  // ── Actions des options ────────────────────────────────────────────
   optionPersonnages.addEventListener("click", () => {
-    rendreFiches();
-    voile.classList.add("visible");
     ouvrirMenu(false);
-  });
-
-  optionIllustrations.addEventListener("click", () => {
-    ouvrirMenu(false);
-    onIllustrations?.();
+    carnet.ouvrir();
   });
 
   optionDressing.addEventListener("click", () => {
@@ -179,13 +171,14 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
     onDressing?.();
   });
 
-  voile.querySelector(".fermer-personnages").addEventListener("click", () => voile.classList.remove("visible"));
-  voile.addEventListener("click", (event) => {
-    if (event.target === voile) voile.classList.remove("visible");
-  });
-
   optionEpisodes.addEventListener("click", () => {
     ouvrirMenu(false);
     onRetourEpisodes?.();
+  });
+
+  optionMusique.addEventListener("click", async () => {
+    await musique?.basculer();
+    rafraichirIconeMusique();
+    // On laisse le menu ouvert pour que l'utilisateur voit le changement d'état
   });
 }

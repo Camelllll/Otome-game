@@ -9,8 +9,10 @@ export class DialogueEngine {
    * @param {object} sauvegarde - objet de sauvegarde courant (modifié en place)
    * @param {{calques: Array, canvas: {width: number, height: number}}|null} [apparenceSucrette] - calques de
    *   l'apparence de Sucrette (voir engine/appearance.js) ; null = on garde le sprite statique de characters.json
+   * @param {{ephemere?: boolean}} [options] - désactive sauvegardes et journal de choix pour un extrait isolé
    */
-  constructor(episodeData, personnagesParId, sauvegarde, apparenceSucrette = null) {
+  constructor(episodeData, personnagesParId, sauvegarde, apparenceSucrette = null, { ephemere = false } = {}) {
+    this.ephemere = ephemere;
     this.episodeData = episodeData;
     this.apparenceSucrette = apparenceSucrette;
     this.personnagesParId = personnagesParId;
@@ -41,6 +43,26 @@ export class DialogueEngine {
     if (noeud.background) {
       this.background = noeud.background;
       this.sauvegarde.currentBackground = noeud.background;
+    }
+
+    // Résolution de la musique :
+    // 1. Un changement ponctuel sur le nœud (node.music) prend le dessus immédiatement.
+    // 2. Sinon, si on vient d'entrer dans une nouvelle scène, on applique sa musique de scène.
+    // 3. Sinon, on garde la musique déjà en cours (persistance entre les nœuds).
+    const sceneCourante = Array.isArray(this.episodeData.scenes)
+      ? this.episodeData.scenes.find((s) => Array.isArray(s.nodeIds) && s.nodeIds.includes(this.nodeId))
+      : null;
+    if (noeud.music) {
+      // Changement ponctuel explicite sur ce nœud.
+      this.musicCourante = noeud.music;
+    } else if (sceneCourante && sceneCourante.id !== this.sceneCouranteId) {
+      // On vient d'entrer dans une nouvelle scène : on applique sa musique de scène.
+      this.sceneCouranteId = sceneCourante.id;
+      this.musicCourante = sceneCourante.music || this.musicCourante || "";
+    } else if (this.musicCourante === undefined) {
+      // Premier appel : initialisation.
+      this.sceneCouranteId = sceneCourante?.id ?? null;
+      this.musicCourante = sceneCourante?.music || "";
     }
 
     const personnage = this.personnagesParId.get(noeud.speaker);
@@ -79,7 +101,9 @@ export class DialogueEngine {
       reponseSucrette,
       nextEpisode: noeud.nextEpisode || null,
       // Mise en scène explicite définie dans l'admin (remplace la gestion automatique quand elle est présente).
-      onScreen: Array.isArray(noeud.onScreen) ? noeud.onScreen : null
+      onScreen: Array.isArray(noeud.onScreen) ? noeud.onScreen : null,
+      // Musique effective à ce point : changement ponctuel du nœud ou musique de la scène courante.
+      music: this.musicCourante || null,
     };
   }
 
@@ -154,7 +178,7 @@ export class DialogueEngine {
     // Marqueurs de choix (ex. bonne réponse clé) : consultables par les nœuds "branch" plus loin.
     poserFlags(this.sauvegarde, option.flags);
     // Journal serveur du choix : conservé même si la sauvegarde évolue ensuite.
-    enregistrerChoix(this.sauvegarde, {
+    if (!this.ephemere) enregistrerChoix(this.sauvegarde, {
       episodeId: this.episodeData.id,
       nodeId: this.nodeId,
       optionIndex: indexOption,
@@ -180,6 +204,10 @@ export class DialogueEngine {
   aller(nodeId, { immediat = false } = {}) {
     this.nodeId = nodeId;
     this.pageIndex = 0;
+    // Réinitialise la musique courante pour qu'elle soit recalculée au prochain obtenirAffichage().
+    // On garde quand même la valeur précédente en fallback si le nœud n'en déclare pas.
+    // (on ne remet PAS à undefined — on laisse musicCourante en place et obtenirAffichage
+    //  la mettra à jour si le nœud a node.music ou si on change de scène)
     // Un nœud "branch" ne s'affiche jamais : on le résout aussitôt vers sa destination.
     this.resoudreBranchements();
     this.sauvegarde.currentNode = this.nodeId;
@@ -194,6 +222,7 @@ export class DialogueEngine {
       }
     }
     // Choix et fins d'épisode partent sans attendre le regroupement des autosaves.
+    if (this.ephemere) return;
     if (immediat || finEpisode) {
       sauvegarderMaintenant(this.sauvegarde);
     } else {

@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Livewire\EpisodeEditor;
+use App\Livewire\Illustrations;
 use App\Livewire\MediaLibrary;
+use App\Models\Character;
 use App\Models\Episode;
+use App\Models\Illustration;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -228,5 +231,80 @@ class MediaLibraryTest extends TestCase
         $episode = $this->episode();
         Livewire::test(EpisodeEditor::class, ['episode' => $episode])->call('selectNode', 'end')->call('save')->assertHasNoErrors();
         $this->assertSame(['type' => 'end'], $episode->latestVersion()->data['nodes']['end']);
+    }
+
+    private function character(string $slug, string $name): Character
+    {
+        return Character::create([
+            'slug' => $slug, 'name' => $name, 'is_player' => false, 'is_secondary' => false,
+            'data' => ['id' => $slug, 'name' => $name],
+        ]);
+    }
+
+    public function test_illustration_form_opens_from_the_media_library(): void
+    {
+        $this->actingAs($this->admin());
+        Livewire::test(MediaLibrary::class)
+            ->call('chooseCategory', 'illustrations')
+            ->assertSet('showCarnet', false)
+            ->call('openCarnet')
+            ->assertSet('showCarnet', true)
+            ->assertSeeLivewire(Illustrations::class)
+            ->call('closeCarnet')
+            ->assertSet('showCarnet', false);
+    }
+
+    public function test_illustration_is_linked_to_several_characters(): void
+    {
+        $this->actingAs($this->admin());
+        $this->episode();
+        $this->character('liam', 'Liam');
+        $this->character('isaac', 'Isaac');
+        $asset = $this->asset('illustrations');
+
+        Livewire::test(Illustrations::class, ['assetId' => $asset->id])
+            ->assertSet('mediaAssetId', (string) $asset->id)
+            ->set('title', 'Une rencontre inattendue')
+            ->set('episodeId', 'episode1')
+            ->set('characterIds', ['liam', 'isaac'])
+            ->set('unlockNodeId', 'start')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $illustration = Illustration::firstOrFail();
+        $this->assertSame(['liam', 'isaac'], $illustration->character_ids);
+        $this->assertSame($asset->id, $illustration->media_asset_id);
+        $this->assertSame('start', $illustration->unlock_node_id);
+        $this->assertSame('viewed', $illustration->unlock_condition);
+    }
+
+    public function test_illustration_requires_a_title_and_a_character(): void
+    {
+        $this->actingAs($this->admin());
+        Livewire::test(Illustrations::class)->call('save')->assertHasErrors(['title', 'characterIds']);
+        $this->assertDatabaseCount('illustrations', 0);
+    }
+
+    public function test_info_button_reopens_the_existing_illustration_instead_of_creating_another(): void
+    {
+        $this->actingAs($this->admin());
+        $this->character('liam', 'Liam');
+        $asset = $this->asset('illustrations');
+        $illustration = Illustration::create([
+            'slug' => 'cg-episode1-test', 'title' => 'Test', 'media_asset_id' => $asset->id,
+            'character_ids' => ['liam'], 'unlock_condition' => 'viewed', 'spoiler_level' => 1,
+        ]);
+
+        Livewire::test(Illustrations::class, ['assetId' => $asset->id])
+            ->assertSet('editingId', $illustration->id)
+            ->assertSet('title', 'Test')
+            ->assertSet('characterIds', ['liam'])
+            ->set('title', 'Test modifié')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseCount('illustrations', 1);
+        $this->assertSame('Test modifié', $illustration->fresh()->title);
+        $this->assertSame('cg-episode1-test', $illustration->fresh()->slug);
     }
 }

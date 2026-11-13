@@ -71,6 +71,8 @@ function creerSauvegardeParDefaut(playerId, slot = SLOT_PRINCIPAL) {
     lastActionPointsTimestamp: Date.now(),
     history: [], // historique des lignes de dialogue déjà vues
     completedEpisodes: [], // ids des épisodes terminés
+    discoveredCharacterIds: [], // personnages apparus au moins une fois dans une scène jouée (carnet de relations)
+    unlockedIllustrationIds: [], // identifiants des illustrations (souvenirs partagés) déjà vues
     revision: 0,
     updatedAt: null,
   };
@@ -186,6 +188,16 @@ export async function sauvegarderMaintenant(sauvegarde) {
     etat.minuteur = null;
   }
   return envoyer();
+}
+
+// Une transaction du dressing doit attendre son propre envoi, pas celui d'une autosave précédente.
+export async function confirmerSauvegarde(sauvegarde) {
+  const precedente = etat.envoiEnCours;
+  if (precedente) {
+    etat.enAttente = true;
+    await precedente;
+  }
+  return sauvegarderMaintenant(sauvegarde);
 }
 
 async function envoyer() {

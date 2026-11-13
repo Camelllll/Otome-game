@@ -146,6 +146,63 @@
     .legacy-flow #new-scene-main { @apply mb-10; }
 }
 
+@layer components {
+    .ill-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .ill-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e7e5e4; border-radius: 16px; background: #fff; }
+    .ill-card-active { border-color: #9f1239; box-shadow: 0 0 0 2px #ffe4e6; }
+    .ill-thumb { display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 10; overflow: hidden; background: #f5f5f4; }
+    .ill-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .ill-thumb-empty { padding: 8px; font-size: 11px; color: #a8a29e; text-align: center; }
+    .ill-body { display: grid; gap: 8px; padding: 14px 16px; align-content: start; }
+    .ill-body h3 { margin: 0; }
+    .ill-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ill-chip { padding: 2px 10px; border-radius: 999px; background: #ffe4e6; color: #881337; font-size: 11px; font-weight: 600; }
+    .ill-chip--rarete { color: #fff; }
+    .ill-chip--rare { background: linear-gradient(120deg, #3d7cf4, #5b9eff); }
+    .ill-chip--ultra_rare { background: linear-gradient(120deg, #8a2be2, #c46eff); }
+    .ill-chip--legendary { background: linear-gradient(120deg, #b8860b, #ffd700, #b8860b); color: #3a2200; }
+    .ill-fieldset { margin: 0; padding: 14px; border: 1px solid #e7e5e4; border-radius: 12px; display: grid; gap: 10px; min-width: 0; }
+    .ill-fieldset legend { padding: 0 6px; font-size: 13px; font-weight: 600; }
+    .ill-preview { overflow: hidden; border-radius: 10px; background: #f5f5f4; }
+    .ill-preview img { display: block; width: 100%; max-height: 180px; object-fit: contain; }
+    .ill-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; max-height: 280px; overflow-y: auto; }
+    .ill-pick { display: block; overflow: hidden; border: 2px solid transparent; border-radius: 10px; background: #f5f5f4; cursor: pointer; }
+    .ill-pick img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+    .ill-pick:focus-within { outline: 2px solid #fb7185; outline-offset: 1px; }
+    .ill-pick-on { border-color: #9f1239; }
+    .ill-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .ill-check { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e7e5e4; border-radius: 10px; cursor: pointer; font-weight: 500; }
+    .ill-check:has(input:checked) { border-color: #9f1239; background: #fff1f2; color: #881337; }
+    .ill-check input { margin: 0; accent-color: #9f1239; }
+    .carnet-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; padding: 16px 20px; border: 1px solid #fecdd3; border-radius: 16px; background: #fff1f2; }
+    .carnet-bar p { margin: 4px 0 0; }
+    .ill-page { display: grid; gap: 20px; }
+    .ill-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+    .ill-toolbar h2 { margin: 0; }
+    .ill-toolbar p { margin: 4px 0 0; }
+    .ill-form { display: grid; gap: 24px; padding: 28px; border: 1px solid #e7e5e4; border-radius: 20px; background: #fff; }
+    .ill-form-head h2 { margin: 8px 0 0; }
+    .ill-form-head p { max-width: 62ch; margin: 6px 0 0; }
+    .ill-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; align-items: start; }
+    .ill-panel { display: grid; gap: 18px; min-width: 0; }
+    .ill-panel-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 16px; }
+    .ill-step { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 999px; background: #9f1239; color: #fff; font-size: 13px; font-weight: 700; }
+    .ill-stage { display: flex; align-items: center; justify-content: center; min-height: 240px; max-height: 380px; overflow: hidden; border: 1px dashed #d6d3d1; border-radius: 16px; background: #f5f5f4; }
+    .ill-stage img { display: block; width: 100%; max-height: 380px; object-fit: contain; }
+    .ill-stage-empty { padding: 24px; margin: 0; font-size: 14px; line-height: 1.6; text-align: center; color: #78716c; }
+    .ill-moment { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .ill-form-footer { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin: 0 -28px -28px; padding: 16px 28px; border-top: 1px solid #e7e5e4; border-radius: 0 0 20px 20px; background: rgba(255, 255, 255, 0.95); }
+}
+
+@media (max-width: 1000px) {
+    .ill-form-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+    .ill-form { padding: 18px; }
+    .ill-moment { grid-template-columns: minmax(0, 1fr); }
+    .ill-form-footer { margin: 0 -18px -18px; padding: 14px 18px; }
+}
+
 @media (max-width: 1200px) {
     .editor-grid { grid-template-columns: 220px minmax(0, 1fr); }
     .inspector { grid-column: 1 / -1; }

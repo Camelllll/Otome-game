@@ -3,6 +3,7 @@
 use App\Http\Controllers\EpisodeStudioController;
 use App\Http\Controllers\SessionController;
 use App\Http\Middleware\RequireAdmin;
+use App\Livewire\CharacterEditor;
 use App\Livewire\EpisodeIndex;
 use App\Livewire\MediaLibrary;
 use App\Models\Episode;
@@ -18,6 +19,7 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', RequireAdmin::class])->prefix('studio')->name('studio.')->group(function () {
     Route::get('/', EpisodeIndex::class)->name('index');
+    Route::get('/personnages', CharacterEditor::class)->name('characters');
     Route::get('/media', MediaLibrary::class)->name('media');
     Route::get('/media/{mediaAsset}/file', function (MediaAsset $mediaAsset) {
         $disk = Storage::disk('studio');

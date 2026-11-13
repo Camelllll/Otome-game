@@ -9,7 +9,7 @@
 
 export const VERSION_APPARENCE = 1;
 
-export const CLES_APPARENCE = Object.freeze(["skin", "hair", "eyes", "eyebrows", "mouth", "outfit", "top", "bottom", "accessory"]);
+export const CLES_APPARENCE = Object.freeze(["skin", "hair", "eyes", "eyebrows", "mouth", "outfit", "top", "bottom", "shoes", "accessory"]);
 // Ces clés ne peuvent jamais rester vides : sans elles, l'écran serait vide.
 const CLES_OBLIGATOIRES = Object.freeze(["skin", "hair", "eyes", "eyebrows", "mouth", "top", "bottom"]);
 
@@ -21,6 +21,7 @@ export const ORDRE_CALQUES = Object.freeze({
   eyes: 20,
   eyebrows: 25,
   bottom: 30,
+  shoes: 35,
   top: 40,
   outfit: 45,
   accessory: 50,
@@ -39,6 +40,11 @@ export function catalogueValide(catalogue) {
       typeof catalogue.defaults === "object" &&
       Array.isArray(catalogue.items),
   );
+}
+
+// Clé d'un élément dans `sauvegarde.inventory` (liste de chaînes déjà persistée par le système de sauvegarde).
+export function cleInventaire(element) {
+  return `wardrobe:${element.category}:${element.id}`;
 }
 
 const indexes = new WeakMap();
@@ -69,6 +75,8 @@ export function estDebloque(element, sauvegarde = null) {
   const regle = element?.unlock;
   if (!regle || regle.type === "default") return true;
   if (regle.type === "flag") return Array.isArray(sauvegarde?.flags) && sauvegarde.flags.includes(regle.flag);
+  // "shop" : l'élément est acheté (clé présente dans l'inventaire). Voir engine/wardrobe.js.
+  if (regle.type === "shop") return Array.isArray(sauvegarde?.inventory) && sauvegarde.inventory.includes(cleInventaire(element));
   return false;
 }
 
@@ -152,6 +160,7 @@ export function assemblerCalques(apparence, catalogue) {
     ajouterElement("top");
     ajouterElement("bottom");
   }
+  ajouterElement("shoes");
   ajouterElement("accessory");
 
   return [...parSlot.values()].sort((x, y) => x.z - y.z);

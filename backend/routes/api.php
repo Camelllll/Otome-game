@@ -9,9 +9,12 @@ use Illuminate\Support\Facades\Route;
 // Contenu public (lecture seule).
 Route::middleware('throttle:120,1')->group(function () {
     Route::get('/characters', [GameContentController::class, 'characters']);
+    Route::get('/backgrounds', [GameContentController::class, 'backgrounds']);
+    Route::get('/media/{id}/file', [GameContentController::class, 'characterMedia'])->whereNumber('id')->name('game.character-media');
     Route::get('/episodes', [GameContentController::class, 'episodes']);
     Route::get('/episodes/{slug}', [GameContentController::class, 'episode'])->where('slug', '[A-Za-z0-9_-]+');
     Route::get('/shop', [GameContentController::class, 'shop']);
+    Route::get('/illustrations/catalogue', [GameContentController::class, 'illustrations']);
 });
 
 // Comptes joueurs.

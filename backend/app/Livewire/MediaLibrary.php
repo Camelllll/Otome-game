@@ -32,6 +32,15 @@ class MediaLibrary extends Component
 
     public string $message = '';
 
+    public bool $showCarnet = false;
+
+    #[Locked]
+    public ?int $carnetAssetId = null;
+
+    /** Change à chaque ouverture pour remonter le formulaire du carnet à neuf. */
+    #[Locked]
+    public int $carnetNonce = 0;
+
     public function boot(): void
     {
         abort_unless(auth()->user()?->is_admin, 403);
@@ -49,10 +58,26 @@ class MediaLibrary extends Component
 
     public function chooseCategory(string $category): void
     {
-        abort_unless(array_key_exists($category, MediaAsset::CATEGORIES), 422);
+        abort_unless(array_key_exists($category, MediaAsset::CATEGORIES) && $category !== 'characters', 422);
         $this->category = $category;
+        $this->showCarnet = false;
         $this->cancel();
         $this->resetPage();
+    }
+
+    public function openCarnet(?int $assetId = null): void
+    {
+        abort_unless($this->category === 'illustrations', 422);
+        $this->cancel();
+        $this->carnetAssetId = $assetId;
+        $this->carnetNonce++;
+        $this->showCarnet = true;
+    }
+
+    public function closeCarnet(): void
+    {
+        $this->showCarnet = false;
+        $this->carnetAssetId = null;
     }
 
     public function cancel(): void
@@ -143,7 +168,7 @@ class MediaLibrary extends Component
 
         return view('livewire.media-library', [
             'assets' => $assets,
-            'categories' => MediaAsset::CATEGORIES,
+            'categories' => array_diff_key(MediaAsset::CATEGORIES, ['characters' => true]),
             'phpUploadLimit' => ini_get('upload_max_filesize'),
             'phpPostLimit' => ini_get('post_max_size'),
             'uploadLimitMb' => MediaAsset::MAX_UPLOAD_KB / 1024,

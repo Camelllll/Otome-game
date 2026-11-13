@@ -18,7 +18,7 @@ export async function lancerEcranAccueil(conteneurRacine, { joueur, onDemarrer }
   // Bannière officielle : campus + les 4 prétendants + logo intégré
   const fondImage = document.createElement("img");
   fondImage.className = "fond-accueil-image";
-  fondImage.src = "assets/Décors/page d'accueil 2.png";
+  fondImage.src = "assets/Décors/Entrée campus.png";
   fondImage.alt = "Pomme d'Amour — Université Aster";
   accueil.appendChild(fondImage);
 

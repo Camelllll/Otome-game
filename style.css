@@ -1575,34 +1575,97 @@ html, body {
   object-fit: cover;
 }
 
-/* Bouton Menu (Pomme d'Amour) */
+/* ── Bouton musique flottant (toujours visible en jeu, hors menu) ── */
+.bouton-musique-flottant {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 24;
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  background: rgba(107, 0, 1, 0.72);
+  color: white;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 14px rgba(107, 0, 1, 0.38);
+  backdrop-filter: blur(6px);
+  transition: background 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.bouton-musique-flottant svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.bouton-musique-flottant:hover {
+  background: var(--degrade-rouge);
+  transform: scale(1.1);
+  box-shadow: 0 6px 18px rgba(107, 0, 1, 0.5);
+}
+
+.bouton-musique-flottant.muet {
+  background: rgba(80, 80, 90, 0.65);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.bouton-musique-flottant.muet:hover {
+  background: rgba(107, 0, 1, 0.72);
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+/* ── Bouton Menu (hamburger) ───────────────────────────────────────── */
 .bouton-menu {
   position: absolute;
   top: 1rem;
   right: 1rem;
   z-index: 25;
-  border: 2px solid rgba(255, 255, 255, 0.95);
-  border-radius: 999px;
-  padding: 0.55rem 1.2rem;
-  background: var(--degrade-rouge);
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  background: rgba(107, 0, 1, 0.72);
   color: white;
   font-family: inherit;
-  font-weight: 800;
-  font-size: 0.95rem;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(107, 0, 1, 0.35);
-  transition: all 0.25s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
+  box-shadow: 0 4px 14px rgba(107, 0, 1, 0.38);
+  backdrop-filter: blur(6px);
+  transition: background 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.bouton-menu svg.menu-hamburger {
+  width: 20px;
+  height: 20px;
+  display: block;
+  transition: transform 0.22s ease;
+}
+
+.bouton-menu span {
+  display: none;
 }
 
 .bouton-menu:hover {
-  background: var(--degrade-rouge-vibrant);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(107, 0, 1, 0.45);
+  background: var(--degrade-rouge);
+  transform: scale(1.08);
+  box-shadow: 0 6px 18px rgba(107, 0, 1, 0.5);
 }
 
+.bouton-menu.actif {
+  background: var(--degrade-rouge);
+  box-shadow: 0 6px 18px rgba(107, 0, 1, 0.5);
+}
+
+.bouton-menu.actif svg.menu-hamburger {
+  transform: rotate(90deg);
+}
+
+/* ── Panneau menu redesigné ────────────────────────────────────────── */
 .panneau-menu {
   position: absolute;
   top: 4rem;
@@ -1610,54 +1673,122 @@ html, body {
   z-index: 25;
   display: none;
   flex-direction: column;
-  min-width: 16rem;
-  padding: 0.5rem;
-  border: 2px solid white;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(10px);
-  box-shadow: var(--ombre-carte);
-  animation: apparition-menu 0.2s ease-out both;
+  min-width: 17rem;
+  padding: 0.6rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow:
+    0 12px 40px rgba(107, 0, 1, 0.18),
+    0 2px 8px rgba(107, 0, 1, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  animation: apparition-menu 0.22s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+  transform-origin: top right;
 }
 
 @keyframes apparition-menu {
-  from { opacity: 0; transform: translateY(-10px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: scale(0.88) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
 }
 
 .panneau-menu.visible {
   display: flex;
 }
 
+/* Titre de section dans le menu */
+.menu-section-titre {
+  padding: 0.5rem 0.9rem 0.25rem;
+  color: var(--rouge-pomme);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+/* Séparateur */
+.menu-separateur {
+  height: 1px;
+  margin: 0.35rem 0.6rem;
+  background: linear-gradient(to right, transparent, rgba(107, 0, 1, 0.15), transparent);
+}
+
+/* Option dans le menu */
 .option-menu {
   border: 0;
   border-radius: 14px;
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 1rem;
   background: none;
   color: var(--texte-fonce);
   font-family: inherit;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.93rem;
   text-align: left;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  transition: all 0.2s ease;
+  gap: 0.65rem;
+  width: 100%;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.option-menu-icone {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--rose-poudre);
+  display: grid;
+  place-items: center;
+  color: var(--rouge-pomme);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.option-menu-icone svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.option-menu-label {
+  flex: 1;
 }
 
 .option-menu:hover:not(:disabled) {
   background: var(--rose-poudre);
   color: var(--rouge-pomme);
+  transform: translateX(3px);
+}
+
+.option-menu:hover:not(:disabled) .option-menu-icone {
+  background: rgba(107, 0, 1, 0.12);
+  transform: scale(1.08);
 }
 
 .option-menu:disabled {
-  opacity: 0.45;
+  opacity: 0.38;
   cursor: default;
 }
 
-.option-menu.muet {
+.option-menu.muet .option-menu-icone {
+  background: rgba(120, 120, 130, 0.12);
   color: var(--texte-clair);
+}
+
+/* Petite pastille "muet" sur l'option musique */
+.option-menu .badge-muet {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.15em 0.55em;
+  border-radius: 999px;
+  background: rgba(120, 120, 130, 0.15);
+  color: var(--texte-clair);
+  letter-spacing: 0.04em;
+}
+
+.option-menu:not(.muet) .badge-muet {
+  display: none;
 }
 
 /* Fenêtre des fiches personnages */
@@ -2000,6 +2131,10 @@ html, body {
 
 .details-illustration {
   padding: 1rem 1.1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .details-illustration p {
@@ -2008,6 +2143,106 @@ html, body {
   font-size: 0.82rem;
   font-weight: 700;
   text-align: center;
+}
+
+/* ─── Badges de rareté (galerie d'illustrations) ─────────────────────────── */
+.details-illustration .badge-rarete {
+  position: static;
+  display: inline-block;
+  padding: 0.18em 0.7em;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+
+.details-illustration .badge-rarete.rarete-rare {
+  background: linear-gradient(120deg, #3d7cf4, #5b9eff);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(61, 124, 244, 0.4);
+}
+
+.details-illustration .badge-rarete.rarete-ultra_rare {
+  background: linear-gradient(120deg, #8a2be2, #c46eff);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(138, 43, 226, 0.45);
+}
+
+.details-illustration .badge-rarete.rarete-legendary {
+  background: linear-gradient(120deg, #b8860b, #ffd700, #b8860b);
+  background-size: 200% 100%;
+  color: #3a2200;
+  box-shadow: 0 2px 14px rgba(255, 215, 0, 0.5);
+  animation: badge-legendaire-shimmer 2.6s linear infinite;
+}
+
+@keyframes badge-legendaire-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Halo coloré sur le voile selon la rareté (s'ajoute au halo existant du niveau de révélation).
+   data-rarete est posé par dialogueScreen.js sur .voile-illustration au moment de l'ouverture. */
+.voile-illustration[data-rarete="rare"] .illustration-cg {
+  filter: drop-shadow(0 0 22px rgba(61, 124, 244, 0.65));
+}
+
+.voile-illustration[data-rarete="ultra_rare"] .illustration-cg {
+  filter: drop-shadow(0 0 26px rgba(138, 43, 226, 0.7));
+}
+
+.voile-illustration[data-rarete="legendary"] .illustration-cg {
+  filter: drop-shadow(0 0 32px rgba(255, 215, 0, 0.75)) drop-shadow(0 0 10px rgba(255, 180, 0, 0.45));
+  animation: halo-legendaire 2.2s ease-in-out infinite;
+}
+
+@keyframes halo-legendaire {
+  0%, 100% { filter: drop-shadow(0 0 28px rgba(255, 215, 0, 0.65)) drop-shadow(0 0 8px rgba(255, 180, 0, 0.35)); }
+  50%       { filter: drop-shadow(0 0 42px rgba(255, 215, 0, 0.9))  drop-shadow(0 0 18px rgba(255, 180, 0, 0.6)); }
+}
+
+/* prefers-reduced-motion : on supprime l'animation du halo légendaire mais on garde le filtre statique. */
+@media (prefers-reduced-motion: reduce) {
+  .voile-illustration[data-rarete="legendary"] .illustration-cg {
+    animation: none;
+    filter: drop-shadow(0 0 32px rgba(255, 215, 0, 0.75));
+  }
+
+  .details-illustration .badge-rarete.rarete-legendary,
+  .badge-rarete.rarete-legendary {
+    animation: none;
+    background: linear-gradient(120deg, #c9960c, #ffd700);
+  }
+}
+
+/* Bordure de la carte-illustration colorée selon la rareté */
+.carte-illustration[data-rarete="rare"] {
+  border-color: #5b9eff;
+  box-shadow: 0 14px 34px rgba(61, 124, 244, 0.22);
+}
+
+.carte-illustration[data-rarete="rare"]:hover {
+  box-shadow: 0 20px 42px rgba(61, 124, 244, 0.38);
+}
+
+.carte-illustration[data-rarete="ultra_rare"] {
+  border-color: #c46eff;
+  box-shadow: 0 14px 34px rgba(138, 43, 226, 0.24);
+}
+
+.carte-illustration[data-rarete="ultra_rare"]:hover {
+  box-shadow: 0 20px 42px rgba(138, 43, 226, 0.4);
+}
+
+.carte-illustration[data-rarete="legendary"] {
+  border-image: linear-gradient(135deg, #b8860b, #ffd700, #b8860b) 1;
+  box-shadow: 0 14px 40px rgba(255, 215, 0, 0.28);
+}
+
+.carte-illustration[data-rarete="legendary"]:hover {
+  box-shadow: 0 20px 52px rgba(255, 215, 0, 0.48);
 }
 
 .galerie-vide {
@@ -2547,6 +2782,167 @@ html, body {
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* Niveau de révélation des illustrations (data-niveau posé par dialogueScreen.js).
+   Sans data-niveau, l'animation d'apparition par défaut ci-dessus s'applique.
+   Les animations qui utilisent clip-path ou transform finissent sur l'état normal de l'image
+   (fill-mode "backwards") pour ne pas couper l'ombre ni le halo une fois l'animation terminée. */
+
+/* Niveau 1 · Discret : le souvenir « se développe », comme une photo qui apparaît (sépia et flou qui s'estompent). */
+.voile-illustration[data-niveau="1"] .illustration-cg {
+  animation: souvenir-developpe 1.4s ease-out backwards;
+}
+
+@keyframes souvenir-developpe {
+  0% { opacity: 0; transform: translateY(14px) rotate(-1.2deg) scale(0.97); filter: sepia(1) blur(6px) brightness(1.3); }
+  60% { opacity: 1; filter: sepia(0.6) blur(1px) brightness(1.1); }
+  100% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); filter: sepia(0) blur(0) brightness(1); }
+}
+
+/* Niveau 2 · Important : le logo Pomme d'Amour apparaît, tremble, puis la pomme se fend en deux le long d'un zigzag.
+   Les deux moitiés tombent de chaque côté et l'illustration s'ouvre depuis le centre. */
+.voile-illustration[data-niveau="2"] {
+  overflow: hidden;
+}
+
+.voile-illustration[data-niveau="2"] .illustration-cg {
+  animation:
+    rideau-ouvert 0.9s cubic-bezier(0.77, 0, 0.175, 1) 1.4s backwards,
+    halo-rose 2.6s ease-in-out 2.4s infinite;
+}
+
+/* Les deux moitiés du logo : même image, découpée par une ligne en zigzag (la fissure). */
+.voile-illustration[data-niveau="2"]::before,
+.voile-illustration[data-niveau="2"]::after {
+  --logo-largeur: min(44vmin, 400px);
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: auto;
+  width: var(--logo-largeur);
+  height: calc(var(--logo-largeur) * 1.0775); /* ratio du PNG : 3343 x 3602 */
+  background: url("assets/logo/Logo Pomme d'Amour.png") center / contain no-repeat;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.voile-illustration[data-niveau="2"]::before {
+  clip-path: polygon(0 0, 50% 0, 45% 12%, 55% 25%, 44% 38%, 56% 50%, 45% 63%, 55% 76%, 46% 88%, 50% 100%, 0 100%);
+  transform-origin: 50% 100%;
+  animation: pomme-gauche 2.2s ease-in-out 0.1s both;
+}
+
+.voile-illustration[data-niveau="2"]::after {
+  clip-path: polygon(100% 0, 50% 0, 45% 12%, 55% 25%, 44% 38%, 56% 50%, 45% 63%, 55% 76%, 46% 88%, 50% 100%, 100% 100%);
+  transform-origin: 50% 100%;
+  animation: pomme-droite 2.2s ease-in-out 0.1s both;
+}
+
+@keyframes rideau-ouvert {
+  0% { clip-path: inset(0 50% 0 50% round 20px); opacity: 0.4; }
+  100% { clip-path: inset(0 0 0 0 round 20px); opacity: 1; }
+}
+
+/* 0-20 % : le logo apparaît. 20-48 % : il tremble. 48 % : éclair au moment de la fissure.
+   56-100 % : les moitiés s'écartent, basculent vers l'extérieur et s'effacent. */
+@keyframes pomme-gauche {
+  0% { opacity: 0; transform: scale(0.3); filter: drop-shadow(0 0 28px rgba(255, 179, 198, 0.85)) brightness(1); }
+  20% { opacity: 1; transform: scale(1); }
+  28% { transform: translateX(-1.5%) rotate(-1.5deg); }
+  34% { transform: translateX(1%) rotate(1deg); }
+  41% { transform: translateX(-1.5%) rotate(-1.5deg); }
+  48% { opacity: 1; transform: translateX(0) rotate(0deg); filter: drop-shadow(0 0 28px rgba(255, 179, 198, 0.85)) brightness(2); }
+  56% { opacity: 1; transform: translateX(-6%) rotate(-3deg); }
+  100% { opacity: 0; transform: translate(-70%, 20%) rotate(-24deg); filter: drop-shadow(0 0 28px rgba(255, 179, 198, 0.85)) brightness(1); }
+}
+
+@keyframes pomme-droite {
+  0% { opacity: 0; transform: scale(0.3); filter: drop-shadow(0 0 28px rgba(255, 179, 198, 0.85)) brightness(1); }
+  20% { opacity: 1; transform: scale(1); }
+  28% { transform: translateX(1.5%) rotate(1.5deg); }
+  34% { transform: translateX(-1%) rotate(-1deg); }
+  41% { transform: translateX(1.5%) rotate(1.5deg); }
+  48% { opacity: 1; transform: translateX(0) rotate(0deg); filter: drop-shadow(0 0 28px rgba(255, 179, 198, 0.85)) brightness(2); }
+  56% { opacity: 1; transform: translateX(6%) rotate(3deg); }
+  100% { opacity: 0; transform: translate(70%, 20%) rotate(24deg); filter: drop-shadow(0 0 28px rgba(255, 179, 198, 0.85)) brightness(1); }
+}
+
+@keyframes halo-rose {
+  0%, 100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 rgba(255, 179, 198, 0); }
+  50% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 36px rgba(255, 179, 198, 0.75); }
+}
+
+/* Niveau 3 · Grand secret : le logo Pomme d'Amour apparaît sur fond noir, bat deux fois comme un cœur,
+   puis grossit jusqu'à traverser l'écran. L'image se retourne comme une carte, avec un halo doré. */
+.voile-illustration[data-niveau="3"] {
+  overflow: hidden;
+  background: rgba(10, 2, 4, 0.88);
+  animation: voile-secret 1s ease-out backwards;
+}
+
+.voile-illustration[data-niveau="3"]::before {
+  --logo-largeur: min(44vmin, 400px);
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: var(--logo-largeur);
+  height: calc(var(--logo-largeur) * 1.0775); /* ratio du PNG : 3343 x 3602 */
+  background: url("assets/logo/Logo Pomme d'Amour.png") center / contain no-repeat;
+  filter: drop-shadow(0 0 28px rgba(217, 154, 43, 0.85));
+  pointer-events: none;
+  opacity: 0;
+  animation: logo-secret 2s ease-in-out 0.2s both;
+}
+
+.voile-illustration[data-niveau="3"] .illustration-cg {
+  border-color: #fde8b3;
+  animation:
+    carte-retournee 1.5s cubic-bezier(0.34, 1.3, 0.64, 1) 1.5s backwards,
+    halo-dore 2.8s ease-in-out 3.1s infinite;
+}
+
+@keyframes voile-secret {
+  from { background: rgba(0, 0, 0, 1); }
+  to { background: rgba(10, 2, 4, 0.88); }
+}
+
+@keyframes logo-secret {
+  0% { opacity: 0; transform: scale(0.3); }
+  18% { opacity: 1; transform: scale(1); }
+  30% { opacity: 1; transform: scale(1.12); }
+  42% { opacity: 1; transform: scale(1); }
+  54% { opacity: 1; transform: scale(1.16); }
+  66% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(7); }
+}
+
+@keyframes carte-retournee {
+  0% { opacity: 0; transform: perspective(1200px) rotateY(-90deg) scale(0.6); filter: brightness(2); }
+  40% { opacity: 1; }
+  100% { opacity: 1; transform: perspective(1200px) rotateY(0deg) scale(1); filter: brightness(1); }
+}
+
+@keyframes halo-dore {
+  0%, 100% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 rgba(217, 154, 43, 0); }
+  50% { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 56px rgba(253, 232, 179, 0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voile-illustration[data-niveau] {
+    animation: none;
+  }
+
+  .voile-illustration[data-niveau]::before,
+  .voile-illustration[data-niveau]::after {
+    display: none;
+  }
+
+  .voile-illustration[data-niveau] .illustration-cg {
+    animation: apparition-illustration 0.2s ease-out both;
+  }
+}
+
 /* Écran fin d'épisode */
 .ecran-fin-episode {
   position: absolute;
@@ -2703,363 +3099,3 @@ html, body {
   font-size: 1.8rem;
   color: var(--texte-doux);
 }
-
-.ecran-dressing {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  background: linear-gradient(160deg, #fff6f8 0%, var(--rose-poudre) 100%);
-  color: var(--texte-fonce);
-}
-
-.dressing-entete {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 1.5rem;
-}
-
-.dressing-surtitre {
-  margin: 0;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--rouge-pomme);
-}
-
-.dressing-titre {
-  margin: 0;
-  font-family: var(--police-titre);
-  font-size: clamp(1.4rem, 2.6vw, 2rem);
-  color: var(--rouge-gourmand);
-}
-
-.dressing-retour {
-  padding: 0.5rem 1.1rem;
-  border: 2px solid var(--rouge-pomme);
-  border-radius: 50px;
-  background: #ffffff;
-  color: var(--rouge-pomme);
-  font-family: inherit;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.dressing-retour:hover {
-  background: var(--rose-poudre);
-}
-
-.dressing-corps {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: 1.25rem;
-  padding: 0 1.5rem 1rem;
-}
-
-.dressing-panneau {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: rgba(255, 255, 255, 0.78);
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  border-radius: 24px;
-  box-shadow: var(--ombre-carte);
-  overflow: hidden;
-}
-
-.dressing-onglets {
-  display: flex;
-  gap: 0.4rem;
-  padding: 0.75rem 0.75rem 0;
-  overflow-x: auto;
-}
-
-.dressing-onglet {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1rem;
-  border: 2px solid transparent;
-  border-radius: 50px;
-  background: transparent;
-  color: var(--texte-doux);
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.dressing-onglet:hover {
-  background: var(--rose-poudre);
-}
-
-.dressing-onglet[aria-selected="true"] {
-  background: var(--degrade-rouge);
-  color: #ffffff;
-}
-
-.dressing-onglet:focus-visible,
-.dressing-tuile:focus-visible,
-.dressing-bouton:focus-visible,
-.dressing-retour:focus-visible {
-  outline: 3px solid var(--rouge-pomme);
-  outline-offset: 2px;
-}
-
-.dressing-zone-choix {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 1rem;
-}
-
-.dressing-choix[hidden] {
-  display: none;
-}
-
-.dressing-section + .dressing-section {
-  margin-top: 1.1rem;
-}
-
-.dressing-section-titre {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--texte-doux);
-}
-
-.dressing-grille {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 0.7rem;
-}
-
-.dressing-tuile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.45rem;
-  border: 2px solid transparent;
-  border-radius: 18px;
-  background: #ffffff;
-  color: var(--texte-fonce);
-  font-family: inherit;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(107, 0, 1, 0.08);
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.dressing-tuile:hover:not(:disabled) {
-  transform: translateY(-2px);
-  border-color: var(--rose-pastel);
-}
-
-.dressing-tuile[aria-pressed="true"] {
-  border-color: var(--rouge-pomme);
-  box-shadow: 0 0 0 3px rgba(155, 14, 34, 0.18);
-}
-
-.dressing-tuile.recouvert {
-  opacity: 0.6;
-}
-
-.dressing-tuile.verrouille {
-  opacity: 0.55;
-  filter: grayscale(0.6);
-  cursor: not-allowed;
-}
-
-.dressing-tuile-nom {
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.2;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.dressing-tuile-cadenas {
-  position: absolute;
-  top: 0.45rem;
-  right: 0.45rem;
-  font-size: 1rem;
-}
-
-.dressing-apercu {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-  min-height: 0;
-}
-
-.dressing-scene {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  overflow: hidden;
-  border-radius: 28px;
-  background: radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.35) 60%, transparent 78%);
-}
-
-.dressing-sol {
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  bottom: 0;
-  height: 12%;
-  background: radial-gradient(ellipse at center, rgba(155, 14, 34, 0.18), transparent 70%);
-}
-
-.dressing-avatar {
-  position: relative;
-  z-index: 1;
-  flex: 0 0 auto;
-  width: auto;
-  height: 100%;
-  max-width: 100%;
-  filter: drop-shadow(0 10px 18px rgba(61, 18, 26, 0.25));
-}
-
-.dressing-nom {
-  margin: 0.5rem 0 0;
-  font-family: var(--police-titre);
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--rouge-gourmand);
-}
-
-.dressing-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.8rem 1.5rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(8px);
-  border-top: 2px solid var(--rose-pastel);
-}
-
-.dressing-statut {
-  flex: 1;
-  min-height: 1.2em;
-  margin: 0;
-  font-weight: 600;
-  color: var(--texte-doux);
-}
-
-.dressing-statut-erreur {
-  color: var(--rouge-gourmand);
-}
-
-.dressing-boutons {
-  display: flex;
-  gap: 0.8rem;
-}
-
-.dressing-bouton {
-  padding: 0.85rem 1.8rem;
-  border: 2px solid transparent;
-  border-radius: 50px;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.dressing-bouton:hover:not(:disabled) {
-  transform: translateY(-2px);
-}
-
-.dressing-bouton:disabled {
-  opacity: 0.6;
-  cursor: progress;
-}
-
-.dressing-bouton-principal {
-  background: var(--degrade-rouge-vibrant);
-  border-color: rgba(255, 255, 255, 0.85);
-  color: #ffffff;
-  box-shadow: var(--ombre-bouton);
-}
-
-.dressing-bouton-secondaire {
-  background: #ffffff;
-  border-color: var(--rouge-pomme);
-  color: var(--rouge-pomme);
-}
-
-@media (max-width: 760px) {
-  .dressing-entete {
-    padding: 0.6rem 1rem;
-  }
-
-  .dressing-corps {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 38%) minmax(0, 1fr);
-    gap: 0.6rem;
-    padding: 0 0.75rem 0.6rem;
-  }
-
-  .dressing-apercu {
-    order: -1;
-  }
-
-  .dressing-nom {
-    margin-top: 0.25rem;
-    font-size: 1rem;
-  }
-
-  .dressing-grille {
-    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-    gap: 0.5rem;
-  }
-
-  .dressing-actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-    padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  .dressing-boutons {
-    width: 100%;
-  }
-
-  .dressing-bouton {
-    flex: 1;
-    padding: 0.75rem 1rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dressing-tuile,
-  .dressing-bouton,
-  .dressing-onglet {
-    transition: none;
-  }
-}
-
-/* L'attribut hidden doit l'emporter sur les display définis plus haut (sprite d'origine / calques). */
-.dressing-avatar[hidden] {
-  display: none;
-}
-
-.dressing-sprite-origine {
-  object-fit: contain;
-}
-

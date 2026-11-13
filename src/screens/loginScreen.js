@@ -1,311 +1,391 @@
-// Écran de connexion / inscription : écran-titre d'otome game.
-// Décor du campus, personnages en pied de chaque côté, logo et fenêtre de dialogue.
-// Contrat inchangé : lancerEcranConnexion(conteneurRacine, { onConnecte }).
 import { creerCompteJoueur, connexionJoueur } from "../services/playerRepository.js";
+import { getCharacters, getEpisode, getBackgrounds } from "../services/gameRepository.js";
+import { creerMoteurExtrait } from "../engine/episodePreview.js";
+import { lancerEcranDialogue } from "./dialogueScreen.js";
+import { creerSectionConcept } from "../ui/conceptSection.js";
+import { creerCarrouselPersonnages, creerDecorPersonnages } from "../ui/characterCarousel.js";
+import {
+  creer, icone, creerImage, creerBouton, creerEntete,
+  creerTransitionConcept,
+} from "../ui/landingComponents.js";
 
-const DECOR = "assets/Décors/Entrée campus.png";
-const DECOR_SECOURS = "assets/Décors/Cour Campus.jpg";
 const LOGO = "assets/logo/Logo Pomme d'Amour.png";
-const DOSSIER_PERSONNAGES = "assets/Personnages/Crushs/PNG/";
 
-// decalage : distance au bord de l'écran (en vw). taille : hauteur en % de l'écran.
-// rang : "avant" reste visible partout, "arriere" disparaît sur les écrans moyens et petits.
-const TROUPE = [
-  { nom: "Isaac", fichier: "Isaac.png", cote: "gauche", decalage: -2, taille: 88, plan: 2, rang: "avant" },
-  { nom: "Aaron", fichier: "Aaron.png", cote: "gauche", decalage: 13, taille: 80, plan: 1, rang: "arriere" },
-  { nom: "Sasha", fichier: "Sasha.png", cote: "droite", decalage: -2, taille: 88, plan: 2, rang: "avant" },
-  { nom: "Camel", fichier: "Camel.png", cote: "droite", decalage: 13, taille: 80, plan: 1, rang: "arriere" }
-];
-
-const ICONES = {
-  star: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.1 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>',
-  play: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14l11-7z"/></svg>',
-  mail: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
-  lock: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
-  user: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
-  alert: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>'
-};
-
-const LIBELLE_CONNEXION = "Entrer sur le Campus";
-const LIBELLE_INSCRIPTION = "Commencer l'aventure";
-const MESSAGE_CHAMPS_VIDES = "Merci de renseigner tous les champs obligatoires.";
-const MESSAGE_ECHEC = "Connexion impossible, vérifie tes identifiants.";
-
-function creer(balise, classe, texte) {
-  const element = document.createElement(balise);
-  if (classe) element.className = classe;
-  if (texte !== undefined) element.textContent = texte;
-  return element;
-}
-
-function creerChamp({ id, libelle, icone, type, placeholder, autocomplete, maxLength, requis }) {
-  const groupe = creer("div", "groupe-champ");
-
-  const label = creer("label", "label-champ", libelle);
-  label.htmlFor = id;
-
-  const enveloppe = creer("div", "champ-saisie-wrapper");
-  const pictogramme = creer("span", "champ-icone");
-  pictogramme.innerHTML = icone;
-
-  const saisie = creer("input", "champ-saisie");
-  saisie.id = id;
+function creerChamp(id, libelle, type, pictogramme, autocomplete) {
+  const groupe = creer("div", "entree-champ");
+  const label = creer("label", "", libelle);
+  label.htmlFor = `entree-${id}`;
+  const enveloppe = creer("div", "entree-saisie");
+  const saisie = creer("input");
+  saisie.id = `entree-${id}`;
   saisie.name = id;
   saisie.type = type;
-  saisie.placeholder = placeholder;
   saisie.autocomplete = autocomplete;
-  saisie.maxLength = maxLength;
-  saisie.required = requis;
-
-  enveloppe.append(pictogramme, saisie);
+  saisie.required = id !== "pseudo";
+  saisie.maxLength = id === "pseudo" ? 40 : 100;
+  if (id === "email") saisie.placeholder = "Adresse e-mail";
+  if (id === "password") saisie.placeholder = "Mot de passe";
+  if (id === "pseudo") saisie.placeholder = "Sucrette";
+  enveloppe.append(icone(pictogramme), saisie);
+  if (id === "password") {
+    const afficher = creer("button", "entree-voir-mdp");
+    afficher.append(icone("oeil"));
+    afficher.type = "button";
+    afficher.setAttribute("aria-label", "Afficher le mot de passe");
+    afficher.setAttribute("aria-pressed", "false");
+    afficher.addEventListener("click", () => {
+      const visible = saisie.type === "password";
+      saisie.type = visible ? "text" : "password";
+      afficher.replaceChildren(icone(visible ? "oeil-barre" : "oeil"));
+      afficher.setAttribute("aria-label", visible ? "Masquer le mot de passe" : "Afficher le mot de passe");
+      afficher.setAttribute("aria-pressed", String(visible));
+    });
+    enveloppe.append(afficher);
+  }
   groupe.append(label, enveloppe);
   return { groupe, saisie };
 }
 
-function creerPersonnage({ nom, fichier, cote, decalage, taille, plan, rang }, indice) {
-  const figure = creer("figure", `perso perso-${cote}`);
-  figure.dataset.rang = rang;
-  figure.style.setProperty("--decalage", String(decalage));
-  figure.style.setProperty("--taille", String(taille));
-  figure.style.setProperty("--plan", String(plan));
-  figure.style.setProperty("--ordre", String(indice));
-
-  const image = creer("img", "perso-image");
-  image.alt = "";
-  image.decoding = "async";
-  image.draggable = false;
-  // Si une image manque, on retire simplement le personnage plutôt que d'afficher une icône cassée.
-  image.onerror = () => figure.remove();
-  image.src = `${DOSSIER_PERSONNAGES}${fichier}`;
-
-  figure.append(image, creer("figcaption", "perso-nom", nom));
-  return figure;
-}
-
-export function lancerEcranConnexion(conteneurRacine, { onConnecte }) {
-  let onglet = "connexion";
-  let enCours = false;
-
-  const ecran = creer("div", "ecran-connexion");
-
-  // --- Scène (décorative) : décor, voile, particules, personnages ---
-  const scene = creer("div", "scene-connexion");
-  scene.setAttribute("aria-hidden", "true");
-
-  const fondDecor = creer("img", "decor-fond-connexion");
-  fondDecor.alt = "";
-  fondDecor.decoding = "async";
-  fondDecor.onerror = () => {
-    fondDecor.onerror = null;
-    fondDecor.src = DECOR_SECOURS;
-  };
-  fondDecor.src = DECOR;
-
-  const zoneParticules = creer("div", "particules-flottantes");
-  for (let i = 0; i < 12; i++) {
-    const coeur = creer("span", "particule-coeur", i % 2 === 0 ? "♥" : "✦");
-    coeur.style.left = `${Math.random() * 95}%`;
-    coeur.style.animationDelay = `${Math.random() * 7}s`;
-    coeur.style.animationDuration = `${7 + Math.random() * 6}s`;
-    zoneParticules.appendChild(coeur);
-  }
-
-  const troupe = creer("div", "troupe-connexion");
-  TROUPE.forEach((personnage, indice) => troupe.appendChild(creerPersonnage(personnage, indice)));
-
-  scene.append(fondDecor, creer("div", "voile-connexion"), zoneParticules, troupe);
-  ecran.appendChild(scene);
-
-  // --- Contenu : logo, fenêtre de dialogue, réplique ---
-  const contenu = creer("div", "contenu-connexion");
-  const colonne = creer("div", "colonne-connexion");
-
-  const entete = creer("header", "entete-connexion");
-  const titre = creer("h1", "titre-connexion");
-  const logo = creer("img", "logo-connexion");
-  logo.src = LOGO;
-  logo.alt = "Pomme d'Amour — Otome Game";
-  titre.appendChild(logo);
-  entete.append(titre, creer("p", "sous-titre-connexion", "Université Aster · Romance & Choix"));
-
-  const carte = creer("main", "carte-connexion");
-
-  const plaque = creer("div", "plaque-connexion");
-  plaque.innerHTML = ICONES.star;
-  plaque.append(creer("span", "", "Bienvenue, future Sucrette"));
-  carte.appendChild(plaque);
-
-  // Onglets présentés comme des choix de visual novel
-  const onglets = creer("div", "onglets-connexion");
+function creerConnexion(onConnecte) {
+  const bloc = creer("div");
+  const onglets = creer("div", "entree-onglets");
   onglets.setAttribute("role", "tablist");
-  onglets.setAttribute("aria-label", "Connexion ou création de compte");
-
-  function creerOnglet(id, texte) {
-    const bouton = creer("button", "btn-onglet", texte);
-    bouton.type = "button";
-    bouton.id = `onglet-${id}`;
-    bouton.setAttribute("role", "tab");
-    bouton.setAttribute("aria-controls", "panneau-connexion");
-    return bouton;
-  }
-
-  const btnConnexion = creerOnglet("connexion", "Se connecter");
-  const btnInscription = creerOnglet("inscription", "Nouveau compte");
-  onglets.append(btnConnexion, btnInscription);
-  carte.appendChild(onglets);
-
-  const formulaire = creer("form", "formulaire-connexion");
-  formulaire.id = "panneau-connexion";
+  onglets.setAttribute("aria-label", "Ton compte");
+  const formulaire = creer("form", "entree-formulaire");
+  formulaire.id = "entree-formulaire";
   formulaire.setAttribute("role", "tabpanel");
-  formulaire.noValidate = true;
-
-  const { groupe: groupePseudo, saisie: champPseudo } = creerChamp({
-    id: "pseudo",
-    libelle: "Prénom de ton héroïne",
-    icone: ICONES.user,
-    type: "text",
-    placeholder: "Ex : Sucrette",
-    autocomplete: "nickname",
-    maxLength: 40,
-    requis: false
+  const pseudo = creerChamp("pseudo", "Prénom de ton héroïne (facultatif)", "text", "compte", "nickname");
+  const email = creerChamp("email", "Adresse e-mail", "email", "mail", "email");
+  const mdp = creerChamp("password", "Mot de passe", "password", "verrou", "current-password");
+  const erreur = creer("p", "entree-erreur");
+  erreur.id = "entree-erreur";
+  erreur.setAttribute("role", "alert");
+  erreur.hidden = true;
+  formulaire.setAttribute("aria-describedby", erreur.id);
+  const valider = creerBouton("Entrer sur le campus", null, { pictogramme: "coeur" });
+  valider.type = "submit";
+  formulaire.append(pseudo.groupe, email.groupe, mdp.groupe, erreur, valider);
+  let inscription = false;
+  let enCours = false;
+  const boutons = ["Se connecter", "Créer un compte"].map((texte, index) => {
+    const bouton = creer("button", "entree-onglet");
+    bouton.append(icone(index === 0 ? "compte" : "inscription"), creer("span", "", texte));
+    bouton.type = "button";
+    bouton.id = `entree-onglet-${index}`;
+    bouton.setAttribute("role", "tab");
+    bouton.setAttribute("aria-controls", formulaire.id);
+    bouton.addEventListener("click", () => choisir(index === 1));
+    onglets.append(bouton);
+    return bouton;
   });
-
-  const { groupe: groupeEmail, saisie: champEmail } = creerChamp({
-    id: "email",
-    libelle: "Adresse email",
-    icone: ICONES.mail,
-    type: "email",
-    placeholder: "ton-email@exemple.com",
-    autocomplete: "email",
-    maxLength: 100,
-    requis: true
-  });
-
-  const { groupe: groupeMotDePasse, saisie: champMotDePasse } = creerChamp({
-    id: "password",
-    libelle: "Mot de passe secret",
-    icone: ICONES.lock,
-    type: "password",
-    placeholder: "••••••••",
-    autocomplete: "current-password",
-    maxLength: 100,
-    requis: true
-  });
-
-  const messageErreur = creer("p", "message-alerte");
-  messageErreur.setAttribute("role", "alert");
-  messageErreur.hidden = true;
-  const iconeErreur = creer("span", "message-alerte-icone");
-  iconeErreur.innerHTML = ICONES.alert;
-  const texteErreur = creer("span");
-  messageErreur.append(iconeErreur, texteErreur);
-
-  const boutonValider = creer("button", "bouton-cta-connexion");
-  boutonValider.type = "submit";
-  const libelleBouton = creer("span", "cta-libelle");
-  const iconeBouton = creer("span", "cta-icone");
-  iconeBouton.innerHTML = ICONES.play;
-  boutonValider.append(libelleBouton, iconeBouton);
-
-  formulaire.append(groupePseudo, groupeEmail, groupeMotDePasse, messageErreur, boutonValider);
-  carte.appendChild(formulaire);
-
-  colonne.append(
-    entete,
-    carte,
-    creer("p", "texte-bas-connexion", "Prêt(e) à rencontrer Isaac, Aaron, Sasha, Camel et les autres ?")
-  );
-  contenu.appendChild(colonne);
-  ecran.appendChild(contenu);
-
-  function libelleActuel() {
-    return onglet === "inscription" ? LIBELLE_INSCRIPTION : LIBELLE_CONNEXION;
-  }
-
-  function afficherErreur(message) {
-    texteErreur.textContent = message;
-    messageErreur.hidden = false;
-  }
-
-  function masquerErreur() {
-    texteErreur.textContent = "";
-    messageErreur.hidden = true;
-  }
-
-  function appliquerOnglet() {
-    const inscription = onglet === "inscription";
-
-    [[btnConnexion, !inscription], [btnInscription, inscription]].forEach(([bouton, actif]) => {
-      bouton.classList.toggle("actif", actif);
+  function choisir(nouveau) {
+    if (enCours) return;
+    inscription = nouveau;
+    boutons.forEach((bouton, index) => {
+      const actif = (index === 1) === inscription;
       bouton.setAttribute("aria-selected", String(actif));
       bouton.tabIndex = actif ? 0 : -1;
     });
-
-    groupePseudo.hidden = !inscription;
-    champMotDePasse.autocomplete = inscription ? "new-password" : "current-password";
-    libelleBouton.textContent = libelleActuel();
-    formulaire.setAttribute("aria-labelledby", inscription ? btnInscription.id : btnConnexion.id);
-    masquerErreur();
+    pseudo.groupe.hidden = !inscription;
+    mdp.saisie.autocomplete = inscription ? "new-password" : "current-password";
+    mdp.saisie.minLength = inscription ? 8 : 1;
+    valider.lastElementChild.textContent = inscription ? "Commencer l'aventure" : "Entrer sur le campus";
+    formulaire.setAttribute("aria-labelledby", boutons[inscription ? 1 : 0].id);
+    erreur.hidden = true;
   }
-
-  function choisirOnglet(nom) {
-    if (enCours || nom === onglet) return;
-    onglet = nom;
-    appliquerOnglet();
-  }
-
-  btnConnexion.addEventListener("click", () => choisirOnglet("connexion"));
-  btnInscription.addEventListener("click", () => choisirOnglet("inscription"));
-
-  onglets.addEventListener("keydown", (evenement) => {
-    if (enCours) return;
-    if (evenement.key !== "ArrowLeft" && evenement.key !== "ArrowRight") return;
-    evenement.preventDefault();
-    choisirOnglet(onglet === "connexion" ? "inscription" : "connexion");
-    (onglet === "connexion" ? btnConnexion : btnInscription).focus();
+  onglets.addEventListener("keydown", (event) => {
+    if (enCours || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    choisir(event.key === "Home" ? false : event.key === "End" ? true : !inscription);
+    boutons[inscription ? 1 : 0].focus();
   });
+  formulaire.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (enCours || !formulaire.reportValidity()) return;
+    enCours = true;
+    erreur.hidden = true;
+    valider.disabled = true;
+    boutons.forEach((bouton) => { bouton.disabled = true; });
+    formulaire.setAttribute("aria-busy", "true");
+    valider.lastElementChild.textContent = "Ouverture des portes…";
+    try {
+      const joueur = inscription
+        ? await creerCompteJoueur(email.saisie.value, mdp.saisie.value, pseudo.saisie.value)
+        : await connexionJoueur(email.saisie.value, mdp.saisie.value);
+      await onConnecte(joueur);
+    } catch (cause) {
+      erreur.textContent = cause.message || "Connexion impossible. Réessaie dans un instant.";
+      erreur.hidden = false;
+    } finally {
+      enCours = false;
+      valider.disabled = false;
+      boutons.forEach((bouton) => { bouton.disabled = false; });
+      formulaire.removeAttribute("aria-busy");
+      valider.lastElementChild.textContent = inscription ? "Commencer l'aventure" : "Entrer sur le campus";
+    }
+  });
+  choisir(false);
+  bloc.append(onglets, formulaire);
+  return { bloc, focus: email.saisie };
+}
 
-  async function validerFormulaire() {
-    if (enCours) return;
-    masquerErreur();
+export function lancerEcranConnexion(conteneurRacine, {
+  onConnecte, joueur = null, sauvegarde = null,
+  onContinuer, onDressing, onAccueil,
+}) {
+  const page = creer("div", "page-connexion");
+  const defilement = creer("div", "entree-defilement");
+  const principal = creer("main", "entree-principal");
+  const hero = creer("section", "entree-hero");
+  hero.id = "entree-campus";
+  hero.tabIndex = -1;
+  hero.setAttribute("aria-labelledby", "entree-titre");
+  function allerA(cible, focus = cible) {
+    menu.setAttribute("aria-expanded", "false");
+    liens.classList.remove("est-ouvert");
+    // La navbar est hors de ce conteneur : son bord supérieur est déjà dégagé.
+    const top = cible === hero ? 0
+      : defilement.scrollTop + cible.getBoundingClientRect().top
+        - defilement.getBoundingClientRect().top - defilement.clientTop
+        - parseFloat(getComputedStyle(cible).scrollMarginTop);
+    defilement.scrollTo({
+      top: Math.max(0, top),
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+    });
+    focus.focus({ preventScroll: true });
+  }
+  const presentation = creer("div", "entree-presentation");
+  const titre = creer("h1", "", "Une rentrée,");
+  titre.id = "entree-titre";
+  titre.append(creer("em", "", "Mille possibilités."));
+  const description = creer("p", "entree-hero-texte");
+  description.append(
+    creer("span", "", "Bienvenue à Aster. Des regards qui se croisent, "),
+    creer("span", "", "des choix qui rapprochent… et toi, au cœur de l'histoire."),
+  );
+  presentation.append(
+    creerImage(LOGO, "entree-logo-hero", "Pomme d'Amour", true),
+    creer("p", "entree-etiquette", "Ta prochaine histoire d'amour"),
+    titre,
+    description,
+  );
+  const carte = creer("aside", "entree-compte");
+  carte.id = "entree-compte";
+  carte.tabIndex = -1;
+  carte.setAttribute("aria-label", joueur ? "Ta partie" : "Rejoins le campus");
+  carte.append(creer("p", "entree-surtitre", "Ton accès au campus"));
+  let focusCompte;
+  const rejoindre = () => allerA(carte, focusCompte);
+  const jouer = joueur ? onContinuer : rejoindre;
+  if (joueur) {
+    carte.append(
+      creer("h2", "", `Bon retour, ${sauvegarde?.playerName || joueur.pseudo || "Sucrette"}`),
+      creer("p", "entree-compte-intro", "Ton histoire t'attend de l'autre côté des portes."),
+      creer("p", "entree-progression", sauvegarde?.currentEpisode
+        ? `Épisode en cours · ${sauvegarde.currentEpisode.replace(/^episode(\d+)$/, "$1")}`
+        : "Une nouvelle histoire à commencer"),
+    );
+    focusCompte = creerBouton("Continuer l'histoire", onContinuer, { pictogramme: "jouer" });
+    carte.append(focusCompte, creerBouton("Mon dressing", onDressing, { secondaire: true, pictogramme: "robe" }));
+  } else {
+    carte.append(
+      creer("h2", "", "On t'attend à Aster"),
+      creer("p", "entree-compte-intro", "Ouvre les portes de ton histoire."),
+    );
+    const connexion = creerConnexion(onConnecte);
+    focusCompte = connexion.focus;
+    carte.append(connexion.bloc);
+  }
+  const noteCompte = creer("div", "entree-compte-note");
+  noteCompte.setAttribute("aria-hidden", "true");
+  noteCompte.append(icone("coeur"));
+  carte.append(noteCompte);
 
-    if (!champEmail.value.trim() || !champMotDePasse.value) {
-      afficherErreur(MESSAGE_CHAMPS_VIDES);
+  const apercu = creer("section", "entree-section entree-apercu");
+  apercu.id = "entree-univers";
+  apercu.tabIndex = -1;
+  const personnages = creer("section", "entree-section entree-rencontres");
+  personnages.id = "entree-personnages";
+  personnages.tabIndex = -1;
+  const { section: concept, afficherPortraits } = creerSectionConcept({
+    onChoix: () => allerA(apercu),
+    onRencontres: () => allerA(personnages),
+    onUnivers: () => allerA(apercu),
+  });
+  const actionsHero = creer("div", "entree-actions");
+  actionsHero.append(
+    creerBouton(joueur ? "Continuer mon histoire" : "Jouer", jouer, { pictogramme: "jouer" }),
+    creerBouton("Découvrir le concept", () => allerA(concept), { secondaire: true, pictogramme: "livre" }),
+  );
+  presentation.append(actionsHero);
+  const casting = creer("div", "entree-casting");
+  casting.setAttribute("aria-hidden", "true");
+  casting.hidden = true;
+  const colonnes = creer("div", "entree-hero-contenu");
+  colonnes.append(presentation, casting, carte);
+  hero.append(colonnes);
+
+  const entetePersonnages = creerEntete("Les personnages", "", "Sept personnalités, sept histoires... À toi de trouver celle qui fera battre ton cœur.");
+  const titrePersonnages = entetePersonnages.querySelector("h2");
+  titrePersonnages.id = "entree-personnages-titre";
+  titrePersonnages.textContent = "Sept rencontres. ";
+  titrePersonnages.append(creer("em", "", "Et ce petit déclic."));
+  personnages.setAttribute("aria-labelledby", titrePersonnages.id);
+  const carrousel = creerCarrouselPersonnages(jouer);
+  const grille = carrousel.piste;
+  const statut = creer("p", "entree-statut", "Les rencontres se préparent…");
+  statut.setAttribute("role", "status");
+  const decorPersonnages = creerDecorPersonnages();
+  personnages.append(...decorPersonnages.elements, entetePersonnages, statut, carrousel.bloc);
+
+  apercu.append(creerEntete("03 / À toi de jouer", "Le premier chapitre, c'est maintenant.", "Un vrai passage de l'épisode 1. Essaie un choix : ici, rien n'est sauvegardé."));
+  apercu.append(creer("p", "entree-extrait-badge", "Épisode 01 · Extrait interactif"));
+  const scene = creer("div", "entree-scene");
+  scene.id = "entree-extrait";
+  scene.tabIndex = -1;
+  scene.setAttribute("aria-label", "Extrait interactif de l'épisode 1, sans sauvegarde");
+  const statutExtrait = creer("p", "entree-statut", "Chargement de l'extrait…");
+  statutExtrait.setAttribute("role", "status");
+  scene.append(statutExtrait);
+  apercu.append(scene, creerBouton("Découvrir l'histoire", jouer, { pictogramme: "jouer" }));
+
+  const navigation = creer("nav", "entree-nav");
+  navigation.setAttribute("aria-label", "Navigation principale");
+  const marque = creer("a", "entree-marque");
+  marque.href = "#entree-campus";
+  marque.setAttribute("aria-label", "Accueil — Pomme d'Amour");
+  marque.append(creerImage(LOGO, "", ""), creer("span", "", "Pomme d'Amour"));
+  marque.addEventListener("click", (event) => { event.preventDefault(); allerA(hero, marque); });
+  const liens = creer("div", "entree-nav-liens");
+  liens.id = "entree-navigation";
+  const menu = creerBouton("Menu", () => {
+    const ouvert = menu.getAttribute("aria-expanded") !== "true";
+    menu.setAttribute("aria-expanded", String(ouvert));
+    liens.classList.toggle("est-ouvert", ouvert);
+  }, { secondaire: true });
+  menu.classList.add("entree-menu");
+  menu.setAttribute("aria-expanded", "false");
+  menu.setAttribute("aria-controls", liens.id);
+  const ancres = [];
+  [
+    ["Concept", concept, "etoile"],
+    ["Personnages", personnages, "coeur"],
+    ["Univers", apercu, "livre"],
+    ["Le jeu", scene, "manette"],
+  ].forEach(([texte, cible, pictogramme]) => {
+    const lien = creer("a");
+    lien.append(icone(pictogramme), creer("span", "", texte));
+    lien.href = `#${cible.id}`;
+    lien.addEventListener("click", (event) => {
+      event.preventDefault();
+      allerA(cible);
+    });
+    liens.append(lien);
+    ancres.push({ cible, lien });
+  });
+  navigation.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && menu.getAttribute("aria-expanded") === "true") {
+      menu.setAttribute("aria-expanded", "false");
+      liens.classList.remove("est-ouvert");
+      menu.focus();
+    }
+  });
+  const compte = creerBouton(joueur ? "Mon compte" : "Connexion", rejoindre, { secondaire: true, pictogramme: "compte" });
+  navigation.append(marque, liens, menu, compte);
+  const pied = creer("footer", "entree-footer");
+  const signature = creer("div", "entree-signature");
+  signature.append(creerImage(LOGO, "", "Pomme d'Amour"), creer("p", "", "Chaque cœur a son histoire."));
+  const liensPied = creer("div", "entree-footer-liens");
+  liensPied.append(
+    creerBouton("Le campus", () => allerA(apercu), { secondaire: true }),
+    creerBouton("Les personnages", () => allerA(personnages), { secondaire: true }),
+    creerBouton("Jouer", () => allerA(hero, marque), { pictogramme: "jouer" }),
+    creerBouton(joueur ? "Menu du jeu" : "Mon compte", joueur ? onAccueil : rejoindre, { secondaire: true }),
+  );
+  pied.append(signature, liensPied, creer("p", "entree-copyright", "Pomme d'Amour · Université Aster · Visual novel romantique"));
+  const eviter = creer("a", "entree-eviter", "Aller au contenu");
+  eviter.href = "#entree-concept";
+  eviter.addEventListener("click", (event) => { event.preventDefault(); allerA(concept); });
+  const invitation = creer("section", "entree-invitation");
+  invitation.append(
+    creer("p", "entree-surtitre", "La suite t'appartient"),
+    creer("h2", "", "C'est peut-être le début de quelque chose."),
+    creerBouton("Jouer", () => allerA(hero, marque), { pictogramme: "jouer" }),
+  );
+  principal.append(hero, creerTransitionConcept(), concept, personnages, apercu, invitation);
+  defilement.append(principal, pied);
+  page.append(eviter, navigation, defilement);
+  conteneurRacine.replaceChildren(page);
+
+  function actualiserNavigation() {
+    const ligne = defilement.getBoundingClientRect().top + 32;
+    let active = null;
+    ancres.forEach(({ cible, lien }) => {
+      if (cible.getBoundingClientRect().top - parseFloat(getComputedStyle(cible).scrollMarginTop) <= ligne) active = lien;
+    });
+    ancres.forEach(({ lien }) => {
+      if (lien === active) lien.setAttribute("aria-current", "location");
+      else lien.removeAttribute("aria-current");
+    });
+  }
+  defilement.addEventListener("scroll", actualiserNavigation, { passive: true });
+  const observation = new ResizeObserver(() => {
+    if (!page.isConnected) { observation.disconnect(); return; }
+    actualiserNavigation();
+  });
+  observation.observe(defilement);
+  observation.observe(principal);
+  actualiserNavigation();
+
+  getBackgrounds().then((decors) => {
+    if (!page.isConnected) return;
+    const campus = decors.find((decor) => decor.sourcePath === "assets/Décors/Entrée campus.png");
+    if (!campus?.image) {
+      console.warn("Décor d'entrée du campus indisponible pour la photo des personnages.");
       return;
     }
-
-    enCours = true;
-    boutonValider.disabled = true;
-    boutonValider.setAttribute("aria-busy", "true");
-    libelleBouton.textContent = "Chargement…";
-
-    try {
-      const joueur =
-        onglet === "connexion"
-          ? await connexionJoueur(champEmail.value, champMotDePasse.value)
-          : await creerCompteJoueur(champEmail.value, champMotDePasse.value, champPseudo.value);
-      onConnecte(joueur);
-    } catch (erreur) {
-      afficherErreur((erreur && erreur.message) || MESSAGE_ECHEC);
-      boutonValider.disabled = false;
-      boutonValider.removeAttribute("aria-busy");
-      libelleBouton.textContent = libelleActuel();
-      enCours = false;
-    }
-  }
-
-  formulaire.addEventListener("submit", (evenement) => {
-    evenement.preventDefault();
-    validerFormulaire();
+    decorPersonnages.afficherDecor(campus.image);
+  }).catch((erreur) => {
+    console.warn("Photo du campus indisponible.", erreur);
   });
 
-  appliquerOnglet();
-
-  conteneurRacine.innerHTML = "";
-  conteneurRacine.appendChild(ecran);
-
-  // Curseur dans l'email, sauf sur écran tactile où cela ouvrirait le clavier d'emblée.
-  if (window.matchMedia("(pointer: fine)").matches) {
-    champEmail.focus({ preventScroll: true });
-  }
+  getCharacters().then((donnees) => {
+    if (!page.isConnected) return;
+    const avecSprite = (donnees?.crushs || []).filter((p) => p.name && p.sprite);
+    const identifiants = ["isaac", "aaron", "camel", "mehdi", "liam", "stella", "sasha"];
+    const crushs = identifiants.map((id) => avecSprite.find((p) => p.id === id)).filter(Boolean);
+    statut.hidden = crushs.length === identifiants.length;
+    statut.textContent = statut.hidden ? "" : "Certains portraits sont momentanément indisponibles.";
+    if (!statut.hidden) console.warn("Portraits du casting indisponibles :", identifiants.filter((id) => !crushs.some((p) => p.id === id)));
+    carrousel.afficherPersonnages(crushs);
+    const vedettes = ["isaac", "aaron"].map((id) => avecSprite.find((p) => p.id === id));
+    if (vedettes.every(Boolean)) {
+      vedettes.forEach((p) => casting.append(creerImage(p.sprite, "entree-casting-personnage", p.name, true)));
+    } else {
+      console.warn("Les sprites d'Isaac et Aaron sont nécessaires au casting de l'accueil.");
+      casting.append(creer("p", "entree-casting-statut", "Les portraits d'Isaac et Aaron sont momentanément indisponibles."));
+    }
+    casting.hidden = false;
+    afficherPortraits(donnees);
+    return getEpisode("episode1").then((episode) => {
+      if (!page.isConnected) return;
+      let nettoyer;
+      function rejouer() {
+        nettoyer?.();
+        const moteur = creerMoteurExtrait(episode, donnees);
+        nettoyer = lancerEcranDialogue(scene, moteur, { onFinEpisode: rejouer });
+      }
+      rejouer();
+    });
+  }).catch((erreur) => {
+    console.warn("Contenu de l'accueil indisponible.", erreur);
+    if (!page.isConnected) return;
+    if (!grille.children.length) {
+      afficherPortraits(null);
+      statut.hidden = false;
+      statut.textContent = "Les portraits sont momentanément indisponibles. Tu peux toujours te connecter.";
+    }
+    statutExtrait.textContent = "L'extrait est momentanément indisponible. Retrouve l'histoire dans le jeu.";
+    scene.replaceChildren(statutExtrait);
+  });
 }

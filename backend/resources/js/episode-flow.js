@@ -261,6 +261,15 @@ function normalizeScene(scene, index, episode) {
   };
 
   normalized.nodeIds = normalized.nodeIds.filter((id) => episode.nodes[id]);
+
+  // Si la scène n'a pas encore de musique définie, on la déduit du premier nœud qui en a une.
+  if (!normalized.music) {
+    for (const id of normalized.nodeIds) {
+      const node = episode.nodes[id];
+      if (node?.music) { normalized.music = node.music; break; }
+    }
+  }
+
   return normalized;
 }
 
@@ -429,6 +438,7 @@ function renderSceneBlock(episode, scene, index, indexCibles) {
       </div>
       <div class="scene-settings">
         <label>Décor de la scène<select data-field="scene-background">${labelsForSelect(files.backgrounds, scene.background || "", "— Choisir un décor —", mediaLabel)}</select></label>
+        <label>Musique de la scène<select data-field="scene-music">${labelsForSelect(files.music, scene.music || "", "— Aucune musique —", mediaLabel)}</select></label>
       </div>
       <div class="scene-nodes">
         ${
@@ -535,7 +545,7 @@ function renderNodeCard(episode, node, id, index, indexCibles) {
       </div>
       <div class="node-grid">
         <label>Personnage<select data-field="speaker">${speakerOptions}</select></label>
-        <label>Musique<select data-field="music">${labelsForSelect(files.music, node.music || "", "— Aucune musique —", mediaLabel)}</select></label>
+        <label class="node-music-change">Changer la musique ici<select data-field="music">${labelsForSelect(files.music, node.music || "", "— Garder la musique de la scène —", mediaLabel)}</select></label>
         <label>Côté de la bulle<select data-field="position">
           <option value="" ${node.position !== "left" && node.position !== "right" ? "selected" : ""}>Automatique (à côté du personnage)</option>
           <option value="left" ${node.position === "left" ? "selected" : ""}>Toujours à gauche du personnage</option>
@@ -716,6 +726,9 @@ function handleSceneFlowInput(target) {
         if (node) node.background = scene.background;
       });
     }
+    if (field === "scene-music") {
+      scene.music = target.value || "";
+    }
 
     save();
   }
@@ -788,6 +801,9 @@ function newScene() {
   const lastPreviousId = previousScene?.nodeIds[previousScene.nodeIds.length - 1];
   const lastPreviousNode = lastPreviousId ? episode.nodes[lastPreviousId] : null;
 
+  // La nouvelle scène hérite de la musique de la scène précédente (au niveau scène, pas nœud).
+  scene.music = lastPreviousNode?.music || previousScene?.music || "";
+
   const firstNodeId = `${scene.id}_dialogue_1`;
   episode.nodes[firstNodeId] = {
     type: "line",
@@ -795,7 +811,7 @@ function newScene() {
     text: "",
     next: "",
     background: scene.background || "",
-    music: lastPreviousNode?.music || "",
+    music: "",   // pas de changement ponctuel par défaut : c'est la scène qui porte la musique
     position: "center",
   };
   scene.nodeIds.push(firstNodeId);
@@ -835,9 +851,10 @@ function scinderScene(nodeId) {
   const nouvelleScene = {
     id: uniqueId("scene", new Set(episode.scenes.map((item) => item.id))),
     title: `${scene.title || "Scène"} (suite)`,
-    // La nouvelle scène reprend le décor/musique du nœud de coupure (modifiable ensuite).
+    // La nouvelle scène reprend le décor de la scène d'origine, et sa musique de scène
+    // (un changement ponctuel sur le nœud de coupure ne devient pas la musique de scène).
     background: noeudCoupure?.background || scene.background || "",
-    music: noeudCoupure?.music || scene.music || "",
+    music: scene.music || "",
     nodeIds: nodeIdsDeplaces,
   };
 
@@ -857,7 +874,9 @@ function newNode(targetSceneId, type) {
   const id = uniqueId(`${scene.id}_${base}`, existingIds);
   const previousId = scene.nodeIds[scene.nodeIds.length - 1];
   const previousNode = episode.nodes[previousId];
-  const music = previousNode?.music || scene.music || "";
+  // On ne propage plus la musique via le nœud : c'est la scène qui la porte.
+  // On reprend uniquement un changement ponctuel explicite du nœud précédent.
+  const music = previousNode?.music || "";
 
   const node =
     type === "choice"

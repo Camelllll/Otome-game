@@ -1,6 +1,25 @@
 function titreIllustration(illustration, index) {
+  if (illustration.title) return illustration.title;
   const nomFichier = decodeURIComponent(illustration.path.split("/").pop() || "");
   return nomFichier.replace(/\.[^.]+$/, "") || `Illustration ${index + 1}`;
+}
+
+const RARETE_LIBELLES_GALERIE = {
+  common:    "Commun",
+  rare:      "Rare",
+  ultra_rare:"Ultra Rare",
+  legendary: "Légendaire",
+};
+
+function creerBadgeRareteGalerie(illustration) {
+  const rarete = illustration.rarity;
+  if (!rarete || rarete === "common") return null;
+  const libelle = RARETE_LIBELLES_GALERIE[rarete] ?? rarete;
+  const badge = document.createElement("span");
+  badge.className = `badge-rarete rarete-${rarete}`;
+  badge.setAttribute("aria-label", `Rareté : ${libelle}`);
+  badge.textContent = libelle;
+  return badge;
 }
 
 function dateAcquisition(valeur) {
@@ -43,6 +62,9 @@ export function lancerEcranGalerie(conteneurRacine, { illustrations = [], onReto
     illustrations.forEach((illustration, index) => {
       const carte = document.createElement("article");
       carte.className = "carte-illustration";
+      if (illustration.rarity && illustration.rarity !== "common") {
+        carte.dataset.rarete = illustration.rarity;
+      }
       const image = document.createElement("img");
       image.src = illustration.path;
       image.alt = titreIllustration(illustration, index);
@@ -55,6 +77,8 @@ export function lancerEcranGalerie(conteneurRacine, { illustrations = [], onReto
       const meta = document.createElement("p");
       meta.textContent = `Obtenue le ${dateAcquisition(illustration.acquiredAt)}`;
       details.appendChild(meta);
+      const badge = creerBadgeRareteGalerie(illustration);
+      if (badge) details.appendChild(badge);
       carte.append(image, details);
       image.addEventListener("click", () => ouvrirIllustration(image.src, image.alt));
       image.addEventListener("keydown", (event) => {

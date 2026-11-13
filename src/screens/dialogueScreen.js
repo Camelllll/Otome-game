@@ -3,16 +3,21 @@ import { afficherBullePersonnage, afficherBarreNarration, afficherFinEpisode } f
 import { afficherLovometre, animerGainLovo, animerPerteLovo } from "../ui/gaugeBar.js";
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
 import { installerMenuJeu } from "../ui/gameMenu.js";
+import { enregistrerRencontres, debloquerSouvenirs } from "../engine/carnet.js";
+import { sauvegarder } from "../engine/saveSystem.js";
+import { getIllustrationsCatalogue } from "../services/gameRepository.js";
 
 export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onRetourEpisodes, onRetourAccueil, onIllustrations, onDressing, onIllustrationDebloquee, fichesPersonnages = [] } = {}) {
-  const musique = new MusiqueAmbiance();
+  const extrait = moteur.ephemere;
+  const musique = extrait ? null : new MusiqueAmbiance();
   const scene = document.createElement("div");
   scene.className = "ecran-dialogue";
 
-  installerMenuJeu(scene, {
+  if (!extrait) installerMenuJeu(scene, {
     musique,
     fiches: fichesPersonnages,
     getInfosPersonnage: (id) => moteur.obtenirInfosPersonnages([id])[0],
+    getSauvegarde: () => moteur.sauvegarde,
     onRetourEpisodes,
     onRetourAccueil,
     onIllustrations,
@@ -20,7 +25,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
   });
 
   // Le premier clic dans le jeu est nécessaire pour que les navigateurs autorisent le son.
-  scene.addEventListener("pointerdown", () => musique.demarrer(), { once: true });
+  if (!extrait) scene.addEventListener("pointerdown", () => musique.demarrer(), { once: true });
 
   const decor = document.createElement("img");
   decor.className = "decor";
@@ -81,6 +86,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
 
   const personnagesPresents = [];
   let decorActuel = null;
+  let musiqueFichierActuelle = undefined; // undefined = pas encore initialisée
   let illustrationFermee = null;
   let affichageCourant = null;
   const illustrationsSignalees = new Set();
@@ -264,7 +270,72 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     return Math.min(haut, maximum);
   }
 
-  window.addEventListener("resize", placerBulle);
+  let observateur;
+  if (extrait) {
+    observateur = new ResizeObserver(() => {
+      if (!scene.isConnected) {
+        observateur.disconnect();
+        return;
+      }
+      scene.style.setProperty("--hauteur-barre", `${zoneBarre.offsetHeight || 0}px`);
+      placerBulle();
+    });
+    observateur.observe(scene);
+    observateur.observe(zoneBarre);
+  } else {
+    window.addEventListener("resize", placerBulle);
+  }
+
+  // Carnet de relations : illustrations définies dans le studio (chargées une fois, en arrière-plan).
+  let catalogueSouvenirs = [];
+
+  // « Niveau de révélation » (1 à 3) de l'illustration déclenchée par ce nœud.
+  // Niveau 1 par défaut si la fiche est introuvable ou si le catalogue n'est pas encore arrivé.
+  const RARETES_VALIDES = new Set(["common", "rare", "ultra_rare", "legendary"]);
+
+  function niveauRevelation(nodeId) {
+    const fiche = catalogueSouvenirs.find(
+      (illustration) =>
+        illustration.unlockNodeId === nodeId &&
+        (!illustration.episodeId || illustration.episodeId === moteur.episodeData.id)
+    );
+    const niveau = Number(fiche?.spoilerLevel);
+    return niveau >= 1 && niveau <= 3 ? niveau : 1;
+  }
+
+  function rareteIllustration(nodeId) {
+    const fiche = catalogueSouvenirs.find(
+      (illustration) =>
+        illustration.unlockNodeId === nodeId &&
+        (!illustration.episodeId || illustration.episodeId === moteur.episodeData.id)
+    );
+    const rarete = fiche?.rarity;
+    return RARETES_VALIDES.has(rarete) ? rarete : "common";
+  }
+
+  // Un personnage est « rencontré » dès qu'il apparaît réellement dans une scène jouée
+  // (il parle ou il est à l'écran). Un souvenir se débloque quand son moment est affiché.
+  function suivreCarnet(affichage) {
+    const sauvegardeJeu = moteur.sauvegarde;
+    if (extrait || !sauvegardeJeu || !affichage) return;
+
+    const idsVus = [...(affichage.onScreen || []), ...personnagesPresents.map((personnage) => personnage.id)];
+    if (affichage.estPersonnageSurScene) idsVus.push(affichage.speakerId);
+
+    // La réponse de Sucrette fusionnée dans la bulle est aussi affichée : son nœud compte comme vu.
+    const idsNoeuds = [affichage.nodeId];
+    if (affichage.reponseSucrette && moteur.noeudCourant?.next) idsNoeuds.push(moteur.noeudCourant.next);
+
+    const rencontre = enregistrerRencontres(sauvegardeJeu, idsVus, moteur.personnagesParId);
+    const souvenir = debloquerSouvenirs(sauvegardeJeu, catalogueSouvenirs, moteur.episodeData.id, idsNoeuds);
+    if (rencontre || souvenir) sauvegarder(sauvegardeJeu);
+  }
+
+  if (!extrait) getIllustrationsCatalogue().then((liste) => {
+    catalogueSouvenirs = liste;
+    // Le premier nœud a pu s'afficher avant l'arrivée du catalogue : on revérifie l'écran courant.
+    if (liste.length) suivreCarnet(affichageCourant);
+  });
 
   function rendre() {
     const affichage = moteur.obtenirAffichage();
@@ -273,13 +344,26 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
 
     if (affichage.background) decor.src = affichage.background;
     mettreAJourPersonnages(affichage);
+    suivreCarnet(affichage);
+
+    // BGM de scène : on change la piste seulement quand l'URL évolue (évite les redémarrages inutiles).
+    const urlMusique = affichage.music || null;
+    if (urlMusique !== musiqueFichierActuelle) {
+      musiqueFichierActuelle = urlMusique;
+      musique?.jouerFichier(urlMusique);
+    }
 
     if (affichage.cg && illustrationFermee !== affichage.nodeId) {
+      const dejaVisible = voileIllustration.classList.contains("visible");
       illustrationCg.src = affichage.cg;
+      voileIllustration.dataset.niveau = String(niveauRevelation(affichage.nodeId));
+      voileIllustration.dataset.rarete = rareteIllustration(affichage.nodeId);
       voileIllustration.classList.add("visible");
+      // Le jingle ne se joue qu'à l'apparition, pas à chaque nouveau rendu pendant que l'illustration reste ouverte.
+      if (!dejaVisible) musique?.jouerJingleRevelation(Number(voileIllustration.dataset.niveau));
       if (!illustrationsSignalees.has(affichage.nodeId)) {
         illustrationsSignalees.add(affichage.nodeId);
-        onIllustrationDebloquee?.({
+        if (!extrait) onIllustrationDebloquee?.({
           path: affichage.cg,
           episodeId: moteur.episodeData.id,
           nodeId: affichage.nodeId,
@@ -300,7 +384,9 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
 
     if (affichage.type === "end") {
       zoneBarre.style.display = "none";
+      musique?.arreterFichier();
       afficherFinEpisode(zoneFinEpisode, {
+        extrait,
         aProchainEpisode: Boolean(affichage.nextEpisode),
         onContinuer: () => onFinEpisode?.(affichage.nextEpisode),
       });
@@ -326,6 +412,10 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
           if (variation < 0) animerPerteLovo(scene, variation);
           moteur.choisir(index);
           rendre();
+          return () => {
+            observateur?.disconnect();
+            if (!extrait) window.removeEventListener("resize", placerBulle);
+          };
         }
       });
     }

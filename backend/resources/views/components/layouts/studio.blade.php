@@ -13,6 +13,7 @@
             <a class="brand" href="{{ route('studio.index') }}"><span class="brand-mark">P</span><span>Pomme d'Amour<small>STUDIO NARRATIF</small></span></a>
             <div class="nav-label">ESPACE DE CRÉATION</div>
             <a class="nav-link {{ request()->routeIs('studio.index', 'studio.edit', 'studio.preview') ? 'nav-active' : '' }}" href="{{ route('studio.index') }}">Épisodes <span>↗</span></a>
+            <a class="nav-link {{ request()->routeIs('studio.characters') ? 'nav-active' : '' }}" href="{{ route('studio.characters') }}">Personnages <span>↗</span></a>
             <a class="nav-link {{ request()->routeIs('studio.media*') ? 'nav-active' : '' }}" href="{{ route('studio.media') }}">Médiathèque <span>↗</span></a>
             <div class="sidebar-note">Ton prochain chapitre<br>commence ici.<p>Studio local · MariaDB<br>Le jeu existant reste indépendant.</p></div>
             @auth

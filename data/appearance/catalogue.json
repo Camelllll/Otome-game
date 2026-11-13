@@ -66,7 +66,7 @@
       "category": "eyes",
       "label": "Verts",
       "layers": [{ "slot": "eyes", "file": "yeux/verts.png" }],
-      "unlock": { "type": "default" }
+      "unlock": { "type": "shop", "price": 150 }
     },
     {
       "id": "chatains",
@@ -101,7 +101,7 @@
       "category": "bottom",
       "label": "Pantalon blanc",
       "layers": [{ "slot": "bottom", "file": "bas/pantalon1-blanc.png" }],
-      "unlock": { "type": "default" }
+      "unlock": { "type": "shop", "price": 200 }
     }
   ]
 }
