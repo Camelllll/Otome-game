@@ -192,7 +192,7 @@ function attendre(attendu, obtenu, etiquette) {
 }
 
 function tester() {
-  const base = { playerId: "test", playerName: "Sucrette", gauges: {}, flags: [] };
+  const base = { playerId: "test", playerName: "Pommette", gauges: {}, flags: [] };
 
   console.log("Routage après n716 :");
   attendre("liam", simuler({ ...base, flags: ["liam_pause"] }, "flag liam_pause + camel à 90"), "flag → Liam même si un autre crush est plus haut");

@@ -1,4 +1,4 @@
-// Catalogue des éléments d'apparence de Sucrette.
+// Catalogue des éléments d'apparence de Pommette.
 // Aujourd'hui : un fichier JSON statique. Une future migration vers la base de données ne changera
 // que cette fonction (par exemple appelApi("/appearance/catalogue")) : le reste du jeu reçoit le même objet.
 import { catalogueValide } from "../engine/appearance.js";

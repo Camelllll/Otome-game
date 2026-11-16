@@ -9,11 +9,11 @@ export function creerCarrouselPersonnages(action) {
   piste.id = "entree-casting-piste";
   piste.tabIndex = 0;
   piste.hidden = true;
-  piste.setAttribute("aria-label", "Galerie des personnages. Flèches gauche et droite pour défiler.");
+  piste.setAttribute("aria-label", "Portraits des personnages. Flèches gauche et droite pour défiler.");
   const precedent = fleche("précédents", -1);
   const suivant = fleche("suivants", 1);
   const reperes = creer("div", "entree-carousel-reperes");
-  reperes.setAttribute("aria-label", "Positions de la galerie");
+  reperes.setAttribute("aria-label", "Positions des portraits");
   const annonce = creer("p", "entree-carousel-annonce");
   annonce.setAttribute("aria-live", "polite");
   annonce.setAttribute("aria-atomic", "true");

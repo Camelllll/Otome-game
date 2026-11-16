@@ -1,11 +1,28 @@
-// Menu de jeu en haut à droite : personnages, dressing, épisodes, retour accueil, musique.
+// Menu partagé entre les épisodes, le dialogue et le dressing.
 import { creerCarnet } from "./carnetRelations.js";
+import { demanderConfirmation } from "./gameModal.js";
 
 /**
  * @param {HTMLElement} scene - conteneur de l'écran de jeu.
- * @param {object} options - { musique, fiches, getInfosPersonnage, getSauvegarde, onRetourEpisodes, onRetourAccueil, onDressing }
+ * @param {object} options - { musique, fiches, getInfosPersonnage, getSauvegarde, onRetourEpisodes, onDressing, onProfil, onCompte, onNouvellePartie }
  */
-export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonnage, getSauvegarde, onRetourEpisodes, onRetourAccueil, onDressing } = {}) {
+export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonnage, getSauvegarde, onRetourEpisodes, onDressing, onProfil, onCompte, onNouvellePartie, surface = scene } = {}) {
+  let navigationEnCours = false;
+  async function naviguer(action) {
+    if (navigationEnCours) return;
+    navigationEnCours = true;
+    ouvrirMenu(false);
+    try {
+      await action();
+    } catch (erreur) {
+      console.error("Navigation depuis le jeu impossible.", erreur);
+      await demanderConfirmation({
+        titre: "Navigation impossible", message: erreur.message, confirmer: "Fermer", annuler: null,
+      });
+    } finally {
+      navigationEnCours = false;
+    }
+  }
 
   function rafraichirIconeMusique() {
     const actif = !!musique?.active;
@@ -81,7 +98,8 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
 
   const optionPersonnages = creerOption(
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-    "Les personnages"
+    "Relations",
+    fiches.length === 0
   );
 
   const optionDressing = creerOption(
@@ -92,7 +110,7 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
 
   const optionEpisodes = creerOption(
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
-    "Journal des épisodes",
+    "Accueil · Épisodes",
     !onRetourEpisodes
   );
 
@@ -114,19 +132,34 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
     optionDressing,
     creerSeparateur(),
     creerSectionTitre("Navigation"),
-    optionEpisodes,
   );
+  if (onRetourEpisodes) panneau.appendChild(optionEpisodes);
 
-  if (onRetourAccueil) {
-    const optionAccueil = creerOption(
-      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-      "Retour à l'accueil"
+  if (onProfil) {
+    const optionProfil = creerOption(
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`,
+      "Mon carnet"
     );
-    optionAccueil.addEventListener("click", () => {
-      ouvrirMenu(false);
-      onRetourAccueil();
+    optionProfil.addEventListener("click", () => {
+      return naviguer(onProfil);
     });
-    panneau.appendChild(optionAccueil);
+    panneau.appendChild(optionProfil);
+  }
+  if (onCompte) {
+    const compte = creerOption(
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>',
+      "Compte",
+    );
+    compte.addEventListener("click", () => naviguer(onCompte));
+    panneau.appendChild(compte);
+  }
+  if (onNouvellePartie) {
+    const recommencer = creerOption(
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11a9 9 0 1 1 2 7M3 4v7h7"/></svg>',
+      "Recommencer l'histoire",
+    );
+    recommencer.addEventListener("click", () => naviguer(onNouvellePartie));
+    panneau.appendChild(recommencer);
   }
 
   // Section Paramètres (musique)
@@ -139,7 +172,8 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
   // ── Carnet de relations ────────────────────────────────────────────
   const carnet = creerCarnet({ fiches, getInfosPersonnage, getSauvegarde });
 
-  scene.append(bouton, panneau, carnet.element);
+  scene.append(bouton, panneau);
+  surface.append(carnet.element);
 
   // Synchroniser l'état initial de l'icône musique dans le panneau
   rafraichirIconeMusique();
@@ -156,8 +190,8 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
     ouvrirMenu(!panneau.classList.contains("visible"));
   });
 
-  scene.addEventListener("pointerdown", (event) => {
-    if (!panneau.contains(event.target) && event.target !== bouton) ouvrirMenu(false);
+  surface.addEventListener("pointerdown", (event) => {
+    if (!panneau.contains(event.target) && !bouton.contains(event.target)) ouvrirMenu(false);
   });
 
   // ── Actions des options ────────────────────────────────────────────
@@ -167,13 +201,11 @@ export function installerMenuJeu(scene, { musique, fiches = [], getInfosPersonna
   });
 
   optionDressing.addEventListener("click", () => {
-    ouvrirMenu(false);
-    onDressing?.();
+    return naviguer(onDressing);
   });
 
   optionEpisodes.addEventListener("click", () => {
-    ouvrirMenu(false);
-    onRetourEpisodes?.();
+    return naviguer(onRetourEpisodes);
   });
 
   optionMusique.addEventListener("click", async () => {

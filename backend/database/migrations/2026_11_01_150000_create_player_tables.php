@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->unsignedTinyInteger('slot')->default(0);
             $table->string('label', 60)->nullable();
-            $table->string('player_name', 40)->default('Sucrette');
+            $table->string('player_name', 40)->default('Pommette');
             $table->string('current_episode', 80)->nullable();
             $table->string('current_node', 120)->nullable();
             $table->string('current_background', 300)->nullable();

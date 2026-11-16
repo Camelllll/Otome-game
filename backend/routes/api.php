@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GameContentController;
 use App\Http\Controllers\Api\IllustrationController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SaveController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +27,10 @@ Route::post('/auth/login', [AuthController::class, 'login'])->middleware('thrott
 Route::middleware(['auth:sanctum', 'throttle:300,1'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/account', [AccountController::class, 'show']);
+    Route::patch('/account', [AccountController::class, 'update'])->middleware('throttle:10,1,account-update:');
+    Route::delete('/account', [AccountController::class, 'destroy'])->middleware('throttle:5,1,account-delete:');
+    Route::get('/profile/stats', [ProfileController::class, 'stats']);
 
     Route::get('/saves', [SaveController::class, 'index']);
     Route::get('/saves/{slot}', [SaveController::class, 'show'])->whereNumber('slot');
@@ -35,5 +41,6 @@ Route::middleware(['auth:sanctum', 'throttle:300,1'])->group(function () {
     Route::post('/saves/{slot}/choices', [SaveController::class, 'recordChoice'])->whereNumber('slot');
 
     Route::get('/illustrations', [IllustrationController::class, 'index']);
+    Route::get('/illustrations/{id}/file', [IllustrationController::class, 'file'])->whereNumber('id')->name('game.illustration-file');
     Route::post('/illustrations', [IllustrationController::class, 'store']);
 });

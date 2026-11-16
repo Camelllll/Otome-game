@@ -20,7 +20,7 @@ class AuthController extends Controller
 
         $pseudo = trim((string) ($data['pseudo'] ?? ''));
         $user = User::create([
-            'name' => $pseudo !== '' ? $pseudo : 'Sucrette',
+            'name' => $pseudo !== '' ? $pseudo : 'Pommette',
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
@@ -67,6 +67,10 @@ class AuthController extends Controller
 
     private function player(User $user): array
     {
-        return ['id' => $user->id, 'pseudo' => $user->name];
+        return [
+            'id'         => $user->id,
+            'pseudo'     => $user->name,
+            'created_at' => $user->created_at?->toIso8601String(),
+        ];
     }
 }

@@ -1,4 +1,4 @@
-import { creerAvatarSucrette } from "./sucretteAvatar.js";
+import { creerAvatarPommette } from "./pommetteAvatar.js";
 
 // Bulle semi-transparente posée à côté du personnage qui parle (jamais par-dessus lui).
 export function afficherBullePersonnage(conteneur, affichage, cote = "droite") {
@@ -33,7 +33,7 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
     const avatar = document.createElement("div");
     avatar.className = "avatar-joueur avatar-joueur-calques";
     const { calques, canvas } = affichage.playerCalques;
-    avatar.appendChild(creerAvatarSucrette(calques, canvas, { etiquette: "" }));
+    avatar.appendChild(creerAvatarPommette(calques, canvas, { etiquette: "" }));
     barre.appendChild(avatar);
   } else if (affichage.playerAvatar) {
     const avatar = document.createElement("img");
@@ -45,12 +45,12 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
   const contenu = document.createElement("div");
   contenu.className = "contenu-narration";
 
-  // Quand un personnage parle, sa bulle est accompagnée immédiatement de la réponse suivante de Sucrette.
-  const texteBas = affichage.estPersonnageSurScene ? affichage.reponseSucrette?.text : affichage.text;
+  // Quand un personnage parle, sa bulle est accompagnée immédiatement de la réponse suivante de Pommette.
+  const texteBas = affichage.estPersonnageSurScene ? affichage.reponsePommette?.text : affichage.text;
   if (texteBas) {
     const texte = document.createElement("div");
     texte.className = affichage.type === "end" ? "texte-dialogue texte-fin" : "texte-dialogue";
-    const nomBas = affichage.estPersonnageSurScene ? affichage.reponseSucrette?.speakerName || "" : affichage.speakerName;
+    const nomBas = affichage.estPersonnageSurScene ? affichage.reponsePommette?.speakerName || "" : affichage.speakerName;
     const prefixeNom = nomBas
       ? `<span class="nom-personnage-inline">${nomBas}.</span> `
       : "";
@@ -85,7 +85,7 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
     });
   }
 
-  if (affichage.estPersonnageSurScene && !affichage.reponseSucrette) barre.classList.add("sans-texte");
+  if (affichage.estPersonnageSurScene && !affichage.reponsePommette) barre.classList.add("sans-texte");
 
   barre.appendChild(contenu);
   conteneur.appendChild(barre);

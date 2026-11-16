@@ -13,7 +13,7 @@ class Illustration extends Model
 {
     public const CONDITION_VIEWED = 'viewed';
 
-    public const RARITIES = ['common', 'rare', 'ultra_rare', 'legendary'];
+    public const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'ultra_rare'];
 
     protected $fillable = [
         'slug', 'title', 'media_asset_id', 'episode_id', 'character_ids',

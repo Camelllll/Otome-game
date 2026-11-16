@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { lancerEcranConnexion } from '../../../src/screens/loginScreen.js';
+import * as apparence from '../../../src/engine/appearance.js';
+import * as gardeRobe from '../../../src/engine/wardrobe.js';
+import { aUneProgression } from '../../../src/engine/saveSystem.js';
+import { normaliserNomJoueur } from '../../../src/engine/playerName.js';
 
 class Element {
     constructor(tag) {
@@ -51,6 +55,10 @@ class Element {
             ? c.className.split(' ').includes(selector.slice(1))
             : selector.startsWith('#') ? c.id === selector.slice(1) : c.tagName === selector);
     }
+    querySelectorAll(selector) {
+        return this.all().filter(c => selector === 'button:not(:disabled)' ? c.tagName === 'button' && !c.disabled : c.tagName === selector);
+    }
+    contains(child) { return this === child || this.all().includes(child); }
     all() { return this.children.flatMap(c => [c, ...c.all()]); }
     reportValidity() { return this.valid !== false; }
     scrollIntoView() { throw new Error('Landing navigation must scroll only its own container'); }
@@ -165,9 +173,10 @@ test('landing keeps the game preview and seven cards, with Isaac and Aaron in th
     assert.ok(root.all().indexOf(trouver('.entree-rencontres')) < root.all().indexOf(trouver('.entree-apercu')));
     assert.ok(appels.every(a => !a.url.includes('/saves')));
     assert.equal(trouver('.entree-galerie'), undefined);
-    const jouer = trouver('.entree-footer').all().find(e => e.tagName === 'button' && e.textContent === 'Jouer');
+    const jouer = trouver('.entree-footer').all().find(e => e.tagName === 'button' && e.textContent === 'Créer mon compte');
     await jouer.emit('click');
-    assert.equal(trouver('.entree-defilement').lastScroll.top, 0);
+    assert.equal(trouver('#entree-onglet-1').getAttribute('aria-selected'), 'true');
+    assert.equal(trouver('#entree-email').focused, true);
 });
 
 test('carousel arrows, progress and keyboard reach Sasha without scrolling the page vertically', async t => {
@@ -222,10 +231,10 @@ test('the game navigation targets the playable excerpt without changing routes',
     const defilement = trouver('.entree-defilement');
     defilement.scrollTop = 1000;
     defilement.getBoundingClientRect = () => ({ top: 80 });
-    const extrait = trouver('#entree-extrait');
+    const extrait = trouver('#entree-univers');
     extrait.style.scrollMarginTop = '24px';
     extrait.getBoundingClientRect = () => ({ top: 80 + 3200 - defilement.scrollTop });
-    const lien = trouver('.entree-nav-liens').children.find(e => e.textContent === 'Le jeu');
+    const lien = trouver('.entree-nav-liens').children.find(e => e.textContent === 'Extrait jouable');
     await lien.emit('click');
     assert.deepEqual(defilement.lastScroll, { top: 3176, behavior: 'instant' });
     assert.equal(extrait.focused, true);
@@ -256,7 +265,7 @@ test('decorative wave joins Hero to Concept without adding an intermediate conte
     const defilement = trouver('.entree-defilement');
     defilement.getBoundingClientRect = () => ({ top: 64 });
     trouver('#entree-concept').getBoundingClientRect = () => ({ top: 64 + 1100 - defilement.scrollTop });
-    const decouvrir = trouver('.entree-actions').children[1];
+    const decouvrir = trouver('.entree-nav-liens').children[0];
     await decouvrir.emit('click');
     assert.equal(defilement.lastScroll.top, 1100);
     assert.equal(trouver('#entree-concept').focused, true);
@@ -307,8 +316,8 @@ test('navigation follows the internal scroll, handles the nested excerpt and clo
     assert.equal(liens[0].getAttribute('aria-current'), 'location');
     positions.splice(0, 4, -2000, -1000, -100, 20);
     await defilement.emit('scroll');
-    assert.equal(liens[3].getAttribute('aria-current'), 'location');
-    assert.equal(liens.slice(0, 3).some(lien => lien.getAttribute('aria-current')), false);
+    assert.equal(liens[2].getAttribute('aria-current'), 'location');
+    assert.equal(liens.slice(0, 2).some(lien => lien.getAttribute('aria-current')), false);
     const menu = trouver('.entree-menu');
     await menu.emit('click');
     assert.equal(menu.getAttribute('aria-expanded'), 'true');
@@ -367,11 +376,11 @@ test('registration tabs support keyboard and send the optional heroine name', as
     assert.equal(trouver('#entree-onglet-1').getAttribute('aria-selected'), 'true');
     assert.equal(trouver('#entree-password').autocomplete, 'new-password');
     assert.equal(trouver('#entree-password').minLength, 8);
-    trouver('#entree-pseudo').value = '  Sucrette  ';
+    trouver('#entree-pseudo').value = '  Pommette  ';
     trouver('#entree-email').value = 'test@example.invalid';
     trouver('#entree-password').value = 'test-password';
     await trouver('.entree-formulaire').emit('submit');
-    assert.equal(JSON.parse(appels.find(a => a.url.endsWith('/auth/register')).config.body).pseudo, 'Sucrette');
+    assert.equal(JSON.parse(appels.find(a => a.url.endsWith('/auth/register')).config.body).pseudo, 'Pommette');
     await trouver('.entree-onglets').emit('keydown', { key: 'Home' });
     assert.equal(trouver('#entree-onglet-0').tabIndex, 0);
     assert.equal(trouver('#entree-password').autocomplete, 'current-password');
@@ -413,24 +422,14 @@ test('native validity prevents submission and pending login cannot be submitted 
     assert.equal(trouver('#entree-onglet-1').disabled, false);
 });
 
-test('connected landing displays saved progress and wires continue, dressing and gallery', async t => {
-    const actions = [];
-    const sauvegarde = { playerName: 'Héroïne', currentEpisode: 'episode3', currentNode: 'n42' };
-    const avant = structuredClone(sauvegarde);
-    const { root, trouver } = monter(t, {
-        joueur: { id: 'test' }, sauvegarde,
-        onContinuer: () => actions.push('continuer'),
-        onDressing: () => actions.push('dressing'),
-    });
-    await terminerChargement();
-    assert.equal(trouver('.entree-formulaire'), undefined);
-    assert.match(trouver('.entree-compte').textContent, /Bon retour, Héroïne/);
-    assert.equal(trouver('.entree-progression').textContent, 'Épisode en cours · 3');
-    for (const texte of ["Continuer l'histoire", 'Mon dressing']) {
-        await root.all().find(e => e.tagName === 'button' && e.textContent === texte).emit('click');
-    }
-    assert.deepEqual(actions, ['continuer', 'dressing']);
-    assert.deepEqual(sauvegarde, avant);
+test('hero excerpt and account actions have distinct destinations', async t => {
+    const { trouver } = monter(t);
+    await trouver('.entree-actions').children[1].emit('click');
+    assert.equal(trouver('#entree-extrait').focused, true);
+    assert.equal(trouver('#entree-onglet-1').getAttribute('aria-selected'), 'false');
+    await trouver('.entree-actions').children[0].emit('click');
+    assert.equal(trouver('#entree-email').focused, true);
+    assert.equal(trouver('#entree-onglet-1').getAttribute('aria-selected'), 'true');
 });
 
 test('unavailable public content is reported without disabling authentication', async t => {
@@ -453,17 +452,49 @@ test('unavailable episode keeps the loaded portraits and explains the missing pr
 
 function routeur(hash, joueur) {
     const appels = [];
-    const sauvegarde = { playerName: 'Sucrette', currentEpisode: 'episode2', currentNode: null };
+    const ecouteurs = {};
+    const location = { hash };
+    const history = {
+        state: null,
+        replaceState(state, _title, url) { this.state = state; location.hash = url; appels.push(['route', url]); },
+        pushState(state, _title, url) { this.state = state; location.hash = url; appels.push(['push', url]); },
+        go(delta) { appels.push(['go', delta]); },
+    };
+    const sauvegarde = { playerName: 'Pommette', currentEpisode: 'episode2', currentNode: null, slot: 3, revision: 1 };
     const contexte = vm.createContext({
         document: { getElementById: () => ({}) },
-        location: { hash },
-        history: { replaceState: (_state, _title, url) => appels.push(['route', url]) },
+        sessionStorage: { getItem: () => null, setItem() {} },
+        location, history,
+        window: { addEventListener: (nom, action) => { ecouteurs[nom] = action; } },
         console,
         obtenirSessionJoueur: async () => joueur,
-        chargerSauvegarde: async () => sauvegarde,
+        chargerSauvegarde: async (...args) => { appels.push(['lecture', ...args]); return sauvegarde; },
+        chargerDerniereProgression: async () => { appels.push(['derniere']); return sauvegarde; },
+        aUneProgression, normaliserNomJoueur,
+        reinitialiserSauvegarde: async () => {
+            appels.push(['reset']);
+            return { playerName: 'Pommette', currentEpisode: 'episode1', currentNode: null, slot: 0 };
+        },
+        sauvegarder: save => appels.push(['sauvegarde', save]),
         recalculerActionPoints() {},
+        preparerSortieSession: async () => {},
+        confirmerSauvegarde: async save => save,
+        demanderTexte: async () => { throw new Error('Le pseudo doit venir du compte.'); },
+        getCharacters: async () => ({}),
+        getEpisode: async () => ({}),
+        chargerCatalogueApparence: async () => null,
+        reconcilierPossessions: () => false,
+        accorderPiecesDemo: () => false,
+        aplatirPersonnages: () => ({}),
+        listerFichesCarnet: () => [],
+        DialogueEngine: class {
+            constructor(_episode, _personnages, save) { appels.push(['moteur', save.playerName]); }
+        },
+        lancerEcranDialogue: (_root, _moteur, options) => appels.push(['dialogue', options]),
         lancerEcranConnexion: (_root, options) => appels.push(['landing', options]),
-        lancerEcranAccueil: (_root, options) => appels.push(['accueil', options]),
+        lancerEcranProfil: (_root, options) => appels.push(['profil', options]),
+        lancerEcranCompte: (_root, options) => appels.push(['compte', options]),
+        lancerEcranDressing: (_root, options) => { appels.push(['dressing', options]); return () => {}; },
         getPublishedEpisodesList: async () => [],
         lancerEcranSelectionEpisode: (_root, options) => appels.push(['episodes', options]),
         demanderConfirmation: async options => appels.push(['erreur', options]),
@@ -472,45 +503,287 @@ function routeur(hash, joueur) {
         .replace(/^import .*;\n/gm, '')
         .replace(/demarrer\(\)\.catch\([\s\S]*$/, '');
     vm.runInContext(source, contexte);
-    return { contexte, appels, sauvegarde };
+    return { contexte, appels, sauvegarde, ecouteurs };
 }
 
-test('boot with an existing session opens the connected landing at the root and resumes selection', async () => {
+test('une session à la racine ouvre les épisodes avec la dernière partie sans réinitialisation', async () => {
     const joueur = { id: 'test' };
     const { contexte, appels, sauvegarde } = routeur('', joueur);
     await contexte.demarrer();
-    const options = appels.find(a => a[0] === 'landing')[1];
+    const options = appels.find(a => a[0] === 'episodes')[1];
     assert.equal(options.joueur, joueur);
+    assert.ok(appels.some(a => a[0] === 'route' && a[1] === '#episodes'));
+    assert.ok(!appels.some(a => a[0] === 'landing'));
+    assert.equal(options.episodeActuel, 'episode2');
     assert.equal(options.sauvegarde, sauvegarde);
-    assert.ok(appels.some(a => a[0] === 'route' && a[1] === '#bienvenue'));
-    await options.onContinuer();
-    assert.equal(appels.find(a => a[0] === 'episodes')[1].episodeActuel, 'episode2');
+    assert.ok(!appels.some(a => a[0] === 'reset'));
 });
 
-test('login transition replaces the form with the saved connected landing', async () => {
+test('se connecter ouvre l’accueil sans réutiliser la route privée d’une autre session', async () => {
     const { contexte, appels } = routeur('#episode/ancien', null);
     await contexte.demarrer();
     const formulaire = appels.find(a => a[0] === 'landing')[1];
     const joueur = { id: 'nouveau' };
     await formulaire.onConnecte(joueur);
-    assert.equal(appels.filter(a => a[0] === 'landing').at(-1)[1].joueur, joueur);
-    assert.ok(appels.some(a => a[0] === 'route' && a[1] === '#bienvenue'));
+    assert.equal(appels.find(a => a[0] === 'episodes')[1].joueur, joueur);
+    assert.ok(appels.some(a => a[0] === 'route' && a[1] === '#episodes'));
 });
 
-test('existing explicit accueil and episodes routes keep their original screens', async () => {
-    for (const [hash, attendu] of [['#accueil', 'accueil'], ['#episodes', 'episodes'], ['#bienvenue', 'landing']]) {
+test('les anciennes routes accueil et bienvenue redirigent vers les épisodes sans écran intermédiaire', async () => {
+    for (const hash of ['#accueil', '#episodes', '#bienvenue']) {
         const { contexte, appels } = routeur(hash, { id: 'test' });
         await contexte.demarrer();
-        assert.ok(appels.some(a => a[0] === attendu), hash);
+        assert.ok(appels.some(a => a[0] === 'episodes'), hash);
+        assert.equal(contexte.location.hash, '#episodes');
+        assert.equal(appels.some(a => a[0] === 'dialogue'), false);
     }
 });
 
-test('a failed navigation restores the landing route and explicitly reports the error', async t => {
-    t.mock.method(console, 'error', () => {});
-    const { contexte, appels } = routeur('', { id: 'test' });
+test('une erreur de lecture de la dernière partie ne crée pas une partie de remplacement', async () => {
+    const { contexte, appels } = routeur('#accueil', { id: 'test' });
+    contexte.chargerDerniereProgression = async () => { throw new Error('Partie indisponible'); };
+    await assert.rejects(contexte.demarrer(), /Partie indisponible/);
+    assert.ok(!appels.some(a => ['lecture', 'episodes', 'reset'].includes(a[0])));
+});
+
+test('sans session, accueil affiche la présentation et une inscription mène aux épisodes', async () => {
+    const { contexte, appels } = routeur('#accueil', null);
     await contexte.demarrer();
-    contexte.getPublishedEpisodesList = async () => { throw new Error('Épisodes indisponibles.'); };
-    await appels.find(a => a[0] === 'landing')[1].onContinuer();
-    assert.equal(appels.filter(a => a[0] === 'route').at(-1)[1], '#bienvenue');
-    assert.equal(appels.find(a => a[0] === 'erreur')[1].message, 'Épisodes indisponibles.');
+    assert.equal(appels.some(a => a[0] === 'accueil'), false);
+    const connexion = appels.find(a => a[0] === 'landing')[1];
+    const joueur = { id: 'connecte' };
+    await connexion.onConnecte(joueur, { nouveauCompte: true });
+    const retour = appels.filter(a => a[0] === 'episodes').at(-1)[1];
+    assert.equal(retour.joueur, joueur);
+    assert.equal(contexte.location.hash, '#episodes');
+    assert.ok(!appels.some(a => a[0] === 'dialogue'));
+});
+
+test('le premier épisode utilise le pseudo du compte sans demander un autre prénom', async () => {
+    const { contexte, appels, sauvegarde } = routeur('#accueil', { id: 'test', pseudo: 'Pommette' });
+    Object.assign(sauvegarde, { playerName: 'Pomette', revision: 0, currentEpisode: 'episode1' });
+    await contexte.demarrer();
+    assert.equal(sauvegarde.playerName, 'Pommette');
+    await appels.find(a => a[0] === 'episodes')[1].onSelect('episode1');
+    assert.equal(sauvegarde.playerName, 'Pommette');
+    assert.equal(appels.find(a => a[0] === 'moteur')[1], 'Pommette');
+    assert.ok(appels.some(a => a[0] === 'dialogue'));
+    assert.ok(!appels.some(a => a[0] === 'reset'));
+});
+
+test('la reprise et le dressing remplacent le vieux prénom du cache sans modifier la progression', async () => {
+    for (const hash of ['#episode/episode2', '#dressing']) {
+        const { contexte, appels, sauvegarde } = routeur(hash, { id: 'test', pseudo: 'Pommette' });
+        Object.assign(sauvegarde, { playerName: 'Pomette', currentNode: 'reprendre-ici' });
+        contexte.chargerCatalogueApparence = async () => ({ canvas: { width: 600, height: 1200 } });
+        await contexte.demarrer();
+        assert.equal(sauvegarde.playerName, 'Pommette');
+        assert.equal(sauvegarde.currentNode, 'reprendre-ici');
+        assert.equal(sauvegarde.slot, 3);
+        assert.equal(appels.some(a => a[0] === 'reset'), false);
+        assert.ok(appels.some(a => a[0] === (hash === '#dressing' ? 'dressing' : 'moteur')));
+    }
+});
+
+test('modifier le pseudo puis revenir au jeu met à jour le moteur conservant la même partie', async () => {
+    const { contexte, appels, sauvegarde } = routeur('#episode/episode2', { id: 'test', pseudo: 'Pommette' });
+    sauvegarde.currentNode = 'reprendre-ici';
+    await contexte.demarrer();
+    await appels.find(a => a[0] === 'dialogue')[1].onProfil();
+    await appels.find(a => a[0] === 'profil')[1].onCompte();
+    const compte = appels.find(a => a[0] === 'compte')[1];
+    compte.onModifie({ pseudo: 'Nouveau' });
+    await compte.onRetour();
+    assert.equal(appels.filter(a => a[0] === 'moteur').at(-1)[1], 'Nouveau');
+    assert.equal(sauvegarde.playerName, 'Nouveau');
+    assert.equal(sauvegarde.currentNode, 'reprendre-ici');
+    assert.equal(sauvegarde.slot, 3);
+    assert.equal(appels.some(a => a[0] === 'reset'), false);
+});
+
+test('l’historique empile les écrans et un retour les restaure sans nouvelle entrée', async () => {
+    const { contexte, appels, ecouteurs } = routeur('#episodes', { id: 'test' });
+    await contexte.demarrer();
+    vm.runInContext('restaurationHistorique = false; allerVers("dressing");', contexte);
+    assert.deepEqual(appels.at(-1), ['push', '#dressing']);
+    contexte.location.hash = '#episodes';
+    await ecouteurs.popstate({ state: { campusIndex: 0 } });
+    assert.equal(appels.filter(a => a[0] === 'push').length, 1);
+    assert.equal(appels.at(-1)[0], 'episodes');
+});
+
+test('refuser de quitter un dressing restaure la position d’historique sans perdre le brouillon', async () => {
+    const { contexte, appels, ecouteurs } = routeur('#episodes', { id: 'test' });
+    await contexte.demarrer();
+    vm.runInContext('restaurationHistorique = false; allerVers("dressing"); sortieEcran = { confirmer: async () => false };', contexte);
+    contexte.location.hash = '#episodes';
+    const avant = appels.filter(a => a[0] === 'episodes').length;
+    await ecouteurs.popstate({ state: { campusIndex: 0 } });
+    assert.deepEqual(appels.at(-1), ['go', 1]);
+    assert.equal(appels.filter(a => a[0] === 'episodes').length, avant);
+});
+
+test('recommencer reste accessible dans le menu et nécessite une confirmation avant le reset', async () => {
+    const { contexte, appels } = routeur('#episodes', { id: 'test' });
+    await contexte.demarrer();
+    const options = appels.find(a => a[0] === 'episodes')[1];
+    contexte.demanderConfirmation = async () => false;
+    await options.onNouvellePartie();
+    assert.ok(!appels.some(a => a[0] === 'reset'));
+    contexte.demanderConfirmation = async () => true;
+    await options.onNouvellePartie();
+    assert.equal(appels.filter(a => a[0] === 'reset').length, 1);
+    assert.equal(appels.filter(a => a[0] === 'episodes').at(-1)[1].sauvegarde.slot, 0);
+    assert.equal(appels.some(a => a[0] === 'dialogue'), false);
+});
+
+test('le carnet ne propose que les collections et statistiques disponibles', async () => {
+    let ouvert = false;
+    let retoursAccueil = 0;
+    let retoursJeu = 0;
+    let contexteRelations;
+    const relations = { fiches: [{ id: 'isaac' }], getSauvegarde: () => ({ slot: 3 }) };
+    const contexte = {
+        document: { createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag) },
+        MutationObserver: class { observe() {} },
+        AbortController,
+        matchMedia: () => ({ matches: true }),
+        appelApi: async () => ({ illustrationsDebloquees: 2, meilleurLovometre: { valeur: 40, personnage: 'Isaac' } }),
+        listerIllustrationsDebloquees: async () => [],
+        creerCollectionIllustrations: () => new Element('div'),
+        creerCarnet: options => {
+            contexteRelations = options;
+            return { element: new Element('div'), ouvrir: () => { ouvert = true; }, fermer() {} };
+        },
+    };
+    const source = readFileSync(new URL('../../../src/screens/profileScreen.js', import.meta.url), 'utf8')
+        .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+    vm.runInNewContext(`${source}\nthis.lancer = lancerEcranProfil;`, contexte);
+    const root = new Element('div');
+    await contexte.lancer(root, {
+        joueur: { pseudo: 'Pommette' }, onRetour: () => { retoursJeu++; }, onCompte() {},
+        onAccueil: () => { retoursAccueil++; },
+        onChargerRelations: async () => relations,
+    });
+    assert.doesNotMatch(root.textContent, /Trophées|Bonnes réponses|Succès débloqués/);
+    await root.all().find(e => e.classList.contains('pda-carte-collection') && /Mes relations/.test(e.textContent)).emit('click');
+    assert.equal(ouvert, true);
+    assert.equal(contexteRelations, relations);
+    const retourAccueil = root.querySelector('.pda-retour-accueil');
+    for (const onglet of ['apercu', 'illustrations', 'statistiques']) {
+        await root.all().find(e => e.id === `pda-onglet-${onglet}`).emit('click');
+        assert.equal(root.querySelector('.pda-retour-accueil'), retourAccueil);
+        assert.notEqual(retourAccueil.hidden, true);
+        await retourAccueil.querySelector('button').emit('click');
+    }
+    assert.equal(retoursAccueil, 3);
+    assert.equal(retoursJeu, 0);
+    assert.match(root.textContent, /40 %/);
+    assert.match(root.textContent, /Illustrations débloquées/);
+    assert.doesNotMatch(root.textContent, /Trophées|Bonnes réponses|Succès débloqués/);
+});
+
+test("le compte conserve le retour à l'accueil sur ses deux pages et accepte le retour de secours", async () => {
+    let retoursAccueil = 0;
+    let retoursJeu = 0;
+    const contexte = {
+        document: { createElement: tag => new Element(tag) },
+        MutationObserver: class { observe() {} },
+        AbortController,
+    };
+    const source = readFileSync(new URL('../../../src/screens/profileScreen.js', import.meta.url), 'utf8')
+        .replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+    vm.runInNewContext(`${source}\nthis.construire = construireCarnet;`, contexte);
+    for (const accueilDedie of [true, false]) {
+        const root = new Element('div');
+        const carnet = contexte.construire(root, {
+            compte: true, onCarnet() {}, onCompte() {},
+            onAccueil: accueilDedie ? () => { retoursAccueil++; } : undefined,
+            onRetour: () => { retoursJeu++; },
+        });
+        for (const page of ['gauche', 'droite']) {
+            carnet.afficherPage(page);
+            const retour = root.querySelector('.pda-retour-accueil');
+            assert.notEqual(retour.hidden, true);
+            await retour.querySelector('button').emit('click');
+        }
+    }
+    assert.equal(retoursAccueil, 2);
+    assert.equal(retoursJeu, 2);
+});
+
+function monterDressing({ confirmation = false, onValider = async () => {} } = {}) {
+    const ecouteurs = new Map();
+    const modales = [];
+    let garde;
+    let detruit = false;
+    const catalogue = {
+        canvas: { width: 600, height: 1200 }, basePath: '', base: { file: 'body.png' },
+        defaults: { top: 'a' },
+        items: ['a', 'b'].map(id => ({ id, category: 'top', label: id, layers: [] })),
+    };
+    const sauvegarde = { appearance: apparence.apparenceParDefaut(catalogue), currency: 0 };
+    const contexte = {
+        ...apparence, ...gardeRobe,
+        document: { createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag) },
+        window: {
+            addEventListener: (nom, action) => ecouteurs.set(nom, action),
+            removeEventListener: nom => ecouteurs.delete(nom),
+            matchMedia: () => ({ matches: true }),
+            setTimeout: () => {},
+        },
+        HTMLButtonElement: Element,
+        PA_ACTIFS: false,
+        MusiqueAmbiance: class {},
+        installerMenuJeu() {},
+        creerAvatarPommette: () => new Element('span'),
+        creerMiniature: () => new Element('span'),
+        mettreAJourAvatar() {},
+        creerZoomDressing: () => ({
+            cadrer() {}, agrandir() {}, reduire() {}, reinitialiser() {}, vueComplete() {},
+            detruire: () => { detruit = true; },
+        }),
+        demanderConfirmation: async options => { modales.push(options); return confirmation; },
+        console,
+    };
+    const source = readFileSync(new URL('../../../src/screens/dressingScreen.js', import.meta.url), 'utf8')
+        .replace(/^import[\s\S]*?;\n/gm, '').replace(/^export /gm, '');
+    vm.runInNewContext(`${source}\nthis.lancer = lancerEcranDressing;`, contexte);
+    const root = new Element('div');
+    const nettoyer = contexte.lancer(root, {
+        catalogue, sauvegarde, onValider,
+        enregistrerGardeSortie: action => { garde = action; },
+    });
+    return { root, ecouteurs, modales, garde, nettoyer, sauvegarde, detruit: () => detruit };
+}
+
+test('quitter le dressing préserve les changements si on refuse, sans alerte quand la tenue est inchangée', async () => {
+    for (const confirmation of [false, true]) {
+        const { root, garde, modales, sauvegarde, nettoyer, ecouteurs, detruit } = monterDressing({ confirmation });
+        assert.equal(await garde(), true);
+        assert.equal(modales.length, 0);
+        await root.all().find(e => e.dataset.id === 'b').emit('click');
+        assert.equal(await garde(), confirmation);
+        assert.equal(modales[0].avertissement, true);
+        assert.match(modales[0].message, /achats déjà enregistrés restent/);
+        assert.equal(sauvegarde.appearance.top, 'a');
+        let prevenu = false;
+        ecouteurs.get('beforeunload')({ preventDefault() { prevenu = true; } });
+        assert.equal(prevenu, true);
+        nettoyer();
+        assert.equal(ecouteurs.has('beforeunload'), false);
+        assert.equal(detruit(), true);
+    }
+});
+
+test('une validation de tenue en cours bloque la sortie sans ouvrir une seconde modale', async () => {
+    let terminer;
+    const attente = new Promise(resolve => { terminer = resolve; });
+    const { root, garde, modales } = monterDressing({ onValider: () => attente });
+    await root.all().find(e => e.dataset.id === 'b').emit('click');
+    const validation = root.all().find(e => e.classList.contains('dressing-bouton-principal')).emit('click');
+    assert.equal(await garde(), false);
+    assert.equal(modales.length, 0);
+    terminer();
+    await validation;
 });

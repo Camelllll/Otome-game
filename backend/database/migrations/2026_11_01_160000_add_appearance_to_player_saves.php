@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Apparence de Sucrette : identifiants d'éléments du catalogue (cheveux, yeux, haut, bas, tenue, accessoire).
+        // Apparence de Pommette : identifiants d'éléments du catalogue (cheveux, yeux, haut, bas, tenue, accessoire).
         // Nullable : une sauvegarde existante reçoit l'apparence par défaut du catalogue, sans migration de données.
         Schema::table('player_saves', function (Blueprint $table) {
             $table->json('appearance')->nullable()->after('player_name');

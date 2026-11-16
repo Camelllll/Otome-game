@@ -101,11 +101,13 @@
                     </label>
 
                     <label>Rareté
-                        <p class="muted" style="margin:0 0 0.35rem">Détermine le badge et les effets visuels dans le jeu. « Commun » = aucun badge affiché.</p>
+                        <p class="muted" style="margin:0 0 0.35rem">Légendaire est la rareté maximale.</p>
                         <select wire:model="rarity">
-                            <option value="common">Commun (par défaut)</option>
+                            <option value="common">Commune (par défaut)</option>
+                            <option value="uncommon">Peu commune</option>
                             <option value="rare">Rare</option>
-                            <option value="ultra_rare">Ultra Rare</option>
+                            <option value="epic">Épique</option>
+                            @if($rarity === 'ultra_rare')<option value="ultra_rare">Épique (ancienne valeur)</option>@endif
                             <option value="legendary">Légendaire</option>
                         </select>
                     </label>

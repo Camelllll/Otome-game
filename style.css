@@ -981,6 +981,8 @@ html, body {
 
 /* Barre de statut façon HUD */
 .hud-journal {
+  position: relative;
+  z-index: 30;
   flex: none;
   display: flex;
   align-items: center;
@@ -1031,6 +1033,26 @@ html, body {
   gap: 0.6rem;
 }
 
+.journal-menu {
+  position: relative;
+  flex: none;
+}
+
+.journal-menu .bouton-menu {
+  position: relative;
+  top: auto;
+  right: auto;
+}
+
+.journal-menu .panneau-menu {
+  top: calc(100% + .6rem);
+  right: 0;
+  min-width: min(17rem, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 100px);
+  overflow-y: auto;
+}
+
 .hud-chip {
   display: inline-flex;
   align-items: center;
@@ -1054,6 +1076,20 @@ html, body {
   border: 2px solid var(--creme);
   font-size: 0.85rem;
   font-weight: 900;
+}
+
+.hud-profil {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.hud-profil:hover {
+  background: rgba(255, 250, 247, 0.2);
+}
+
+.hud-profil:focus-visible {
+  outline: 3px solid var(--or-ruban-clair);
+  outline-offset: 3px;
 }
 
 .hud-chip-pa {
@@ -1530,6 +1566,10 @@ html, body {
 
   .apercu-scene {
     aspect-ratio: 4 / 3;
+  }
+
+  .apercu-scene.vignette-officielle {
+    aspect-ratio: 16 / 9;
   }
 
   .apercu-dialogue::after {
@@ -2356,6 +2396,12 @@ html, body {
   transition: opacity 0.2s ease;
 }
 
+.cadre-personnage.taille-ajustee { overflow: visible; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cadre-personnage { transition: none; }
+}
+
 .cadre-personnage.solo {
   left: 50%;
   bottom: -64.5vh;
@@ -2380,12 +2426,25 @@ html, body {
 .cadre-personnage.trio-1 { left: 50%; width: min(34vw, 460px); transform: translateX(-50%); }
 .cadre-personnage.trio-2 { right: 2%; width: min(34vw, 460px); }
 
+@media (max-width: 600px) {
+  .zone-personnages.taille-scene .cadre-personnage.solo,
+  .zone-personnages.taille-scene .cadre-personnage.duo-0,
+  .zone-personnages.taille-scene .cadre-personnage.duo-1 { bottom: var(--hauteur-barre, 0px); }
+  .zone-personnages.taille-scene .cadre-personnage.trio-0,
+  .zone-personnages.taille-scene .cadre-personnage.trio-1,
+  .zone-personnages.taille-scene .cadre-personnage.trio-2 {
+    bottom: calc(var(--hauteur-barre, 0px) - 8vh);
+    height: min(88vh, calc(100% - var(--hauteur-barre, 0px)));
+  }
+}
+
 .sprite-personnage {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: bottom center;
+  transform-origin: center bottom;
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
 }
 
@@ -2540,10 +2599,28 @@ html, body {
 }
 
 .lovometre-remplissage {
+  position: relative;
   height: 100%;
   background: var(--degrade-jauge);
   transition: width 0.5s cubic-bezier(0.25, 1, 0.5, 1);
   border-radius: inherit;
+  overflow: hidden;
+}
+
+.lovometre-remplissage::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+  pointer-events: none;
+  animation: reflet-lovometre 4.8s ease-in-out infinite;
+}
+
+@keyframes reflet-lovometre {
+  0%, 35% { transform: translateX(-150%); opacity: 0; }
+  45% { opacity: 0.7; }
+  75%, 100% { transform: translateX(350%); opacity: 0; }
 }
 
 .lovometre-pourcentage {
@@ -2563,6 +2640,11 @@ html, body {
 .lovometre-pourcentage.sur-remplissage {
   color: white;
   text-shadow: 0 1px 2px rgba(61, 18, 26, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lovometre-remplissage { transition: none; }
+  .lovometre-remplissage::after { animation: none; opacity: 0; }
 }
 
 /* Animations cœurs de gain / perte */
@@ -3046,11 +3128,11 @@ html, body {
 }
 
 /* ==========================================================================
-   SUCRETTE PAR CALQUES PNG + ÉCRAN « DRESSING »
+   POMMETTE PAR CALQUES PNG + ÉCRAN « DRESSING »
    Tous les calques ont les dimensions du sprite de base et sont superposés en inset: 0 :
    l'alignement est identique quelle que soit la taille d'affichage.
    ========================================================================== */
-.sucrette-calques {
+.pommette-calques {
   position: relative;
   display: block;
   width: 100%;
@@ -3058,7 +3140,7 @@ html, body {
   -webkit-user-select: none;
 }
 
-.calque-sucrette {
+.calque-pommette {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -3072,14 +3154,14 @@ html, body {
   overflow: hidden;
 }
 
-.avatar-joueur-calques .sucrette-calques {
+.avatar-joueur-calques .pommette-calques {
   position: absolute;
   top: 0;
   left: 0;
 }
 
 /* Miniatures du dressing : même pile de calques, recadrée par le script sur une zone du sprite. */
-.miniature-sucrette {
+.miniature-pommette {
   position: relative;
   display: block;
   width: 100%;
@@ -3089,7 +3171,7 @@ html, body {
   background: linear-gradient(160deg, #ffffff, var(--rose-poudre));
 }
 
-.miniature-sucrette .sucrette-calques {
+.miniature-pommette .pommette-calques {
   position: absolute;
 }
 

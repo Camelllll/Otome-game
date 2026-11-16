@@ -2,7 +2,7 @@
   "player": {
     "id": "moi",
     "sprite": "assets/Personnages/Perso principal.png",
-    "defaultName": "Sucrette",
+    "defaultName": "Pommette",
     "customizable": true
   },
   "crushs": [

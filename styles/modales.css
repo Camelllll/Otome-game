@@ -1,0 +1,68 @@
+.modale-avertissement {
+  background: rgba(27, 4, 12, .58);
+  backdrop-filter: none;
+}
+
+.modale-avertissement .modale-jeu {
+  width: min(540px, 100%);
+  padding: 2rem;
+  border: 1px solid #d4647c;
+  border-radius: 18px;
+  background: #320d19;
+  color: #fff1ed;
+  text-align: left;
+}
+
+.modale-avertissement .icone-avertissement {
+  float: left;
+  margin: -.1rem .85rem .5rem 0;
+  color: #ee8ca0;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.modale-avertissement .surtitre-modale-jeu {
+  color: #e6a3af;
+}
+
+.modale-avertissement .modale-jeu h2 {
+  padding-right: 1.5rem;
+  color: #fff8f1;
+  font: 800 1.15rem/1.35 var(--police-principale);
+}
+
+.modale-avertissement .texte-modale-jeu {
+  max-width: none;
+  color: #f5dce0;
+}
+
+.modale-avertissement .fermer-modale-jeu {
+  background: transparent;
+  color: #fff8f1;
+}
+
+.modale-avertissement .bouton-modale {
+  border: 1px solid #e8a4b2;
+  border-radius: 999px;
+}
+
+.modale-avertissement .bouton-modale.secondaire {
+  background: transparent;
+  color: #fff8f1;
+}
+
+.modale-avertissement .bouton-modale.principal {
+  background: linear-gradient(145deg, #e3657c, #ad2945);
+  color: #fff8f1;
+}
+
+.modale-avertissement button:focus-visible {
+  outline: 3px solid #fff8f1;
+  outline-offset: 3px;
+}
+
+@media (max-width: 420px) {
+  .modale-avertissement .modale-jeu {
+    padding: 1.5rem;
+  }
+}

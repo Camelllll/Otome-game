@@ -1,4 +1,5 @@
 import { DialogueEngine, aplatirPersonnages } from "./dialogueEngine.js";
+import { normaliserNomJoueur } from "./playerName.js";
 
 // Le passage est copié : ni les données publiées ni la sauvegarde du joueur ne sont utilisées comme état.
 export function creerMoteurExtrait(episode, personnages) {
@@ -50,7 +51,7 @@ export function creerMoteurExtrait(episode, personnages) {
       const debut = prefixe[0]?.id || id;
       const gauges = Object.fromEntries([...parId].filter(([, p]) => p.gauges).map(([key, p]) => [key, { ...p.gauges }]));
       return new DialogueEngine({ id: episode.id, start: debut, nodes }, parId, {
-        playerName: personnages.player.defaultName || "Sucrette",
+        playerName: normaliserNomJoueur(personnages.player.defaultName),
         currentNode: debut,
         currentBackground: decor,
         gauges,

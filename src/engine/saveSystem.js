@@ -12,13 +12,17 @@ import {
   sauvegarderProgressionDistante,
   reinitialiserProgressionDistante,
   enregistrerChoixDistant,
+  listerSauvegardesDistantes,
   SLOT_PRINCIPAL,
 } from "../services/playerRepository.js";
+import { normaliserNomJoueur } from "./playerName.js";
 
 const CACHE_KEY = "otome_save_cache_v2";
 const ANCIEN_CACHE_KEY = "otome_save_v1";
 const DELAI_AUTOSAVE_MS = 600;
 const TENTATIVES_MAX = 5;
+// Désactivés pendant la démo ; conserver les données pour leur réactivation.
+export const PA_ACTIFS = false;
 const PA_MAX = 25;
 const PA_REGEN_MS = 5 * 60 * 1000; // +1 PA toutes les 5 minutes
 
@@ -56,8 +60,8 @@ function creerSauvegardeParDefaut(playerId, slot = SLOT_PRINCIPAL) {
     playerId,
     slot,
     label: null,
-    playerName: "Sucrette",
-    appearance: null, // apparence de Sucrette (voir engine/appearance.js) ; null = apparence par défaut du catalogue
+    playerName: "Pommette",
+    appearance: null, // apparence de Pommette (voir engine/appearance.js) ; null = apparence par défaut du catalogue
     currentEpisode: "episode1",
     currentNode: null,
     currentBackground: null,
@@ -99,9 +103,14 @@ function lireCache(playerId, slot) {
     // Ancien format (v1) : l'objet de sauvegarde était stocké à plat.
     const entree = contenu?.sauvegarde ? contenu : { synchronise: false, majLocaleAt: 0, sauvegarde: contenu };
     const sauvegarde = entree.sauvegarde;
-    if (!sauvegarde || sauvegarde.playerId !== playerId) return null;
-    if ((sauvegarde.slot ?? SLOT_PRINCIPAL) !== slot) return null;
-    return { ...entree, sauvegarde: { ...creerSauvegardeParDefaut(playerId, slot), ...sauvegarde } };
+    if (!sauvegarde || (playerId !== null && sauvegarde.playerId !== playerId)) return null;
+    const emplacement = sauvegarde.slot ?? SLOT_PRINCIPAL;
+    if (slot !== null && emplacement !== slot) return null;
+    return { ...entree, sauvegarde: {
+      ...creerSauvegardeParDefaut(sauvegarde.playerId, emplacement),
+      ...sauvegarde,
+      playerName: normaliserNomJoueur(sauvegarde.playerName),
+    } };
   } catch (erreur) {
     console.warn("Cache de sauvegarde corrompu, il est ignoré.", erreur);
     return null;
@@ -154,6 +163,26 @@ export async function chargerSauvegarde(playerId, slot = SLOT_PRINCIPAL) {
 // Indique si une partie est déjà commencée (bouton "Continuer").
 export function aUneProgression(sauvegarde) {
   return Boolean(sauvegarde?.currentNode) || (sauvegarde?.revision ?? 0) > 0;
+}
+
+// Lecture seule : ouvrir l'accueil ou cliquer sur Continuer ne rejoue pas le cache hors ligne.
+export async function chargerDerniereProgression(playerId) {
+  const emplacements = await listerSauvegardesDistantes();
+  const dernier = emplacements
+    .filter(aUneProgression)
+    .sort((a, b) => (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0))[0];
+  const cache = lireCache(null, null);
+  if (cache && !cache.synchronise) {
+    if (cache.sauvegarde.playerId !== playerId) {
+      throw new Error("Un autre compte possède des modifications hors ligne non synchronisées. Synchronise-les avant de reprendre une partie.");
+    }
+    if (dernier && (!cache.majLocaleAt || cache.majLocaleAt < (Date.parse(dernier.updatedAt) || 0))) {
+      throw new Error("Une partie hors ligne non synchronisée pourrait être plus ancienne que ta sauvegarde en ligne. Synchronise-la avant de continuer.");
+    }
+    if (aUneProgression(cache.sauvegarde)) return cache.sauvegarde;
+    throw new Error("Une partie hors ligne n'est pas encore synchronisée. Synchronise-la avant de continuer.");
+  }
+  return dernier ? chargerProgressionDistante(playerId, dernier.slot) : null;
 }
 
 // ------------------------------------------------------------
@@ -247,35 +276,91 @@ async function envoyer() {
 
 // Journalise un choix côté serveur (best-effort : l'échec ne bloque pas le joueur,
 // la sauvegarde contient déjà les effets du choix).
+let journalEnCours = null;
+let erreurJournal = null;
+const choixEnAttente = [];
+
+export async function attendreJournalChoix() {
+  if (!journalEnCours && choixEnAttente.length) envoyerJournal();
+  await journalEnCours;
+  if (erreurJournal) throw new Error("Un choix n’a pas pu être enregistré. Vérifie ta connexion puis réessaie.");
+}
+
+function envoyerJournal() {
+  if (journalEnCours) return;
+  journalEnCours = (async () => {
+    try {
+      while (choixEnAttente.length) {
+        await enregistrerChoixDistant(choixEnAttente[0]);
+        choixEnAttente.shift();
+      }
+      erreurJournal = null;
+    } catch (erreur) {
+      erreurJournal = erreur;
+      console.warn("Journalisation du choix impossible.", erreur);
+      publierStatut({ enLigne: false, derniereErreur: erreur });
+    } finally {
+      journalEnCours = null;
+    }
+  })();
+}
+
+export async function preparerSortieSession() {
+  await attendreJournalChoix();
+  if (etat.envoiEnCours) await etat.envoiEnCours;
+  if (etat.enAttente && !await sauvegarderMaintenant()) {
+    throw new Error("Ta progression n’est pas encore sauvegardée. Vérifie ta connexion puis réessaie.");
+  }
+}
+
+export function fermerSessionSauvegarde() {
+  if (etat.minuteur) clearTimeout(etat.minuteur);
+  etat.minuteur = null;
+  etat.sauvegardeCourante = null;
+  etat.enAttente = false;
+  etat.tentatives = 0;
+  erreurJournal = null;
+  choixEnAttente.length = 0;
+  viderCache();
+}
+
 export function enregistrerChoix(sauvegarde, choix) {
   if (!sauvegarde) return;
   sauvegarde.choices ||= [];
   sauvegarde.choices.push({ ...choix, at: new Date().toISOString() });
-  enregistrerChoixDistant({ ...choix, slot: sauvegarde.slot ?? SLOT_PRINCIPAL }).catch((erreur) => {
-    console.warn("Journalisation du choix différée.", erreur);
-  });
+  choixEnAttente.push({ ...choix, slot: sauvegarde.slot ?? SLOT_PRINCIPAL });
+  envoyerJournal();
 }
 
-export async function reinitialiserSauvegarde(playerId, slot = SLOT_PRINCIPAL, playerName = null) {
+export async function reinitialiserSauvegarde(playerId, slot = SLOT_PRINCIPAL) {
+  // Finir toute écriture précédente avant le reset : elle ne doit pas recréer l'ancienne partie après.
+  if (etat.envoiEnCours) await etat.envoiEnCours;
+  if (etat.enAttente && !await sauvegarderMaintenant()) {
+    throw new Error("Impossible de sauvegarder la progression en attente. Réessaie avant de commencer une nouvelle partie.");
+  }
+  const cache = lireCache(null, null);
+  if (cache && !cache.synchronise
+      && (cache.sauvegarde.playerId !== playerId || cache.sauvegarde.slot !== slot)) {
+    throw new Error("Une autre partie possède des modifications hors ligne non synchronisées. Synchronise-la avant de commencer une nouvelle partie.");
+  }
   if (etat.minuteur) {
     clearTimeout(etat.minuteur);
     etat.minuteur = null;
   }
-  etat.enAttente = false;
-  etat.tentatives = 0;
-  viderCache();
   try {
-    const neuve = await reinitialiserProgressionDistante(playerId, slot, playerName);
+    await attendreJournalChoix();
+    const neuve = await reinitialiserProgressionDistante(playerId, slot);
+    etat.enAttente = false;
+    etat.tentatives = 0;
     etat.sauvegardeCourante = neuve;
+    viderCache();
     ecrireCache(neuve, true);
     publierStatut({ enLigne: true, derniereErreur: null, derniereSynchro: Date.now() });
     return neuve;
   } catch (erreur) {
     console.warn("Réinitialisation en ligne impossible.", erreur);
     publierStatut({ enLigne: false, derniereErreur: erreur });
-    const neuve = creerSauvegardeParDefaut(playerId, slot);
-    etat.sauvegardeCourante = neuve;
-    return neuve;
+    throw erreur;
   }
 }
 
@@ -302,6 +387,7 @@ if (typeof window !== "undefined") {
 // Recalcule les PA courants à partir du timestamp sauvegardé (régénération hors ligne incluse).
 // Le serveur applique la même règle et refuse tout gain non justifié par le temps écoulé.
 export function recalculerActionPoints(sauvegarde) {
+  if (!PA_ACTIFS) return sauvegarde;
   if (sauvegarde.actionPoints >= PA_MAX) {
     sauvegarde.lastActionPointsTimestamp = Date.now();
     return sauvegarde;
@@ -317,6 +403,7 @@ export function recalculerActionPoints(sauvegarde) {
 }
 
 export function consommerActionPoints(sauvegarde, cout) {
+  if (!PA_ACTIFS) return true;
   recalculerActionPoints(sauvegarde);
   if (sauvegarde.actionPoints < cout) return false;
   sauvegarde.actionPoints -= cout;

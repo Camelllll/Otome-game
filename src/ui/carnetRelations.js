@@ -3,6 +3,8 @@ import { jaugeEnPourcentageAffichage } from "../engine/relationManager.js";
 import { souvenirsDuPersonnage } from "../engine/carnet.js";
 import { getIllustrationsCatalogue } from "../services/gameRepository.js";
 import { PROFILS_CARNET } from "../data/carnetProfils.js";
+import { chargerImagePrivee } from "../services/apiClient.js";
+import { RARETES } from "../screens/illustrationGalleryScreen.js";
 
 const ECHAPPEMENTS = { "\u0026": "\u0026amp;", "<": "\u0026lt;", ">": "\u0026gt;", '"': "\u0026quot;", "'": "\u0026#39;" };
 
@@ -160,12 +162,7 @@ function libelleEpisode(illustration) {
   return illustration.episodeTitle || illustration.episodeId || "";
 }
 
-const RARETE_LIBELLES = {
-  common:    "Commun",
-  rare:      "Rare",
-  ultra_rare:"Ultra Rare",
-  legendary: "Légendaire",
-};
+const RARETE_LIBELLES = RARETES;
 
 function badgeRarete(illustration, debloque) {
   // On affiche la rareté même sur les vignettes verrouillées (sauf spoilerLevel >= 2 où tout est masqué).
@@ -194,7 +191,7 @@ function carteSouvenir(illustration, index, debloque) {
   }
   return `
     <button type="button" class="carnet-souvenir" data-souvenir="${index}">
-      <span class="carnet-vignette"><img src="${esc(illustration.image)}" alt="" loading="lazy">${badgeDuo}${badgeRar}</span>
+      <span class="carnet-vignette"><img data-image-privee="${esc(illustration.image)}" alt="" loading="lazy">${badgeDuo}${badgeRar}</span>
       <span class="carnet-souvenir-texte">
         <strong>${esc(illustration.title)}</strong>
         <small>${esc(libelleEpisode(illustration))}</small>
@@ -224,7 +221,7 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
         <button class="carnet-fermer" type="button" aria-label="Fermer">${ICONES.croix}</button>
       </header>
       <div class="carnet-corps">
-        <aside class="carnet-galerie" aria-label="Galerie des personnages">
+        <aside class="carnet-galerie" aria-label="Portraits des personnages">
           <div class="carnet-onglets" role="tablist"></div>
           <div class="carnet-grille"></div>
         </aside>
@@ -326,6 +323,11 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
         ? `<div class="carnet-adecouvrir">${ICONES.etoile}<div><strong>À découvrir…</strong><p>D’autres moments restent à vivre.</p></div></div>`
         : "";
     zoneSouvenirs.innerHTML = `${entete(compteur)}<div class="carnet-souvenirs-liste">${cartes}${vide}</div>${aDecouvrir}`;
+    for (const image of zoneSouvenirs.querySelectorAll("[data-image-privee]")) {
+      chargerImagePrivee(image.dataset.imagePrivee).then(src => { image.src = src; }).catch(erreur => {
+        image.replaceWith(document.createTextNode(erreur.message));
+      });
+    }
   }
 
   function rendre() {
@@ -351,7 +353,7 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
     lightbox.innerHTML = `
       <figure class="carnet-lightbox-cadre">
         <button type="button" class="carnet-lightbox-fermer" aria-label="Fermer l’illustration">${ICONES.croix}</button>
-        <img src="${esc(illustration.image)}" alt="${esc(illustration.title)}">
+        <img alt="${esc(illustration.title)}">
         <figcaption>
           <strong>${esc(illustration.title)}</strong>
           <span>${esc(libelleEpisode(illustration))}</span>
@@ -359,6 +361,10 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
         </figcaption>
       </figure>`;
     lightbox.hidden = false;
+    const image = lightbox.querySelector("img");
+    chargerImagePrivee(illustration.image).then(src => { image.src = src; }).catch(erreur => {
+      image.replaceWith(document.createTextNode(erreur.message));
+    });
     lightbox.querySelector(".carnet-lightbox-fermer").focus();
   }
 

@@ -1,6 +1,11 @@
 // Comptes joueurs et persistance de la progression via l'API Laravel (jeton Bearer Sanctum).
 // Le serveur valide et borne toutes les données : le client ne fait que les transmettre.
 import { appelApi, lireJeton, memoriserJeton, oublierJeton, ApiError } from "./apiClient.js";
+import { normaliserNomJoueur, remplacerAncienNom } from "../engine/playerName.js";
+
+function normaliserJoueur(joueur) {
+  return { ...joueur, pseudo: normaliserNomJoueur(joueur.pseudo) };
+}
 
 // Crée un compte (email + mot de passe) et connecte directement le joueur.
 export async function creerCompteJoueur(email, motDePasse, pseudo) {
@@ -11,7 +16,7 @@ export async function creerCompteJoueur(email, motDePasse, pseudo) {
     corps: { email: email.trim(), password: motDePasse, pseudo: pseudoNettoye || null },
   });
   memoriserJeton(donnees.token);
-  return donnees.player;
+  return normaliserJoueur(donnees.player);
 }
 
 export async function connexionJoueur(email, motDePasse) {
@@ -21,7 +26,7 @@ export async function connexionJoueur(email, motDePasse) {
     corps: { email: email.trim(), password: motDePasse },
   });
   memoriserJeton(donnees.token);
-  return donnees.player;
+  return normaliserJoueur(donnees.player);
 }
 
 // Retrouve le joueur déjà connecté (jeton conservé), ou null si personne n'est connecté.
@@ -29,7 +34,7 @@ export async function obtenirSessionJoueur() {
   if (!lireJeton()) return null;
   try {
     const donnees = await appelApi("/auth/me");
-    return donnees.player;
+    return normaliserJoueur(donnees.player);
   } catch (erreur) {
     if (erreur instanceof ApiError && erreur.statut === 401) return null;
     throw erreur;
@@ -37,13 +42,8 @@ export async function obtenirSessionJoueur() {
 }
 
 export async function deconnecterJoueur() {
-  try {
-    await appelApi("/auth/logout", { method: "POST" });
-  } catch (erreur) {
-    console.warn("Déconnexion côté serveur impossible, le jeton local est effacé quand même.", erreur);
-  } finally {
-    oublierJeton();
-  }
+  await appelApi("/auth/logout", { method: "POST" });
+  oublierJeton();
 }
 
 // Emplacements de sauvegarde : 0 = sauvegarde principale (autosave), 1..9 = emplacements manuels.
@@ -57,7 +57,7 @@ function normaliserSauvegarde(brut, playerId, slot) {
     playerId: donnees.playerId || playerId,
     slot: donnees.slot ?? slot,
     label: donnees.label ?? null,
-    playerName: donnees.playerName || "Sucrette",
+    playerName: normaliserNomJoueur(donnees.playerName),
     appearance: donnees.appearance && typeof donnees.appearance === "object" ? donnees.appearance : null,
     currentEpisode: donnees.currentEpisode || "episode1",
     currentNode: donnees.currentNode ?? null,
@@ -92,7 +92,6 @@ export async function sauvegarderProgressionDistante(sauvegarde) {
   const slot = sauvegarde.slot ?? SLOT_PRINCIPAL;
 
   const payload = {
-    playerName: sauvegarde.playerName,
     appearance: sauvegarde.appearance ?? null,
     label: sauvegarde.label ?? null,
     currentEpisode: sauvegarde.currentEpisode,
@@ -140,7 +139,9 @@ export async function enregistrerChoixDistant({
 
 export async function listerSauvegardesDistantes() {
   const donnees = await appelApi("/saves");
-  return Array.isArray(donnees) ? donnees : [];
+  return Array.isArray(donnees)
+    ? donnees.map(sauvegarde => ({ ...sauvegarde, playerName: normaliserNomJoueur(sauvegarde.playerName) }))
+    : [];
 }
 
 export async function listerChoixDistants(slot = SLOT_PRINCIPAL, limite = 200) {
@@ -148,17 +149,21 @@ export async function listerChoixDistants(slot = SLOT_PRINCIPAL, limite = 200) {
   return Array.isArray(donnees) ? donnees : [];
 }
 
-export async function debloquerIllustration({ path, episodeId, nodeId }) {
+export async function debloquerIllustration({ path, episodeId, nodeId, slot = 0 }) {
   if (!path) return null;
   return appelApi("/illustrations", {
     method: "POST",
-    corps: { path, episodeId: episodeId ?? null, nodeId: nodeId ?? null },
+    corps: { path, episodeId: episodeId ?? null, nodeId: nodeId ?? null, slot },
   });
 }
 
 export async function listerIllustrationsDebloquees() {
   const donnees = await appelApi("/illustrations");
-  return Array.isArray(donnees) ? donnees : [];
+  return Array.isArray(donnees) ? donnees.map(illustration => ({
+    ...illustration,
+    title: illustration.title ? remplacerAncienNom(illustration.title) : illustration.title,
+    characters: illustration.characters?.map(nom => remplacerAncienNom(nom)),
+  })) : [];
 }
 
 export async function copierSauvegardeDistante(slotSource, slotCible, label = null) {
@@ -169,7 +174,7 @@ export async function copierSauvegardeDistante(slotSource, slotCible, label = nu
   return normaliserSauvegarde(donnees, donnees?.playerId, slotCible);
 }
 
-export async function reinitialiserProgressionDistante(playerId, slot = SLOT_PRINCIPAL, playerName = null) {
-  const donnees = await appelApi(`/saves/${slot}/reset`, { method: "POST", corps: { playerName } });
+export async function reinitialiserProgressionDistante(playerId, slot = SLOT_PRINCIPAL) {
+  const donnees = await appelApi(`/saves/${slot}/reset`, { method: "POST" });
   return normaliserSauvegarde(donnees, playerId, slot);
 }

@@ -43,7 +43,7 @@ class PlayerSaveService
     {
         $save = $this->find($user, $slot);
 
-        return $save ? $this->toArray($save) : $this->defaultSave($user, $slot);
+        return $save ? $this->toArray($user, $save) : $this->defaultSave($user, $slot);
     }
 
     /** Résumé de tous les emplacements du joueur. */
@@ -56,7 +56,7 @@ class PlayerSaveService
             ->map(fn (PlayerSave $s) => [
                 'slot' => $s->slot,
                 'label' => $s->label,
-                'playerName' => $s->player_name,
+                'playerName' => $this->playerName($user),
                 'currentEpisode' => $s->current_episode,
                 'currentNode' => $s->current_node,
                 'completedEpisodes' => $s->completed_episodes ?? [],
@@ -66,15 +66,20 @@ class PlayerSaveService
             ->all();
     }
 
-    public function defaultSave(User $user, int $slot, ?string $playerName = null): array
+    private function playerName(User $user): string
     {
-        $name = trim((string) ($playerName ?? $user->name));
+        $name = trim((string) $user->name);
 
+        return mb_substr($name !== '' ? $name : 'Pommette', 0, 40);
+    }
+
+    public function defaultSave(User $user, int $slot): array
+    {
         return [
             'playerId' => $user->id,
             'slot' => $slot,
             'label' => null,
-            'playerName' => mb_substr($name !== '' ? $name : 'Sucrette', 0, 40),
+            'playerName' => $this->playerName($user),
             'appearance' => null,
             'currentEpisode' => 'episode1',
             'currentNode' => null,
@@ -97,13 +102,13 @@ class PlayerSaveService
     }
 
     /** Sérialise une sauvegarde vers le format camelCase attendu par le client. */
-    public function toArray(PlayerSave $s): array
+    public function toArray(User $user, PlayerSave $s): array
     {
         return [
             'playerId' => $s->user_id,
             'slot' => $s->slot,
             'label' => $s->label,
-            'playerName' => $s->player_name,
+            'playerName' => $this->playerName($user),
             'currentEpisode' => $s->current_episode,
             'currentNode' => $s->current_node,
             'appearance' => $s->appearance,
@@ -139,31 +144,34 @@ class PlayerSaveService
                 ->first();
             $now = Carbon::now();
 
-            // Points d'action : la régénération est recalculée ici. Le client peut en dépenser,
-            // jamais en gagner au-delà du temps réellement écoulé.
-            if ($old === null) {
-                $allowed = $paMax;
-                $stamp = $now->copy();
+            if (! $this->rule('paEnabled')) {
+                $pa = $old?->action_points ?? $paMax;
+                $stamp = $old?->last_action_points_at ?? $now->copy();
             } else {
-                $reference = $old->last_action_points_at->getTimestamp();
-                $earned = intdiv(max(0, $now->getTimestamp() - $reference), $regen);
-                $allowed = min($paMax, $old->action_points + $earned);
-                $stamp = Carbon::createFromTimestamp($reference + $earned * $regen);
-            }
-            $requested = isset($payload['actionPoints']) && is_numeric($payload['actionPoints'])
-                ? (int) $payload['actionPoints']
-                : $allowed;
-            $pa = max(0, min($allowed, $requested));
-            // Jauge pleine : le compteur de régénération repart de maintenant.
-            if ($pa >= $paMax) {
-                $stamp = $now->copy();
+                // Le client peut dépenser des PA, sans gagner au-delà du temps écoulé.
+                if ($old === null) {
+                    $allowed = $paMax;
+                    $stamp = $now->copy();
+                } else {
+                    $reference = $old->last_action_points_at->getTimestamp();
+                    $earned = intdiv(max(0, $now->getTimestamp() - $reference), $regen);
+                    $allowed = min($paMax, $old->action_points + $earned);
+                    $stamp = Carbon::createFromTimestamp($reference + $earned * $regen);
+                }
+                $requested = isset($payload['actionPoints']) && is_numeric($payload['actionPoints'])
+                    ? (int) $payload['actionPoints']
+                    : $allowed;
+                $pa = max(0, min($allowed, $requested));
+                if ($pa >= $paMax) {
+                    $stamp = $now->copy();
+                }
             }
 
             $currency = isset($payload['currency']) && is_numeric($payload['currency']) ? (int) $payload['currency'] : 0;
 
             $attributes = [
                 'label' => $this->text($payload['label'] ?? null, 60) ?? $old?->label,
-                'player_name' => $this->text($payload['playerName'] ?? null, 40) ?? $old?->player_name ?? 'Sucrette',
+                'player_name' => $this->playerName($user),
                 // Clé présente avec null = retour au sprite d'origine ; clé absente ou invalide = on garde l'ancienne valeur.
                 'appearance' => array_key_exists('appearance', $payload) && $payload['appearance'] === null
                     ? null
@@ -182,7 +190,14 @@ class PlayerSaveService
                 'history' => $this->trimList($payload['history'] ?? null, $this->rule('maxHistory')),
                 'completed_episodes' => $this->trimList($payload['completedEpisodes'] ?? null, $this->rule('maxCompletedEpisodes')),
                 'discovered_character_ids' => $this->mergeIds($payload['discoveredCharacterIds'] ?? null, $old?->discovered_character_ids, self::MAX_DISCOVERED_CHARACTERS),
-                'unlocked_illustration_ids' => $this->mergeIds($payload['unlockedIllustrationIds'] ?? null, $old?->unlocked_illustration_ids, self::MAX_UNLOCKED_ILLUSTRATIONS),
+                'unlocked_illustration_ids' => $this->mergeIds(
+                    array_values(array_intersect(
+                        array_filter(is_array($payload['unlockedIllustrationIds'] ?? null) ? $payload['unlockedIllustrationIds'] : [], 'is_string'),
+                        app(IllustrationAccess::class)->collection($user)->pluck('id')->filter()->all()
+                    )),
+                    $old?->unlocked_illustration_ids,
+                    self::MAX_UNLOCKED_ILLUSTRATIONS
+                ),
             ];
 
             if ($old === null) {
@@ -220,7 +235,7 @@ class PlayerSaveService
     private const APPEARANCE_KEYS = ['skin', 'hair', 'eyes', 'eyebrows', 'mouth', 'outfit', 'top', 'bottom', 'shoes', 'accessory'];
 
     /**
-     * Apparence de Sucrette : ne conserve que les clés connues et des identifiants de forme sûre.
+     * Apparence de Pommette : ne conserve que les clés connues et des identifiants de forme sûre.
      * Le contenu exact (existence de l'élément, déblocage) est revalidé par le catalogue côté client.
      * Renvoie null si la valeur reçue n'est pas une apparence (l'appelant décide alors de conserver l'ancienne valeur).
      */
@@ -263,6 +278,7 @@ class PlayerSaveService
                 'stats', 'currency', 'inventory', 'action_points', 'last_action_points_at', 'history', 'completed_episodes',
                 'discovered_character_ids', 'unlocked_illustration_ids',
             ]);
+            $attributes['player_name'] = $this->playerName($user);
             $attributes['label'] = $this->text($label, 60) ?? $destination?->label;
 
             if ($destination === null) {
@@ -278,14 +294,14 @@ class PlayerSaveService
     }
 
     /** Nouvelle partie : vide l'emplacement et son journal de choix, puis renvoie une sauvegarde neuve. */
-    public function reset(User $user, int $slot, ?string $playerName): array
+    public function reset(User $user, int $slot): array
     {
         DB::transaction(function () use ($user, $slot) {
             PlayerSave::query()->where('user_id', $user->id)->where('slot', $slot)->delete();
             PlayerChoice::query()->where('user_id', $user->id)->where('slot', $slot)->delete();
         });
 
-        return $this->defaultSave($user, $slot, $playerName);
+        return $this->defaultSave($user, $slot);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Episode;
 use App\Models\PlayerChoice;
 use App\Services\PlayerSaveService;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,7 @@ class SaveController extends Controller
     {
         $payload = $request->validate([
             'label' => ['nullable', 'string', 'max:500'],
+            // Ancien client : le champ reste accepté, mais le nom vient uniquement du compte.
             'playerName' => ['nullable', 'string', 'max:500'],
             'currentEpisode' => ['nullable', 'string', 'max:500'],
             'currentNode' => ['nullable', 'string', 'max:500'],
@@ -45,7 +47,7 @@ class SaveController extends Controller
 
         $save = $this->saves->save($request->user(), $payload, PlayerSaveService::slot($slot));
 
-        return response()->json($this->saves->toArray($save));
+        return response()->json($this->saves->toArray($request->user(), $save));
     }
 
     public function copy(Request $request, int $slot): JsonResponse
@@ -62,15 +64,15 @@ class SaveController extends Controller
             $data['label'] ?? null
         );
 
-        return response()->json($this->saves->toArray($save));
+        return response()->json($this->saves->toArray($request->user(), $save));
     }
 
     public function reset(Request $request, int $slot): JsonResponse
     {
-        $data = $request->validate(['playerName' => ['nullable', 'string', 'max:500']]);
+        $request->validate(['playerName' => ['nullable', 'string', 'max:500']]);
 
         return response()->json(
-            $this->saves->reset($request->user(), PlayerSaveService::slot($slot), $data['playerName'] ?? null)
+            $this->saves->reset($request->user(), PlayerSaveService::slot($slot))
         );
     }
 
@@ -103,16 +105,20 @@ class SaveController extends Controller
     public function recordChoice(Request $request, int $slot): JsonResponse
     {
         $data = $request->validate([
-            'episodeId' => ['nullable', 'string', 'max:500'],
-            'nodeId' => ['nullable', 'string', 'max:500'],
-            'optionIndex' => ['nullable', 'integer', 'between:-32768,32767'],
+            'episodeId' => ['required', 'string', 'max:80'],
+            'nodeId' => ['required', 'string', 'max:120'],
+            'optionIndex' => ['required', 'integer', 'min:0'],
             'optionLabel' => ['nullable', 'string', 'max:2000'],
             'flags' => ['nullable', 'array'],
             'effects' => ['nullable', 'array'],
         ]);
 
-        $flags = $data['flags'] ?? [];
-        $effects = $data['effects'] ?? [];
+        $episode = Episode::query()->where('slug', $data['episodeId'])->whereNotNull('published_version_id')->with('publishedVersion')->firstOrFail();
+        $node = $episode->publishedVersion?->data['nodes'][$data['nodeId']] ?? [];
+        $option = $node['options'][$data['optionIndex']] ?? null;
+        abort_unless(($node['type'] ?? '') === 'choice' && is_array($option), 422, 'Ce choix ne correspond pas à une option publiée.');
+        $flags = $option['flags'] ?? [];
+        $effects = $option['effects'] ?? [];
 
         $choice = PlayerChoice::create([
             'user_id' => $request->user()->id,
@@ -120,7 +126,7 @@ class SaveController extends Controller
             'episode_id' => $this->limit($data['episodeId'] ?? null, 80),
             'node_id' => $this->limit($data['nodeId'] ?? null, 120),
             'option_index' => $data['optionIndex'] ?? null,
-            'option_label' => $this->limit($data['optionLabel'] ?? null, 300),
+            'option_label' => $this->limit($option['text'] ?? null, 300),
             'flags' => array_is_list($flags) ? $flags : [],
             'effects' => ($effects === [] || ! array_is_list($effects)) ? $effects : [],
             'chosen_at' => now(),

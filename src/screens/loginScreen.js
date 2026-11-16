@@ -25,7 +25,7 @@ function creerChamp(id, libelle, type, pictogramme, autocomplete) {
   saisie.maxLength = id === "pseudo" ? 40 : 100;
   if (id === "email") saisie.placeholder = "Adresse e-mail";
   if (id === "password") saisie.placeholder = "Mot de passe";
-  if (id === "pseudo") saisie.placeholder = "Sucrette";
+  if (id === "pseudo") saisie.placeholder = "Pommette";
   enveloppe.append(icone(pictogramme), saisie);
   if (id === "password") {
     const afficher = creer("button", "entree-voir-mdp");
@@ -54,7 +54,7 @@ function creerConnexion(onConnecte) {
   const formulaire = creer("form", "entree-formulaire");
   formulaire.id = "entree-formulaire";
   formulaire.setAttribute("role", "tabpanel");
-  const pseudo = creerChamp("pseudo", "Prénom de ton héroïne (facultatif)", "text", "compte", "nickname");
+  const pseudo = creerChamp("pseudo", "Ton pseudo (facultatif)", "text", "compte", "nickname");
   const email = creerChamp("email", "Adresse e-mail", "email", "mail", "email");
   const mdp = creerChamp("password", "Mot de passe", "password", "verrou", "current-password");
   const erreur = creer("p", "entree-erreur");
@@ -112,7 +112,7 @@ function creerConnexion(onConnecte) {
       const joueur = inscription
         ? await creerCompteJoueur(email.saisie.value, mdp.saisie.value, pseudo.saisie.value)
         : await connexionJoueur(email.saisie.value, mdp.saisie.value);
-      await onConnecte(joueur);
+      await onConnecte(joueur, { nouveauCompte: inscription });
     } catch (cause) {
       erreur.textContent = cause.message || "Connexion impossible. Réessaie dans un instant.";
       erreur.hidden = false;
@@ -126,13 +126,10 @@ function creerConnexion(onConnecte) {
   });
   choisir(false);
   bloc.append(onglets, formulaire);
-  return { bloc, focus: email.saisie };
+  return { bloc, focus: email.saisie, inscrire: () => choisir(true) };
 }
 
-export function lancerEcranConnexion(conteneurRacine, {
-  onConnecte, joueur = null, sauvegarde = null,
-  onContinuer, onDressing, onAccueil,
-}) {
+export function lancerEcranConnexion(conteneurRacine, { onConnecte }) {
   const page = creer("div", "page-connexion");
   const defilement = creer("div", "entree-defilement");
   const principal = creer("main", "entree-principal");
@@ -155,47 +152,34 @@ export function lancerEcranConnexion(conteneurRacine, {
     focus.focus({ preventScroll: true });
   }
   const presentation = creer("div", "entree-presentation");
-  const titre = creer("h1", "", "Une rentrée,");
+  const titre = creer("h1", "", "TOUT COMMENCE");
   titre.id = "entree-titre";
-  titre.append(creer("em", "", "Mille possibilités."));
+  titre.append(creer("em", "", "ICI."));
   const description = creer("p", "entree-hero-texte");
   description.append(
-    creer("span", "", "Bienvenue à Aster. Des regards qui se croisent, "),
-    creer("span", "", "des choix qui rapprochent… et toi, au cœur de l'histoire."),
+    creer("span", "", "Une première année à l'université, c'est aussi des habitudes à prendre, des amitiés à construire et des personnes à découvrir."),
+    creer("span", "", " Au fil des rencontres, tu découvriras peu à peu ceux qui pourraient bien rendre cette année inoubliable."),
   );
   presentation.append(
     creerImage(LOGO, "entree-logo-hero", "Pomme d'Amour", true),
-    creer("p", "entree-etiquette", "Ta prochaine histoire d'amour"),
+    creer("p", "entree-etiquette", "OTOME GAME FRANÇAIS"),
     titre,
     description,
   );
   const carte = creer("aside", "entree-compte");
   carte.id = "entree-compte";
   carte.tabIndex = -1;
-  carte.setAttribute("aria-label", joueur ? "Ta partie" : "Rejoins le campus");
+  carte.setAttribute("aria-label", "Rejoins le campus");
   carte.append(creer("p", "entree-surtitre", "Ton accès au campus"));
-  let focusCompte;
+  carte.append(
+    creer("h2", "", "On t'attend à Aster"),
+    creer("p", "entree-compte-intro", "Ouvre les portes de ton histoire."),
+  );
+  const connexion = creerConnexion(onConnecte);
+  const focusCompte = connexion.focus;
+  carte.append(connexion.bloc);
   const rejoindre = () => allerA(carte, focusCompte);
-  const jouer = joueur ? onContinuer : rejoindre;
-  if (joueur) {
-    carte.append(
-      creer("h2", "", `Bon retour, ${sauvegarde?.playerName || joueur.pseudo || "Sucrette"}`),
-      creer("p", "entree-compte-intro", "Ton histoire t'attend de l'autre côté des portes."),
-      creer("p", "entree-progression", sauvegarde?.currentEpisode
-        ? `Épisode en cours · ${sauvegarde.currentEpisode.replace(/^episode(\d+)$/, "$1")}`
-        : "Une nouvelle histoire à commencer"),
-    );
-    focusCompte = creerBouton("Continuer l'histoire", onContinuer, { pictogramme: "jouer" });
-    carte.append(focusCompte, creerBouton("Mon dressing", onDressing, { secondaire: true, pictogramme: "robe" }));
-  } else {
-    carte.append(
-      creer("h2", "", "On t'attend à Aster"),
-      creer("p", "entree-compte-intro", "Ouvre les portes de ton histoire."),
-    );
-    const connexion = creerConnexion(onConnecte);
-    focusCompte = connexion.focus;
-    carte.append(connexion.bloc);
-  }
+  const jouer = () => { connexion.inscrire(); rejoindre(); };
   const noteCompte = creer("div", "entree-compte-note");
   noteCompte.setAttribute("aria-hidden", "true");
   noteCompte.append(icone("coeur"));
@@ -214,8 +198,8 @@ export function lancerEcranConnexion(conteneurRacine, {
   });
   const actionsHero = creer("div", "entree-actions");
   actionsHero.append(
-    creerBouton(joueur ? "Continuer mon histoire" : "Jouer", jouer, { pictogramme: "jouer" }),
-    creerBouton("Découvrir le concept", () => allerA(concept), { secondaire: true, pictogramme: "livre" }),
+    creerBouton("Créer mon compte", jouer, { pictogramme: "jouer" }),
+    creerBouton("Essayer un extrait", () => allerA(scene), { secondaire: true, pictogramme: "livre" }),
   );
   presentation.append(actionsHero);
   const casting = creer("div", "entree-casting");
@@ -247,7 +231,7 @@ export function lancerEcranConnexion(conteneurRacine, {
   const statutExtrait = creer("p", "entree-statut", "Chargement de l'extrait…");
   statutExtrait.setAttribute("role", "status");
   scene.append(statutExtrait);
-  apercu.append(scene, creerBouton("Découvrir l'histoire", jouer, { pictogramme: "jouer" }));
+  apercu.append(scene, creerBouton("Créer mon compte", jouer, { pictogramme: "jouer" }));
 
   const navigation = creer("nav", "entree-nav");
   navigation.setAttribute("aria-label", "Navigation principale");
@@ -269,9 +253,8 @@ export function lancerEcranConnexion(conteneurRacine, {
   const ancres = [];
   [
     ["Concept", concept, "etoile"],
-    ["Personnages", personnages, "coeur"],
-    ["Univers", apercu, "livre"],
-    ["Le jeu", scene, "manette"],
+    ["Rencontres", personnages, "coeur"],
+    ["Extrait jouable", apercu, "manette"],
   ].forEach(([texte, cible, pictogramme]) => {
     const lien = creer("a");
     lien.append(icone(pictogramme), creer("span", "", texte));
@@ -290,17 +273,17 @@ export function lancerEcranConnexion(conteneurRacine, {
       menu.focus();
     }
   });
-  const compte = creerBouton(joueur ? "Mon compte" : "Connexion", rejoindre, { secondaire: true, pictogramme: "compte" });
+  const compte = creerBouton("Connexion", rejoindre, { secondaire: true, pictogramme: "compte" });
   navigation.append(marque, liens, menu, compte);
   const pied = creer("footer", "entree-footer");
   const signature = creer("div", "entree-signature");
   signature.append(creerImage(LOGO, "", "Pomme d'Amour"), creer("p", "", "Chaque cœur a son histoire."));
   const liensPied = creer("div", "entree-footer-liens");
   liensPied.append(
-    creerBouton("Le campus", () => allerA(apercu), { secondaire: true }),
+    creerBouton("Essayer un extrait", () => allerA(scene), { secondaire: true }),
     creerBouton("Les personnages", () => allerA(personnages), { secondaire: true }),
-    creerBouton("Jouer", () => allerA(hero, marque), { pictogramme: "jouer" }),
-    creerBouton(joueur ? "Menu du jeu" : "Mon compte", joueur ? onAccueil : rejoindre, { secondaire: true }),
+    creerBouton("Créer mon compte", jouer, { pictogramme: "jouer" }),
+    creerBouton("Connexion", rejoindre, { secondaire: true }),
   );
   pied.append(signature, liensPied, creer("p", "entree-copyright", "Pomme d'Amour · Université Aster · Visual novel romantique"));
   const eviter = creer("a", "entree-eviter", "Aller au contenu");
@@ -310,7 +293,7 @@ export function lancerEcranConnexion(conteneurRacine, {
   invitation.append(
     creer("p", "entree-surtitre", "La suite t'appartient"),
     creer("h2", "", "C'est peut-être le début de quelque chose."),
-    creerBouton("Jouer", () => allerA(hero, marque), { pictogramme: "jouer" }),
+    creerBouton("Créer mon compte", jouer, { pictogramme: "jouer" }),
   );
   principal.append(hero, creerTransitionConcept(), concept, personnages, apercu, invitation);
   defilement.append(principal, pied);

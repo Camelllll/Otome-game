@@ -1,115 +1,162 @@
-function titreIllustration(illustration, index) {
-  if (illustration.title) return illustration.title;
-  const nomFichier = decodeURIComponent(illustration.path.split("/").pop() || "");
-  return nomFichier.replace(/\.[^.]+$/, "") || `Illustration ${index + 1}`;
-}
+import { chargerImagePrivee } from "../services/apiClient.js";
 
-const RARETE_LIBELLES_GALERIE = {
-  common:    "Commun",
-  rare:      "Rare",
-  ultra_rare:"Ultra Rare",
+export const RARETES = {
+  common: "Commune",
+  uncommon: "Peu commune",
+  rare: "Rare",
+  epic: "Épique",
+  ultra_rare: "Épique",
   legendary: "Légendaire",
 };
 
-function creerBadgeRareteGalerie(illustration) {
-  const rarete = illustration.rarity;
-  if (!rarete || rarete === "common") return null;
-  const libelle = RARETE_LIBELLES_GALERIE[rarete] ?? rarete;
-  const badge = document.createElement("span");
-  badge.className = `badge-rarete rarete-${rarete}`;
-  badge.setAttribute("aria-label", `Rareté : ${libelle}`);
-  badge.textContent = libelle;
-  return badge;
+function element(tag, classe, texte = "") {
+  const el = document.createElement(tag);
+  el.className = classe;
+  el.textContent = texte;
+  return el;
 }
 
-function dateAcquisition(valeur) {
-  const date = new Date(valeur);
-  if (Number.isNaN(date.getTime())) return "Date inconnue";
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date);
+function informationsIllustration(illustration, titre, detaillees = false) {
+  const informations = element("div", "pda-illustration-infos");
+  const nom = element("h3", "", titre);
+  nom.title = titre;
+  informations.append(nom);
+  if (illustration.characters?.length) {
+    const personnages = element("p", "", illustration.characters.join(", "));
+    personnages.title = personnages.textContent;
+    informations.append(personnages);
+  }
+  const rarete = RARETES[illustration.rarity];
+  if (rarete) {
+    const badge = element("span", "pda-rarete", rarete);
+    badge.dataset.rarete = illustration.rarity;
+    informations.append(badge);
+  }
+  if (illustration.acquiredAt) {
+    informations.append(element("p", "", `Obtenue le ${new Intl.DateTimeFormat("fr-FR", { dateStyle: detaillees ? "long" : "medium" }).format(new Date(illustration.acquiredAt))}`));
+  }
+  return informations;
 }
 
-export function lancerEcranGalerie(conteneurRacine, { illustrations = [], onRetour }) {
-  const ecran = document.createElement("div");
-  ecran.className = "ecran-galerie";
-  ecran.innerHTML = `
-    <header class="header-galerie">
-      <div class="identite-galerie">
-        <img src="assets/logo/Logo Pomme d'Amour.png" alt="Pomme d'Amour">
-        <div><p>Collection</p><h1>Mes illustrations</h1></div>
-      </div>
-      <button class="btn-retour-galerie" type="button">← Retour</button>
-    </header>
-    <main class="contenu-galerie">
-      <p class="intro-galerie">Les moments précieux rencontrés au fil de tes choix.</p>
-      <div class="grille-illustrations"></div>
-    </main>
-  `;
+export function ouvrirIllustration(src, titre, illustration) {
+  const focus = document.activeElement;
+  const dialogue = element("dialog", "pda-visionneuse");
+  dialogue.setAttribute("aria-label", titre);
+  const fermer = element("button", "", "Fermer ×");
+  fermer.type = "button";
+  const image = element("img", "");
+  image.src = src;
+  image.alt = titre;
+  dialogue.append(fermer, image);
+  if (illustration) dialogue.append(informationsIllustration(illustration, titre, true));
+  fermer.addEventListener("click", () => dialogue.close());
+  dialogue.addEventListener("click", event => { if (event.target === dialogue) dialogue.close(); });
+  dialogue.addEventListener("close", () => { dialogue.remove(); focus?.focus(); }, { once: true });
+  document.body.append(dialogue);
+  dialogue.showModal();
+}
 
-  const grille = ecran.querySelector(".grille-illustrations");
-  if (!illustrations.length) {
-    grille.innerHTML = `
-      <div class="galerie-vide">
-        <span aria-hidden="true">♡</span>
-        <h2>Ta collection commence ici</h2>
-        <p>Les illustrations apparaîtront après leur découverte dans l'histoire.</p>
-      </div>
-    `;
+export function paginerIllustrations(illustrations, capacite, ancre = 0) {
+  const totalPages = Math.ceil(illustrations.length / capacite);
+  const page = Math.max(0, Math.min(Math.floor(ancre / capacite), totalPages - 1));
+  const debut = page * capacite;
+  return { page, totalPages, debut, elements: illustrations.slice(debut, debut + capacite) };
+}
+
+function creerCarteIllustration(illustration, index) {
+  const titre = illustration.title || `Illustration ${index + 1}`;
+  const carte = element("article", "pda-illustration");
+  const media = element("div", "pda-illustration-media");
+  const agrandir = element("button", "");
+  agrandir.type = "button";
+  agrandir.disabled = true;
+  agrandir.setAttribute("aria-label", `Agrandir ${titre}`);
+  const image = element("img", "");
+  image.alt = titre;
+  const erreur = element("p", "pda-erreur");
+  erreur.setAttribute("role", "alert");
+  if (illustration.path) {
+    chargerImagePrivee(illustration.path).then(src => {
+      image.src = src;
+      agrandir.disabled = false;
+    }).catch(cause => { erreur.textContent = cause.message; });
   } else {
-    illustrations.forEach((illustration, index) => {
-      const carte = document.createElement("article");
-      carte.className = "carte-illustration";
-      if (illustration.rarity && illustration.rarity !== "common") {
-        carte.dataset.rarete = illustration.rarity;
-      }
-      const image = document.createElement("img");
-      image.src = illustration.path;
-      image.alt = titreIllustration(illustration, index);
-      image.loading = "lazy";
-      image.tabIndex = 0;
-      image.setAttribute("role", "button");
-      image.setAttribute("aria-label", `Agrandir ${image.alt}`);
-      const details = document.createElement("div");
-      details.className = "details-illustration";
-      const meta = document.createElement("p");
-      meta.textContent = `Obtenue le ${dateAcquisition(illustration.acquiredAt)}`;
-      details.appendChild(meta);
-      const badge = creerBadgeRareteGalerie(illustration);
-      if (badge) details.appendChild(badge);
-      carte.append(image, details);
-      image.addEventListener("click", () => ouvrirIllustration(image.src, image.alt));
-      image.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          ouvrirIllustration(image.src, image.alt);
-        }
-      });
-      grille.appendChild(carte);
-    });
+    erreur.textContent = "Cette illustration nécessite un import privé. Son acquisition est conservée.";
   }
+  image.addEventListener("error", () => { erreur.textContent = "Cette illustration n’a pas pu être affichée."; agrandir.disabled = true; });
+  agrandir.append(image);
+  agrandir.addEventListener("click", () => ouvrirIllustration(image.src, titre, illustration));
+  media.append(agrandir, erreur);
+  carte.append(media, informationsIllustration(illustration, titre));
+  return carte;
+}
 
-  function ouvrirIllustration(src, alt) {
-    const voile = document.createElement("div");
-    voile.className = "visionneuse-galerie";
-    const fermerBouton = document.createElement("button");
-    fermerBouton.type = "button";
-    fermerBouton.setAttribute("aria-label", "Fermer");
-    fermerBouton.textContent = "×";
-    const image = document.createElement("img");
-    image.src = src;
-    image.alt = alt;
-    voile.append(fermerBouton, image);
-    const fermer = () => voile.remove();
-    fermerBouton.addEventListener("click", fermer);
-    voile.addEventListener("click", (event) => {
-      if (event.target === voile) fermer();
-    });
-    ecran.appendChild(voile);
+export function creerCollectionIllustrations(illustrations, { signal } = {}) {
+  const collection = element("div", "pda-collection-pagination");
+  const grille = element("div", "pda-collection");
+  grille.id = "pda-grille-illustrations";
+  collection.append(grille);
+  if (!illustrations.length) {
+    const vide = element("p", "pda-notice", "Ta collection commence ici. Les illustrations apparaîtront après leur découverte dans l’histoire.");
+    grille.append(vide);
+    return collection;
   }
+  let capacite = 0;
+  let ancre = 0;
+  const pagination = element("nav", "pda-pagination");
+  pagination.setAttribute("aria-label", "Pagination des illustrations");
+  const precedent = element("button", "pda-bouton", "←");
+  const suivant = element("button", "pda-bouton", "→");
+  [[precedent, "Page précédente"], [suivant, "Page suivante"]].forEach(([commande, label]) => {
+    commande.type = "button";
+    commande.disabled = true;
+    commande.setAttribute("aria-label", label);
+    commande.setAttribute("aria-controls", grille.id);
+  });
+  const compteur = element("span", "pda-compteur-pages");
+  compteur.setAttribute("role", "status");
+  compteur.setAttribute("aria-live", "polite");
+  compteur.setAttribute("aria-atomic", "true");
+  const afficher = () => {
+    const { page, totalPages, debut, elements } = paginerIllustrations(illustrations, capacite, ancre);
+    ancre = debut;
+    grille.replaceChildren(...elements.map((illustration, index) => creerCarteIllustration(illustration, debut + index)));
+    precedent.disabled = page === 0;
+    suivant.disabled = page + 1 >= totalPages;
+    compteur.replaceChildren(element("span", "", `${debut + 1}–${debut + elements.length} sur ${illustrations.length}`),
+      element("span", "", `Page ${page + 1} / ${totalPages}`));
+  };
+  precedent.addEventListener("click", () => { ancre -= capacite; afficher(); });
+  suivant.addEventListener("click", () => { ancre += capacite; afficher(); });
+  pagination.append(precedent, compteur, suivant);
+  collection.append(pagination);
+  const observer = new ResizeObserver(([entree]) => {
+    const { width, height } = entree.contentRect;
+    if (!width || !height) return;
+    const colonnes = width >= 440 && height >= 330 ? 2 : 1;
+    const lignes = Math.max(1, Math.min(2, Math.floor((height - 50) / 280)));
+    grille.style.gridTemplateColumns = `repeat(${colonnes}, minmax(0, 1fr))`;
+    grille.style.gridTemplateRows = `repeat(${lignes}, minmax(0, 1fr))`;
+    collection.classList.toggle("pda-collection-compacte", height < 300);
+    collection.classList.toggle("pda-collection-basse", height < 200);
+    if (capacite !== colonnes * lignes) {
+      capacite = colonnes * lignes;
+      afficher();
+    }
+  });
+  if (!signal?.aborted) observer.observe(collection);
+  signal?.addEventListener("abort", () => observer.disconnect(), { once: true });
+  return collection;
+}
 
-  ecran.querySelector(".btn-retour-galerie").addEventListener("click", () => onRetour?.());
-  conteneurRacine.replaceChildren(ecran);
+// L'ancienne route #galerie est conservée ; le routeur utilise désormais le carnet.
+export function lancerEcranGalerie(racine, { illustrations = [], onRetour }) {
+  const cycle = new AbortController();
+  const ecran = element("main", "pda-ecran");
+  const page = element("section", "pda-page");
+  const retour = element("button", "pda-bouton", "Retour");
+  retour.addEventListener("click", () => { cycle.abort(); onRetour(); });
+  page.append(element("h1", "pda-titre", "Mes Illustrations"), creerCollectionIllustrations(illustrations, { signal: cycle.signal }), retour);
+  ecran.append(page);
+  racine.replaceChildren(ecran);
 }

@@ -47,9 +47,16 @@ export function afficherLovometre(conteneur, personnage) {
   const nom = document.createElement("span");
   nom.className = "lovometre-nom";
   nom.textContent = personnage.name;
+  nom.title = personnage.name;
 
   const barre = document.createElement("div");
   barre.className = "lovometre-barre";
+  barre.setAttribute("role", "meter");
+  barre.setAttribute("aria-label", `${typeJauge === "amour" ? "Amour" : "Amitié"} avec ${personnage.name}`);
+  barre.setAttribute("aria-valuemin", "-100");
+  barre.setAttribute("aria-valuemax", "100");
+  barre.setAttribute("aria-valuenow", String(pourcentage));
+  barre.setAttribute("aria-valuetext", `${pourcentage} %`);
   const niveau = pourcentage < 25 ? "faible" : pourcentage < 50 ? "moyen" : pourcentage < 75 ? "eleve" : "fort";
   barre.classList.add(`niveau-${niveau}`);
   const remplissage = document.createElement("div");
@@ -59,9 +66,9 @@ export function afficherLovometre(conteneur, personnage) {
 
   const pourcentageTexte = document.createElement("span");
   pourcentageTexte.className = "lovometre-pourcentage";
-  // Fond clair à faible niveau, fond rose à fort niveau : la couleur conserve toujours un contraste suffisant.
   pourcentageTexte.classList.toggle("sur-remplissage", pourcentage >= 55);
   pourcentageTexte.textContent = `${pourcentage}%`;
+  pourcentageTexte.setAttribute("aria-hidden", "true");
   barre.appendChild(pourcentageTexte);
 
   cadre.append(coeurEmbleme, nom, barre);

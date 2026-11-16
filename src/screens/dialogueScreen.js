@@ -6,8 +6,10 @@ import { installerMenuJeu } from "../ui/gameMenu.js";
 import { enregistrerRencontres, debloquerSouvenirs } from "../engine/carnet.js";
 import { sauvegarder } from "../engine/saveSystem.js";
 import { getIllustrationsCatalogue } from "../services/gameRepository.js";
+import { chargerImagePrivee } from "../services/apiClient.js";
+import { ajustementScene, imageScenePrete, tailleDuPersonnage } from "../ui/stageSizing.js";
 
-export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onRetourEpisodes, onRetourAccueil, onIllustrations, onDressing, onIllustrationDebloquee, fichesPersonnages = [] } = {}) {
+export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onRetourEpisodes, onIllustrations, onDressing, onProfil, onIllustrationDebloquee, fichesPersonnages = [] } = {}) {
   const extrait = moteur.ephemere;
   const musique = extrait ? null : new MusiqueAmbiance();
   const scene = document.createElement("div");
@@ -19,9 +21,9 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     getInfosPersonnage: (id) => moteur.obtenirInfosPersonnages([id])[0],
     getSauvegarde: () => moteur.sauvegarde,
     onRetourEpisodes,
-    onRetourAccueil,
     onIllustrations,
-    onDressing
+    onDressing,
+    onProfil,
   });
 
   // Le premier clic dans le jeu est nécessaire pour que les navigateurs autorisent le son.
@@ -39,11 +41,23 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     cadre.className = "cadre-personnage";
     const sprite = document.createElement("img");
     sprite.className = "sprite-personnage";
-    // Les dimensions réelles du dessin ne sont connues qu'une fois l'image chargée : on repositionne la bulle ensuite.
-    sprite.addEventListener("load", () => placerBulle());
+    const emplacement = { cadre, sprite, id: null, ajustementPret: false, erreur: false };
+    sprite.addEventListener("load", () => {
+      emplacement.erreur = false;
+      ajusterPersonnages();
+      actualiserVisibilite();
+      placerBulle();
+    });
+    sprite.addEventListener("error", () => {
+      if (sprite.currentSrc && sprite.currentSrc !== sprite.src) return;
+      emplacement.erreur = true;
+      console.warn("Sprite de personnage inaccessible :", sprite.src);
+      actualiserVisibilite();
+      placerBulle();
+    });
     cadre.appendChild(sprite);
     zonePersonnages.appendChild(cadre);
-    return { cadre, sprite, id: null };
+    return emplacement;
   };
   const emplacements = [creerEmplacement(), creerEmplacement(), creerEmplacement()];
   scene.appendChild(zonePersonnages);
@@ -131,25 +145,43 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
       }
     }
 
+    zonePersonnages.classList.toggle(
+      "taille-scene",
+      !extrait && personnagesPresents.some((personnage) => tailleDuPersonnage(moteur.personnagesParId.get(personnage.id)))
+    );
     emplacements.forEach((emplacement, index) => {
       const personnage = personnagesPresents[index];
       emplacement.id = personnage?.id ?? null;
+      const sourceChangee = personnage && emplacement.sprite.getAttribute("src") !== personnage.sprite;
+      if (!personnage || sourceChangee) {
+        emplacement.cadre.style.visibility = "hidden";
+        emplacement.cadre.style.opacity = "0";
+      }
       const disposition = personnagesPresents.length === 1
         ? "solo"
         : personnagesPresents.length === 2 ? `duo-${index}` : `trio-${index}`;
       emplacement.cadre.className = `cadre-personnage ${disposition}`;
-      emplacement.cadre.style.visibility = personnage ? "visible" : "hidden";
-      if (personnage) emplacement.sprite.src = personnage.sprite;
+      emplacement.cadre.classList.toggle("taille-ajustee", !extrait && Boolean(tailleDuPersonnage(moteur.personnagesParId.get(personnage?.id))));
+      if (sourceChangee) {
+        emplacement.erreur = false;
+        emplacement.sprite.src = personnage.sprite;
+      }
     });
+    preparerAjustements();
+    ajusterPersonnages();
+    actualiserVisibilite();
   }
 
   // Les sprites contiennent de larges marges transparentes : on mesure une fois les bords réellement dessinés
   // au niveau de la tête et des épaules, pour poser la bulle juste à côté du visage.
   const bornesParSprite = new Map();
 
-  function bornesDuDessin(sprite) {
-    if (bornesParSprite.has(sprite.src)) return bornesParSprite.get(sprite.src);
-    let bornes = { gauche: 0, droite: 1, haut: 0 };
+  function bornesDuDessin(sprite, mesureObligatoire = false) {
+    if (bornesParSprite.has(sprite.src)) {
+      const resultat = bornesParSprite.get(sprite.src);
+      if (resultat.valide || !mesureObligatoire) return resultat.bornes;
+    }
+    let bornes = { gauche: 0, droite: 1, haut: 0, bas: 1 };
     try {
       const LARGEUR = 96;
       const hauteur = Math.max(1, Math.round((sprite.naturalHeight / sprite.naturalWidth) * LARGEUR));
@@ -185,14 +217,112 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
           }
         }
         if (maxX >= 0) {
-          bornes = { gauche: minX / LARGEUR, droite: (maxX + 1) / LARGEUR, haut: premiereLigne / hauteur };
+          bornes = { gauche: minX / LARGEUR, droite: (maxX + 1) / LARGEUR, haut: premiereLigne / hauteur, bas: (derniereLigne + 1) / hauteur };
         }
+      } else {
+        console.warn("Sprite vide :", sprite.src);
+        bornesParSprite.set(sprite.src, { bornes, valide: false });
+        return mesureObligatoire ? null : bornes;
       }
-    } catch {
-      // Image non analysable : on retombe sur la boîte complète du sprite.
+    } catch (erreur) {
+      console.warn("Impossible de mesurer le sprite :", sprite.src, erreur);
+      if (mesureObligatoire) return null;
+      bornesParSprite.set(sprite.src, { bornes, valide: false });
+      return bornes;
     }
-    bornesParSprite.set(sprite.src, bornes);
+    bornesParSprite.set(sprite.src, { bornes, valide: true });
     return bornes;
+  }
+
+  const mesuresScene = new Map();
+  function mesurerSprite(src) {
+    if (!mesuresScene.has(src)) {
+      const mesure = new Promise((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = "anonymous";
+        image.onload = () => {
+          const bornes = bornesDuDessin(image, true);
+          if (!bornes) return reject(new Error(`Sprite non analysable : ${src}`));
+          resolve({ image: { width: image.naturalWidth, height: image.naturalHeight }, bornes });
+        };
+        image.onerror = () => reject(new Error(`Sprite inaccessible pour la mesure : ${src}`));
+        image.src = src;
+      });
+      mesuresScene.set(src, mesure);
+    }
+    return mesuresScene.get(src);
+  }
+
+  let referenceScene = null;
+  const mesuresPretes = new Map();
+  const mesuresEnEchec = new Set();
+  function preparerAjustements() {
+    for (const emplacement of emplacements) {
+      const fiche = moteur.personnagesParId.get(emplacement.id);
+      if (extrait || !fiche) {
+        emplacement.sprite.style.transform = "";
+        continue;
+      }
+      const reference = moteur.personnagesParId.get("isaac");
+      const taille = tailleDuPersonnage(fiche);
+      const tailleReference = tailleDuPersonnage(reference);
+      if (!taille) {
+        if (fiche.taille || fiche.height) console.warn("Taille de personnage invalide :", emplacement.id, fiche.taille || fiche.height);
+        emplacement.sprite.style.transform = "";
+        continue;
+      }
+      if (!tailleReference || !reference?.sprite) {
+        console.warn("Taille ou sprite de référence manquant pour la scène :", emplacement.id);
+        mesuresEnEchec.add(emplacement.sprite.src);
+        emplacement.sprite.style.transform = "";
+        continue;
+      }
+      const src = emplacement.sprite.src;
+      if (mesuresEnEchec.has(src) || (mesuresPretes.has(src) && referenceScene)) continue;
+      Promise.all([mesurerSprite(src), mesurerSprite(reference.sprite)]).then(([mesure, ref]) => {
+        mesuresPretes.set(src, mesure);
+        referenceScene = { ...ref, taille: tailleReference };
+        if (!scene.isConnected) return;
+        ajusterPersonnages();
+        actualiserVisibilite();
+        placerBulle();
+      }).catch((erreur) => {
+        mesuresEnEchec.add(src);
+        console.warn("Ajustement de taille impossible :", erreur);
+        if (scene.isConnected) {
+          ajusterPersonnages();
+          actualiserVisibilite();
+          placerBulle();
+        }
+      });
+    }
+  }
+
+  function ajusterPersonnages() {
+    for (const emplacement of emplacements) {
+      const fiche = moteur.personnagesParId.get(emplacement.id);
+      const mesure = mesuresPretes.get(emplacement.sprite.src);
+      const taille = tailleDuPersonnage(fiche);
+      emplacement.ajustementPret = Boolean(emplacement.id && (extrait || !taille || mesuresEnEchec.has(emplacement.sprite.src)));
+      if (extrait || !mesure || !referenceScene || !taille || mesuresEnEchec.has(emplacement.sprite.src)) {
+        emplacement.sprite.style.transform = "";
+        continue;
+      }
+      const cadre = { width: emplacement.cadre.clientWidth, height: emplacement.cadre.clientHeight };
+      const ajustement = ajustementScene(cadre, mesure.image, mesure.bornes, referenceScene, taille, referenceScene.taille);
+      emplacement.ajustementPret = Boolean(ajustement);
+      emplacement.sprite.style.transform = ajustement
+        ? `translateY(${ajustement.decalage}px) scale(${ajustement.echelle})`
+        : "";
+    }
+  }
+
+  function actualiserVisibilite() {
+    for (const emplacement of emplacements) {
+      const visible = Boolean(emplacement.id) && imageScenePrete(emplacement.sprite, emplacement.ajustementPret);
+      emplacement.cadre.style.visibility = visible ? "visible" : "hidden";
+      emplacement.cadre.style.opacity = visible ? "1" : "0";
+    }
   }
 
   // Le cadre d'un personnage est bien plus large que son dessin (object-fit: contain) :
@@ -200,13 +330,15 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
   function boiteDuLocuteur(speakerId) {
     const emplacement = emplacements.find((item) => item.id === speakerId);
     const sprite = emplacement?.sprite;
+    if (emplacement?.cadre.style.visibility !== "visible") return null;
     if (!sprite?.naturalWidth || !sprite.naturalHeight) return null;
-    const cadre = emplacement.cadre.getBoundingClientRect();
+    const cadre = sprite.getBoundingClientRect();
     if (!cadre.width || !cadre.height) return null;
     const echelle = Math.min(cadre.width / sprite.naturalWidth, cadre.height / sprite.naturalHeight);
     const largeur = sprite.naturalWidth * echelle;
     const hauteur = sprite.naturalHeight * echelle;
-    const bornes = bornesDuDessin(sprite);
+    const bornes = mesuresPretes.get(sprite.src)?.bornes || bornesDuDessin(sprite);
+    if (!bornes) return null;
     const bordGauche = cadre.left + (cadre.width - largeur) / 2;
     const sommet = cadre.bottom - hauteur + hauteur * bornes.haut;
     return {
@@ -230,8 +362,18 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     const bulle = zoneBulle.firstElementChild;
     if (!bulle || !affichageCourant) return;
 
+    const emplacement = emplacements.find((item) => item.id === affichageCourant.speakerId);
+    bulle.style.visibility = emplacement && emplacement.cadre.style.visibility !== "visible" && !emplacement.erreur
+      ? "hidden" : "";
     const boite = boiteDuLocuteur(affichageCourant.speakerId);
-    const cote = coteDeBulle(affichageCourant, boite);
+    let cote = coteDeBulle(affichageCourant, boite);
+    if (boite && !extrait && !affichageCourant.position && tailleDuPersonnage(moteur.personnagesParId.get(affichageCourant.speakerId))) {
+      const rectScene = scene.getBoundingClientRect();
+      const espaceGauche = boite.gauche - rectScene.left - 14;
+      const espaceDroite = rectScene.right - boite.droite - 14;
+      if (cote === "gauche" && espaceGauche < bulle.offsetWidth && espaceDroite > espaceGauche) cote = "droite";
+      else if (cote === "droite" && espaceDroite < bulle.offsetWidth && espaceGauche > espaceDroite) cote = "gauche";
+    }
     bulle.classList.toggle("cote-gauche", cote === "gauche");
     bulle.classList.toggle("cote-droite", cote === "droite");
 
@@ -271,6 +413,12 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
   }
 
   let observateur;
+  function actualiserDisposition() {
+    scene.style.setProperty("--hauteur-barre", `${zoneBarre.offsetHeight || 0}px`);
+    ajusterPersonnages();
+    actualiserVisibilite();
+    placerBulle();
+  }
   if (extrait) {
     observateur = new ResizeObserver(() => {
       if (!scene.isConnected) {
@@ -283,7 +431,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     observateur.observe(scene);
     observateur.observe(zoneBarre);
   } else {
-    window.addEventListener("resize", placerBulle);
+    window.addEventListener("resize", actualiserDisposition);
   }
 
   // Carnet de relations : illustrations définies dans le studio (chargées une fois, en arrière-plan).
@@ -291,7 +439,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
 
   // « Niveau de révélation » (1 à 3) de l'illustration déclenchée par ce nœud.
   // Niveau 1 par défaut si la fiche est introuvable ou si le catalogue n'est pas encore arrivé.
-  const RARETES_VALIDES = new Set(["common", "rare", "ultra_rare", "legendary"]);
+  const RARETES_VALIDES = new Set(["common", "uncommon", "rare", "epic", "ultra_rare", "legendary"]);
 
   function niveauRevelation(nodeId) {
     const fiche = catalogueSouvenirs.find(
@@ -322,13 +470,21 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     const idsVus = [...(affichage.onScreen || []), ...personnagesPresents.map((personnage) => personnage.id)];
     if (affichage.estPersonnageSurScene) idsVus.push(affichage.speakerId);
 
-    // La réponse de Sucrette fusionnée dans la bulle est aussi affichée : son nœud compte comme vu.
+    // La réponse de Pommette fusionnée dans la bulle est aussi affichée : son nœud compte comme vu.
     const idsNoeuds = [affichage.nodeId];
-    if (affichage.reponseSucrette && moteur.noeudCourant?.next) idsNoeuds.push(moteur.noeudCourant.next);
+    if (affichage.reponsePommette && moteur.noeudCourant?.next) idsNoeuds.push(moteur.noeudCourant.next);
 
     const rencontre = enregistrerRencontres(sauvegardeJeu, idsVus, moteur.personnagesParId);
-    const souvenir = debloquerSouvenirs(sauvegardeJeu, catalogueSouvenirs, moteur.episodeData.id, idsNoeuds);
-    if (rencontre || souvenir) sauvegarder(sauvegardeJeu);
+    if (rencontre) sauvegarder(sauvegardeJeu);
+    for (const fiche of catalogueSouvenirs.filter(illustration =>
+      illustration.episodeId === moteur.episodeData.id && idsNoeuds.includes(illustration.unlockNodeId)
+      && !sauvegardeJeu.unlockedIllustrationIds?.includes(illustration.id))) {
+      signalerIllustration(fiche.image, fiche.unlockNodeId).then(() => {
+        if (!scene.isConnected) return;
+        const souvenir = debloquerSouvenirs(sauvegardeJeu, [fiche], moteur.episodeData.id, idsNoeuds);
+        if (souvenir) sauvegarder(sauvegardeJeu);
+      }).catch(erreur => { messageIllustration.textContent = erreur.message; });
+    }
   }
 
   if (!extrait) getIllustrationsCatalogue().then((liste) => {
@@ -336,6 +492,23 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     // Le premier nœud a pu s'afficher avant l'arrivée du catalogue : on revérifie l'écran courant.
     if (liste.length) suivreCarnet(affichageCourant);
   });
+
+  const demandesIllustrations = new Map();
+  const messageIllustration = document.createElement("p");
+  messageIllustration.className = "message-illustration";
+  messageIllustration.setAttribute("role", "alert");
+  voileIllustration.appendChild(messageIllustration);
+
+  function signalerIllustration(path, nodeId) {
+    const cle = `${nodeId}:${path}`;
+    if (!demandesIllustrations.has(cle)) {
+      const demande = Promise.resolve().then(() => onIllustrationDebloquee?.({
+        path, episodeId: moteur.episodeData.id, nodeId,
+      })).catch(erreur => { demandesIllustrations.delete(cle); throw erreur; });
+      demandesIllustrations.set(cle, demande);
+    }
+    return demandesIllustrations.get(cle);
+  }
 
   function rendre() {
     const affichage = moteur.obtenirAffichage();
@@ -353,9 +526,8 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
       musique?.jouerFichier(urlMusique);
     }
 
-    if (affichage.cg && illustrationFermee !== affichage.nodeId) {
+    if ((affichage.cg || affichage.cgUnavailable) && illustrationFermee !== affichage.nodeId) {
       const dejaVisible = voileIllustration.classList.contains("visible");
-      illustrationCg.src = affichage.cg;
       voileIllustration.dataset.niveau = String(niveauRevelation(affichage.nodeId));
       voileIllustration.dataset.rarete = rareteIllustration(affichage.nodeId);
       voileIllustration.classList.add("visible");
@@ -363,10 +535,19 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
       if (!dejaVisible) musique?.jouerJingleRevelation(Number(voileIllustration.dataset.niveau));
       if (!illustrationsSignalees.has(affichage.nodeId)) {
         illustrationsSignalees.add(affichage.nodeId);
-        if (!extrait) onIllustrationDebloquee?.({
-          path: affichage.cg,
-          episodeId: moteur.episodeData.id,
-          nodeId: affichage.nodeId,
+        illustrationCg.removeAttribute("src");
+        messageIllustration.textContent = "Chargement de l’illustration…";
+        const chargement = affichage.cgUnavailable
+          ? Promise.reject(new Error("Cette illustration doit encore être importée dans la médiathèque privée. Tu peux poursuivre l’histoire."))
+          : signalerIllustration(affichage.cg, affichage.nodeId).then(() => chargerImagePrivee(affichage.cg));
+        chargement.then(src => {
+          if (affichageCourant?.nodeId !== affichage.nodeId) return;
+          illustrationCg.src = src;
+          messageIllustration.textContent = "";
+        }).catch(erreur => {
+          if (affichageCourant?.nodeId !== affichage.nodeId) return;
+          messageIllustration.textContent = erreur.message;
+          illustrationsSignalees.delete(affichage.nodeId);
         });
       }
     } else {
@@ -397,8 +578,8 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
 
       afficherBarreNarration(zoneBarre, affichage, {
         onSuivant: () => {
-          // La réponse de Sucrette est déjà visible sous la bulle : on la valide avec ce clic et on passe à son nœud suivant.
-          if (affichage.reponseSucrette?.next) moteur.aller(affichage.reponseSucrette.next);
+          // La réponse de Pommette est déjà visible sous la bulle : on la valide avec ce clic et on passe à son nœud suivant.
+          if (affichage.reponsePommette?.next) moteur.aller(affichage.reponsePommette.next);
           else moteur.avancer();
           rendre();
         },
@@ -414,7 +595,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
           rendre();
           return () => {
             observateur?.disconnect();
-            if (!extrait) window.removeEventListener("resize", placerBulle);
+            if (!extrait) window.removeEventListener("resize", actualiserDisposition);
           };
         }
       });
@@ -426,6 +607,8 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     scene.style.setProperty("--hauteur-barre", `${hauteurBarre}px`);
 
     // Placée en dernier : le lovomètre et la barre sont alors dans leur état définitif.
+    ajusterPersonnages();
+    actualiserVisibilite();
     placerBulle();
   }
 

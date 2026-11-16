@@ -1,20 +1,21 @@
 // Moteur de dialogue générique : lit un épisode JSON et fait avancer la progression nœud par nœud.
 import { appliquerEffets, poserFlags, resoudreBranche } from "./relationManager.js";
 import { sauvegarder, sauvegarderMaintenant, enregistrerChoix } from "./saveSystem.js";
+import { normaliserNomJoueur, remplacerAncienNom } from "./playerName.js";
 
 export class DialogueEngine {
   /**
    * @param {object} episodeData - JSON de l'épisode (voir data/episodes/episode1.json)
    * @param {Map<string, object>} personnagesParId - map id -> fiche personnage (characters.json aplati)
    * @param {object} sauvegarde - objet de sauvegarde courant (modifié en place)
-   * @param {{calques: Array, canvas: {width: number, height: number}}|null} [apparenceSucrette] - calques de
-   *   l'apparence de Sucrette (voir engine/appearance.js) ; null = on garde le sprite statique de characters.json
+   * @param {{calques: Array, canvas: {width: number, height: number}}|null} [apparencePommette] - calques de
+   *   l'apparence de Pommette (voir engine/appearance.js) ; null = on garde le sprite statique de characters.json
    * @param {{ephemere?: boolean}} [options] - désactive sauvegardes et journal de choix pour un extrait isolé
    */
-  constructor(episodeData, personnagesParId, sauvegarde, apparenceSucrette = null, { ephemere = false } = {}) {
+  constructor(episodeData, personnagesParId, sauvegarde, apparencePommette = null, { ephemere = false } = {}) {
     this.ephemere = ephemere;
     this.episodeData = episodeData;
-    this.apparenceSucrette = apparenceSucrette;
+    this.apparencePommette = apparencePommette;
     this.personnagesParId = personnagesParId;
     this.sauvegarde = sauvegarde;
     // Restaure le dernier décor connu pour ne pas repartir sur un fond vide après une reprise de partie.
@@ -32,7 +33,8 @@ export class DialogueEngine {
 
   // Remplace les variables comme {playerName} dans un texte.
   interpoler(texte) {
-    return texte.replaceAll("{playerName}", this.sauvegarde.playerName || "Sucrette");
+    const nom = normaliserNomJoueur(this.sauvegarde.playerName);
+    return remplacerAncienNom(texte, nom).replaceAll("{playerName}", () => nom);
   }
 
   // Retourne les informations d'affichage du nœud courant (texte, portrait, décor, choix...).
@@ -66,7 +68,9 @@ export class DialogueEngine {
     }
 
     const personnage = this.personnagesParId.get(noeud.speaker);
-    const nomAffiche = personnage ? personnage.name : this.nomSpeakerParDefaut(noeud.speaker);
+    const nomAffiche = noeud.speaker === "moi" || noeud.speaker === "narration"
+      ? this.nomSpeakerParDefaut(noeud.speaker)
+      : personnage?.name || this.nomSpeakerParDefaut(noeud.speaker);
     const portrait = noeud.portrait && personnage?.portraits ? personnage.portraits[noeud.portrait] : null;
     // false pour "moi"/"narration" et pour les nœuds sans speaker (ex. "end").
     const estPersonnageSurScene = Boolean(noeud.speaker) && noeud.speaker !== "moi" && noeud.speaker !== "narration";
@@ -77,7 +81,7 @@ export class DialogueEngine {
 
     const { texte: textePage, aDautresPages } = this.obtenirPageDeTexte(noeud);
 
-    const reponseSucrette = this.obtenirReponseSucrette(noeud);
+    const reponsePommette = this.obtenirReponsePommette(noeud);
 
     return {
       nodeId: this.nodeId,
@@ -90,15 +94,16 @@ export class DialogueEngine {
       spriteScene,
       position,
       estPersonnageSurScene,
-      cg: noeud.cg || null,
+      cg: this.ephemere ? null : (noeud.cg || null),
+      cgUnavailable: !this.ephemere && Boolean(noeud.cgUnavailable),
       background: this.background,
       playerAvatar: this.personnagesParId.get("moi")?.sprite || null,
-      playerCalques: this.apparenceSucrette,
+      playerCalques: this.apparencePommette,
       options: noeud.type === "choice"
         ? noeud.options.map((option, index) => ({ index, text: this.interpoler(option.text) }))
         : null,
       affectedCharacters: noeud.type === "choice" ? this.obtenirPersonnagesAffectes(noeud) : [],
-      reponseSucrette,
+      reponsePommette,
       nextEpisode: noeud.nextEpisode || null,
       // Mise en scène explicite définie dans l'admin (remplace la gestion automatique quand elle est présente).
       onScreen: Array.isArray(noeud.onScreen) ? noeud.onScreen : null,
@@ -107,9 +112,9 @@ export class DialogueEngine {
     };
   }
 
-  // Une réplique de personnage est accompagnée immédiatement de la réponse de Sucrette (ou de la narration)
+  // Une réplique de personnage est accompagnée immédiatement de la réponse de Pommette (ou de la narration)
   // dans la barre basse : elles s'affichent en même temps que la bulle, sans clic supplémentaire.
-  obtenirReponseSucrette(noeud) {
+  obtenirReponsePommette(noeud) {
     if (!noeud.next || noeud.type !== "line" || noeud.speaker === "moi" || noeud.speaker === "narration") return null;
     const suivant = this.episodeData.nodes[noeud.next];
     if (!suivant || suivant.type !== "line" || !suivant.text || !suivant.next) return null;
@@ -149,7 +154,7 @@ export class DialogueEngine {
   }
 
   nomSpeakerParDefaut(speakerId) {
-    const noms = { moi: this.sauvegarde.playerName || "Sucrette", narration: "" };
+    const noms = { moi: normaliserNomJoueur(this.sauvegarde.playerName), narration: "" };
     return noms[speakerId] ?? speakerId;
   }
 

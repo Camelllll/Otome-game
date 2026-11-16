@@ -23,9 +23,9 @@ export function creerSectionConcept({ onChoix, onRencontres, onUnivers }) {
   );
   const liste = creer("ul", "entree-concept-fonctionnalites");
   [
-    ["coeur", "Tes choix, ton histoire.", "Chaque décision influence les relations et le cours de ton aventure.", onChoix],
-    ["rencontres", "Des rencontres marquantes.", "Crée des liens uniques avec des personnages attachants et pleins de secrets.", onRencontres],
-    ["livre", "Un univers vivant.", "Découvre Aster et ce qui fait battre le cœur du campus.", onUnivers],
+    ["coeur", "À chacun son histoire.", "Fais connaissance avec les personnages, découvre leurs personnalités et rapproche-toi de tes coups de cœur. Tes choix influencent tes relations et te permettent de suivre les routes qui te ressemblent.", onChoix],
+    ["rencontres", "Des histoires à collectionner", "Vis une aventure ponctuée de rencontres, de surprises et de rebondissements. Débloque de nouvelles illustrations avec tes crushs et rassemble tes plus beaux souvenirs au fil des épisodes.", onRencontres],
+    ["livre", "Le dressing de Pommette", "Personnalise ta Pommette selon tes envies et renouvelle son style au fil de tes aventures. Après tout, une nouvelle année mérite bien quelques nouvelles tenues !", onUnivers],
   ].forEach(([pictogramme, intitule, description, action]) => {
     const ligne = creer("li");
     const bouton = creer("button", "entree-concept-fonctionnalite");

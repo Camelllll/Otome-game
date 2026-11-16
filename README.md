@@ -4,7 +4,145 @@
 # php artisan serve --host=127.0.0.1 --port=8001
 
 # cd /Users/camelientournu/Otome-game
-# python3 -m http.server 8080
+# php -S 127.0.0.1:8080 scripts/serve-game.php
+
+Ne pas exposer la racine du dépôt avec un serveur de fichiers générique :
+le routeur PHP ne publie que le frontend et bloque les originaux des
+illustrations (y compris leurs copies sous `assets/media/illustrations`).
+
+## Tailles des personnages en scène
+
+Dans les dialogues joués, les personnages dont la taille est renseignée sont mis
+à l'échelle d'après leurs fiches en base, avec Isaac comme référence. Le champ `taille` édité dans
+le studio prime sur l'ancien champ `height` ; les formats `1m82`, `1,82 m`
+et `182 cm` sont reconnus. Les marges transparentes des
+sprites sont mesurées pour aligner les pieds et calculer les proportions.
+Une nouvelle image apparaît une fois chargée et sa taille calculée ; si la
+mesure échoue, l'image reste utilisable sans ajustement et l'erreur est signalée.
+À trois, les personnages sont cadrés derrière la barre de dialogue.
+Les personnages sans taille et les portraits du carnet ne sont pas redimensionnés.
+Les tailles absentes ne sont pas inventées ; ce système ne modifie pas la base.
+L'extrait public conserve son cadrage actuel.
+
+## Lovomètre en jeu
+
+Le lovomètre conserve son habillage d'origine : cœur, nom du personnage et
+pourcentage centré dans la barre, sans curseur pomme. Un reflet discret traverse
+périodiquement la partie remplie, sous le texte du pourcentage. Il est désactivé
+avec la préférence système de réduction des animations.
+Les valeurs négatives gardent leur signe et une barre vide ; les calculs et les
+animations de gain/perte restent inchangés. Le même composant sert à l'extrait public.
+La version précédente est conservée dans `backups/lovometre-2026-11-16-2335/` :
+`gaugeBar.js` est une copie du composant, et `lovometre.css` contient ses styles
+et les anciens ajustements de l'extrait. Ces fichiers ne sont pas chargés par le jeu.
+Pour revenir en arrière, restaurer le composant à son emplacement d'origine et
+remplacer les règles du lovomètre par celles de cette sauvegarde.
+
+## Carnet personnel et compte
+
+`#profil` affiche un carnet ivoire et bordeaux occupant la fenêtre, avec une
+fiche d'identité compacte, des onglets contrastés et des cartes de collection.
+Les pages peuvent défiler intérieurement si la hauteur est insuffisante.
+Les deux pages sont ouvertes sur ordinateur ; sur petit écran ou en faible
+hauteur, les commandes Profil / Carnet permettent de les consulter séparément.
+Les illustrations sont paginées selon l'espace disponible et seules les
+images de la page courante sont chargées. Leurs détails restent consultables
+en grand. Les formulaires du compte disposent de leur propre vue de modification.
+La sidebar conserve le logo officiel et les accès Mon carnet et Compte.
+Le carnet réunit les illustrations, les statistiques réellement suivies et
+l'accès Mes relations, qui réutilise le carnet de personnages du jeu avec les
+rencontres et les jauges de la dernière partie, sans créer de sauvegarde.
+Les trophées et les indicateurs Bonnes réponses / Succès ne sont pas proposés
+tant que ces fonctionnalités ne sont pas disponibles.
+Le logo revient toujours à l'accueil ; un accès Retour au jeu conserve le
+contexte d'ouverture lorsqu'on vient d'un épisode ou du dressing.
+Sur tous les onglets du carnet et les pages du compte, un bouton Retour à
+l'accueil reste visible en bas à gauche et ramène aux épisodes, indépendamment
+du contexte d'ouverture. Une bande réservée évite qu'il recouvre le contenu
+sur petit écran.
+`#galerie` reste compatible et ouvre l'onglet Illustrations ; les alias
+`#illustrations`, `#trophees`, `#profil/statistiques`, `#compte` et `#parametres`
+survivent également au rechargement (`#trophees` redirige vers le carnet).
+Aucun asset graphique de remplacement
+n'est utilisé : en l'absence d'avatar enregistré, le profil montre une initiale.
+L'upload d'avatar n'est pas proposé, le modèle utilisateur n'en ayant pas.
+Le pseudo du compte est le nom unique de l'héroïne (Pommette par défaut), dans
+l'accueil, le dressing, les répliques, la narration et les choix utilisant
+`{playerName}`. Il remplace l'ancien prénom propre à chaque partie, y compris
+pour les sauvegardes existantes et les caches hors ligne, sans effacer la progression.
+Changer le pseudo dans Mon compte s'applique aussi au retour dans une partie.
+L'API déduit toujours `playerName` du compte : un ancien client ne peut pas
+réintroduire un prénom différent en sauvegardant ou en recommençant.
+
+Les statistiques viennent de `/api/profile/stats`, pour l'utilisateur Sanctum :
+collection dédoublonnée entre les acquisitions historiques et les sauvegardes,
+et maximum du Lovomètre des crushs dans les sauvegardes/journaux conservés.
+Les pics antérieurs à une ancienne réinitialisation ne peuvent pas être
+reconstitués si leur journal a été supprimé. Les bonnes réponses et les succès
+sont `null`, jamais un pourcentage ou un trophée fictif. Pour les ajouter :
+définir éditorialement la correction des options publiées et en journaliser
+le résultat immuable côté serveur ; définir un catalogue de succès et une
+relation utilisateur/succès avec date d'obtention et règles serveur.
+Il n'existe actuellement aucun catalogue de trophées à afficher.
+
+`#compte` utilise les routes privées `GET/PATCH/DELETE /api/account`.
+Toute modification exige le mot de passe actuel. Les pseudos (non uniques,
+comme à l'inscription) acceptent 3–40 caractères : lettres Unicode, chiffres,
+espaces, tirets et traits de soulignement. Les nouveaux mots de passe exigent
+8–100 caractères et une confirmation ; Laravel les hache. Modifier e-mail ou
+mot de passe révoque les autres jetons et sessions. Aucun circuit d'envoi et
+de confirmation d'adresse n'est actuellement branché : la modification
+d'e-mail est immédiate après réauthentification, ce que le formulaire indique.
+La suppression exige une modale explicite, le mot de passe et `SUPPRIMER` ;
+une transaction supprime jetons, sessions et utilisateur, avec cascade vers
+sauvegardes, choix et acquisitions. Elle ne s'exécute jamais au premier clic.
+La déconnexion attend la sauvegarde, demande confirmation et révoque
+uniquement le jeton courant ; elle ne supprime aucune donnée côté serveur.
+
+### Déploiement des illustrations privées — validation requise
+
+La route publique `/api/media/{id}/file` ne sert plus d'illustrations.
+`/api/illustrations/{id}/file` exige Sanctum et une acquisition du joueur,
+avec cache privé `no-store`. Le frontend charge ces images avec son jeton,
+puis utilise des URL Blob révoquées à la fin de session. Le catalogue ne donne
+pas de fichier public de remplacement. Le déblocage vérifie l'image, le
+moment publié et le parcours possible à partir du journal de choix. Les effets
+et flags du journal sont pris dans l'option publiée, pas dans la requête.
+Ajouter des identifiants au payload d'une sauvegarde ne crée plus d'acquisition.
+Les collections existantes restent conservées : aucune réécriture automatique.
+Un ancien journal incompatible avec une version désormais publiée est refusé
+explicitement ; sa réconciliation doit être examinée, pas simulée côté client.
+Une CG publiée non importée est signalée à son apparition sans empêcher de
+continuer l'histoire ; aucun chemin public de secours n'est affiché.
+Les extraits promotionnels éphémères n'affichent pas les CG privées.
+
+Préparation non destructive, à valider avant activation sur l'hébergement :
+
+1. Sauvegarder la base et la médiathèque ; exécuter
+   `cd backend && php artisan game:audit-illustrations` (lecture seule).
+2. S'il manque des copies privées, utiliser l'importeur existant
+   `php artisan studio:import-media ../assets` **après validation**.
+   Il copie les fichiers sans supprimer les originaux. Ne pas ajouter
+   `--link-episodes` sans valider les nouveaux brouillons.
+3. Remplacer le serveur statique générique par
+   `php -S 127.0.0.1:8080 scripts/serve-game.php` depuis la racine,
+   ou appliquer la même liste d'autorisation sur l'hébergement.
+   Les seules exceptions publiques du dossier Illustrations sont les trois
+   images promotionnelles de l'accueil et des vignettes d'épisodes.
+   Ne jamais exposer le disque privé `backend/storage/app/studio-media`.
+4. Vérifier anonymement les anciennes URL : les CG et leurs copies doivent
+   renvoyer 404 ; les décors, sprites, logo et images promotionnelles restent
+   publics. Invalider les anciens caches/CDN : un fichier déjà téléchargé
+   lorsqu'il était public ne peut pas être récupéré à distance.
+
+Aucun déplacement d'original ni migration de données réelle n'est exécuté
+par cette refonte. Tout serveur statique générique doit être remplacé lors de
+cette activation : une protection dans Laravel seule ne peut pas contrôler
+les fichiers servis par un autre serveur.
+
+Tests ciblés :
+`cd backend && php artisan test --filter='PlayerProfileTest|CharacterMediaApiTest'`
+et `node --test backend/tests/js/profile.test.mjs` depuis la racine.
 
 ## Entrée du campus
 
@@ -55,10 +193,12 @@ Seul l'habillage
 extérieur de l'extrait change : son interface de jeu reste inchangée.
 
 - Sans session : connexion et inscription via les mêmes services Laravel.
-- Après connexion, ou avec une session sans route ou sur `#bienvenue` : prénom
-  et épisode de la sauvegarde, reprise de l'histoire et dressing.
-- Les routes de jeu existantes (`#accueil`, `#episodes`, `#episode/...`,
-  `#dressing`, `#galerie`) conservent leurs écrans.
+- Après connexion, ou avec une session sans route ou sur `#bienvenue` :
+  ouverture directe de `#episodes`, sans écran d'accueil intermédiaire.
+  Le pseudo du compte est repris sans demander un second prénom.
+- `#accueil` reste un ancien lien compatible, redirigé vers `#episodes`.
+  Les routes `#episode/...` et `#dressing` conservent leurs écrans ;
+  `#galerie` ouvre les Illustrations dans le carnet personnel.
 - Le casting est présenté avant l'extrait dans l'ordre Isaac, Aaron, Camel,
   Mehdi, Liam, Stella, Sasha. Les sprites et descriptions proviennent de la base,
   sélectionnés par identifiant, sans doublons de variantes ni personnage de substitution.
@@ -72,8 +212,11 @@ extérieur de l'extrait change : son interface de jeu reste inchangée.
   aucun déblocage de carnet ou d'illustration et ne lance pas de musique.
   Les jauges viennent des valeurs initiales des personnages, jamais de la partie
   du joueur. « Revoir l'extrait » recrée un état indépendant.
-- La galerie promotionnelle est retirée de cette page. Le bouton « Jouer » final
-  remonte au hero sans démarrer la partie ; la galerie en jeu reste inchangée.
+- La galerie promotionnelle est retirée de cette page. Les actions Créer mon
+  compte ouvrent l'inscription ; Connexion mène au formulaire et Essayer un
+  extrait à la démo sans sauvegarde. La navigation Concept / Rencontres /
+  Extrait jouable ne propose plus deux noms pour la même section.
+  Les Illustrations en jeu sont accessibles dans le carnet personnel.
 
 La navigation occupe une ligne de hauteur constante, hors du conteneur
 scrollable `.entree-defilement` : les débordements et les contextes d'empilement
@@ -98,9 +241,68 @@ dont `prefers-reduced-motion`.
 Tests ciblés :
 `node --test backend/tests/js/landing.test.mjs backend/tests/js/episode-preview.test.mjs`.
 
+## Accueil du jeu — épisodes
+
+`#episodes` est l'unique accueil connecté : la page conserve son journal,
+ses aperçus et la sélection de l'épisode en cours. L'ancien écran séparé est
+supprimé ; `#accueil`, la racine et `#bienvenue` rejoignent directement cette
+page avec une session. Sans session, la présentation et la connexion restent
+affichées.
+
+Le menu partagé, en haut à droite du journal, donne accès aux relations,
+au dressing, au carnet, au compte et à la musique. Il n'affiche pas de lien
+Accueil vers la page déjà ouverte. Depuis le dialogue ou le dressing,
+Accueil · Épisodes ramène au journal, sans étape intermédiaire.
+Le pseudo dans l'en-tête ouvre directement le profil ; le dressing n'est
+accessible que dans le menu, sans bouton supplémentaire dans l'en-tête.
+
+L'entrée retrouve la dernière progression et son emplacement sans la
+réinitialiser. Les écritures en attente de la session courante sont confirmées
+avant de revenir à l'accueil. Les échecs de lecture sont remontés, jamais
+interprétés comme l'absence de partie. Le premier épisode utilise directement
+le pseudo du compte, sans saisie supplémentaire.
+
+Recommencer l'histoire reste une action secondaire du menu, uniquement avec
+une partie existante. Après confirmation, elle conserve le pseudo du compte et réinitialise
+l'emplacement principal (0), sans effacer les autres emplacements ni la
+collection d'illustrations. Les protections contre les caches hors ligne
+non synchronisés restent actives. Les styles des avertissements sont conservés
+dans `styles/modales.css`, indépendamment de l'écran supprimé.
+
+Les écrans sont enregistrés dans l'historique du navigateur : Retour / Suivant
+restaurent la route sans ajouter d'entrée. Une ancienne URL d'épisode différente
+de la partie active ouvre le journal au lieu d'y injecter un point de reprise
+incompatible. Les anciens alias de route restent reconnus.
+
+Dans le dressing, quitter une tenue modifiée demande confirmation, y compris
+avec Retour navigateur ; refuser conserve le brouillon et la position
+d'historique. La fermeture ou le rechargement déclenche l'avertissement natif.
+Les achats restent acquis même si la tenue est abandonnée ; une transaction
+en cours bloque les sorties internes jusqu'à sa fin.
+
+Tests ciblés : `node --test backend/tests/js/episode-select.test.mjs backend/tests/js/home-save.test.mjs backend/tests/js/game-modal.test.mjs backend/tests/js/landing.test.mjs`.
+
+## Journal des épisodes
+
+Les aperçus des épisodes 1 et 2 utilisent les vignettes locales
+`assets/Illustrations/vignette-episode-1.png` et `vignette-episode-2.png`.
+Les décors restent utilisés en fond du journal et pour les autres épisodes.
+Les épisodes terminés expliquent que le rejeu n'est pas encore disponible,
+sans réinitialiser la partie. Changer d'épisode pendant un épisode inachevé
+demande confirmation avant de remplacer son point de reprise.
+L'accès libre aux épisodes non terminés reste conservé pour le développement ;
+aucun nouveau système de déblocage ou de rejeu n'est activé par cette refonte.
+
+## Points d'action
+
+Pour la démo, les PA sont masqués et aucune action ne les consomme. Les valeurs
+enregistrées sont conservées sans régénération côté serveur. Pour les réactiver,
+passer `PA_ACTIFS` à `true` dans `src/engine/saveSystem.js` et `paEnabled` à
+`true` dans `backend/config/game.php`.
+
 ## Dressing et boutique
 
-Le dressing conserve les PNG alignés de Sucrette et leur ordre de superposition.
+Le dressing conserve les PNG alignés de Pommette et leur ordre de superposition.
 `styles/dressing.css` ne s'applique qu'à cet écran. Les anciens calques de démonstration
 (910 × 1727) ne sont pas compatibles avec le catalogue actuel (600 × 1200).
 

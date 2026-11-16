@@ -1,4 +1,4 @@
-// Apparence de Sucrette : modèle de données, validation et assemblage des calques.
+// Apparence de Pommette : modèle de données, validation et assemblage des calques.
 // Ce module ne touche jamais au DOM : chaque fonction est pure et testable seule.
 //
 // Une seule configuration décrit l'apparence active (stockée dans la sauvegarde, clé `appearance`) :

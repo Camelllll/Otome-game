@@ -3,114 +3,79 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Episode;
+use App\Models\Illustration;
 use App\Models\MediaAsset;
 use App\Models\PlayerIllustration;
+use App\Models\PlayerSave;
+use App\Services\IllustrationAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class IllustrationController extends Controller
 {
+    public function __construct(private readonly IllustrationAccess $access) {}
+
     public function index(Request $request): JsonResponse
     {
-        $assets = $this->activeAssets();
-        // Tri croissant pour garder la date de premier déblocage en cas de doublon, puis ordre décroissant.
-        $rows = PlayerIllustration::query()
-            ->where('user_id', $request->user()->id)
-            ->orderBy('acquired_at')
-            ->orderBy('id')
-            ->get()
-            ->map(fn (PlayerIllustration $i) => $this->format($i, $assets))
-            ->unique('path')
-            ->reverse()
-            ->values()
-            ->all();
+        return response()->json($this->access->collection($request->user()))
+            ->header('Cache-Control', 'private, no-store');
+    }
 
-        return response()->json($rows);
+    public function file(Request $request, int $id): BinaryFileResponse
+    {
+        $asset = MediaAsset::query()->where('category', 'illustrations')->where('is_archived', false)->findOrFail($id);
+        abort_unless($this->access->canView($request->user(), $asset), 404);
+        $disk = Storage::disk('studio');
+        abort_unless($disk->exists($asset->file_path), 404);
+
+        return response()->file($disk->path($asset->file_path), [
+            'Content-Type' => $asset->mime_type,
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+            'Vary' => 'Authorization',
+        ])->setPrivate();
     }
 
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'path' => ['required', 'string', 'max:1000'],
-            'episodeId' => ['nullable', 'string', 'max:500'],
-            'nodeId' => ['nullable', 'string', 'max:500'],
+            'episodeId' => ['required', 'string', 'max:80'],
+            'nodeId' => ['required', 'string', 'max:120'],
+            'slot' => ['sometimes', 'integer', 'between:0,9'],
         ]);
+        $asset = $this->access->resolve($data['path']);
+        abort_unless($asset, 422, 'Illustration inconnue de la médiathèque.');
+        $episode = Episode::query()->where('slug', $data['episodeId'])->whereNotNull('published_version_id')->with('publishedVersion')->firstOrFail();
+        $node = $episode->publishedVersion?->data['nodes'][$data['nodeId']] ?? [];
+        $nodeAsset = isset($node['cg']) ? $this->access->resolve($node['cg']) : null;
+        $linked = Illustration::query()->where('media_asset_id', $asset->id)->where('episode_id', $data['episodeId'])->where('unlock_node_id', $data['nodeId'])->exists();
+        abort_unless($nodeAsset?->id === $asset->id || $linked, 403, 'Cette image ne correspond pas à ce moment de l’histoire.');
+        $this->access->assertReachable($request->user(), $data['slot'] ?? 0, $data['episodeId'], $data['nodeId']);
+        $path = '/api/illustrations/'.$asset->id.'/file';
+        DB::transaction(function () use ($request, $data, $asset, $path) {
+            PlayerIllustration::query()->firstOrCreate([
+                'user_id' => $request->user()->id,
+                'path_hash' => hash('sha256', $path),
+            ], [
+                'illustration_path' => $path,
+                'episode_id' => $data['episodeId'],
+                'node_id' => $data['nodeId'],
+                'acquired_at' => now(),
+            ]);
+            $save = PlayerSave::query()->where('user_id', $request->user()->id)
+                ->where('slot', $data['slot'] ?? 0)->lockForUpdate()->first();
+            if ($save) {
+                $slugs = Illustration::query()->where('media_asset_id', $asset->id)->pluck('slug')->all();
+                $save->unlocked_illustration_ids = array_values(array_unique([...($save->unlocked_illustration_ids ?? []), ...$slugs]));
+                $save->save();
+            }
+        });
 
-        $path = trim($data['path']);
-        if ($path === '') {
-            return response()->json(['message' => 'Chemin d\'illustration absent.'], 422);
-        }
-
-        // Le jeu envoie l'URL de la médiathèque (avec un paramètre de version qui change à chaque remplacement).
-        // On enregistre l'identifiant stable de l'illustration : son chemin d'origine, ou à défaut son URL sans version.
-        $assets = $this->activeAssets();
-        $asset = $this->resolve($path, $assets);
-        if ($asset) {
-            $path = $asset->source_path ?: '/api/media/'.$asset->id.'/file';
-        }
-
-        $illustration = PlayerIllustration::query()->firstOrNew([
-            'user_id' => $request->user()->id,
-            'path_hash' => hash('sha256', $path),
-        ]);
-
-        $illustration->illustration_path = $illustration->illustration_path ?? $path;
-        $illustration->acquired_at = $illustration->acquired_at ?? now();
-        // L'épisode et le nœud d'origine ne sont renseignés qu'une fois (premier déblocage).
-        $illustration->episode_id ??= $this->limit($data['episodeId'] ?? null, 80);
-        $illustration->node_id ??= $this->limit($data['nodeId'] ?? null, 120);
-        $illustration->save();
-
-        return response()->json($this->format($illustration, $assets));
-    }
-
-    /** @return Collection<int, MediaAsset> */
-    private function activeAssets(): Collection
-    {
-        return MediaAsset::query()
-            ->where('category', 'illustrations')
-            ->where('is_archived', false)
-            ->get(['id', 'label', 'source_path', 'source_key', 'updated_at']);
-    }
-
-    /** Retrouve l'illustration de la médiathèque désignée par une URL /api/media/{id}/file ou par un chemin d'origine. */
-    private function resolve(string $path, Collection $assets): ?MediaAsset
-    {
-        if (preg_match('#/api/media/(\d+)/file#', $path, $match)) {
-            return $assets->firstWhere('id', (int) $match[1]);
-        }
-
-        return $assets->firstWhere('source_key', hash('sha256', $this->canonicalPath($path)));
-    }
-
-    /** Même normalisation que LocalMediaImporter::canonical(), pour retrouver la clé source_key. */
-    private function canonicalPath(string $path): string
-    {
-        $path = rawurldecode($path);
-
-        return class_exists(\Normalizer::class) ? (\Normalizer::normalize($path, \Normalizer::FORM_C) ?: $path) : $path;
-    }
-
-    private function format(PlayerIllustration $i, Collection $assets): array
-    {
-        $asset = $this->resolve($i->illustration_path, $assets);
-
-        return [
-            'path' => $asset
-                ? route('game.character-media', ['id' => $asset->id, 'v' => $asset->updated_at?->timestamp ?? 0])
-                : $i->illustration_path,
-            'title' => $asset?->label,
-            'episodeId' => $i->episode_id,
-            'nodeId' => $i->node_id,
-            'acquiredAt' => $i->acquired_at?->toIso8601String(),
-        ];
-    }
-
-    private function limit(?string $value, int $max): ?string
-    {
-        $value = $value === null ? '' : trim($value);
-
-        return $value === '' ? null : mb_substr($value, 0, $max);
+        return response()->json($this->access->collection($request->user())->firstWhere('mediaId', $asset->id));
     }
 }

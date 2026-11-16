@@ -62,12 +62,13 @@ class CharacterMediaApiTest extends TestCase
         $this->get("/api/media/{$illustration->id}/file")->assertNotFound();
     }
 
-    public function test_active_illustration_is_served(): void
+    public function test_active_illustration_is_not_served_publicly(): void
     {
         Storage::fake('studio');
         $illustration = $this->makeAsset('illustrations', 'assets/Illustrations/cg.png');
 
-        $this->get("/api/media/{$illustration->id}/file")->assertOk();
+        $this->get("/api/media/{$illustration->id}/file")->assertNotFound();
+        $this->getJson("/api/illustrations/{$illustration->id}/file")->assertUnauthorized();
     }
 
     public function test_background_catalogue_exposes_active_database_images_only(): void

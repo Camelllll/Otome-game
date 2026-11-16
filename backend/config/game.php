@@ -6,6 +6,7 @@ return [
         'gaugeMin' => -100,
         'gaugeMax' => 100,
         'gaugeMaxDelta' => 50, // progression maximale d'une jauge en une seule sauvegarde
+        'paEnabled' => false, // Désactivés pendant la démo, comme PA_ACTIFS côté jeu.
         'paMax' => 25,
         'paRegenSeconds' => 300,
         'currencyMax' => 1000000,

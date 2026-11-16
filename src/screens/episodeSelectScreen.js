@@ -2,6 +2,11 @@
 // À gauche, la page du journal avec la liste des épisodes. À droite, l'aperçu de l'épisode
 // choisi (scène + boîte de dialogue). Un clic sélectionne, le bouton lance l'épisode.
 
+import { PA_ACTIFS } from "../engine/saveSystem.js";
+import { demanderConfirmation } from "../ui/gameModal.js";
+import { installerMenuJeu } from "../ui/gameMenu.js";
+import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
+
 const IMAGE_PAR_DEFAUT = "assets/Décors/Cour Campus.jpg";
 const SYNOPSIS_PAR_DEFAUT = "Poursuis tes aventures et renforce tes liens avec les étudiants du campus.";
 const SYNOPSIS_VERROUILLE = "Cet épisode n'est pas encore débloqué.";
@@ -9,10 +14,12 @@ const SYNOPSIS_VERROUILLE = "Cet épisode n'est pas encore débloqué.";
 const DECORS_PAR_DEFAUT = {
   episode1: {
     image: "assets/Décors/Entrée campus.png",
+    vignette: "assets/Illustrations/vignette-episode-1.png",
     synopsis: "Arrivée sur le campus, premiers cartons et rencontres inattendues à l'Université Aster."
   },
   episode2: {
     image: "assets/Décors/Cour campus nuit.png",
+    vignette: "assets/Illustrations/vignette-episode-2.png",
     synopsis: "La grande soirée d'intégration : guirlandes, musique et rapprochements sous les étoiles."
   },
   episode3: {
@@ -30,9 +37,7 @@ const ICONES = {
   check: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.6 7.9l-1.4-1.4z"/></svg>',
   lock: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M7 10V8a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1zm2 0h6V8a3 3 0 0 0-6 0v2z"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
-  home: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 2 12h3v8h5v-5h4v5h5v-8h3z"/></svg>',
-  star: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.1 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>',
-  hanger: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.6 18.2 13 11.75v-.91c1.65-.49 2.8-2.17 2.43-4.05-.26-1.31-1.3-2.4-2.61-2.7C10.54 3.57 8.5 5.3 8.5 7.5h2c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5c0 .84-.69 1.52-1.53 1.5-.54-.01-.97.45-.97.99v1.76L2.4 18.2c-.77.58-.36 1.8.6 1.8h18c.96 0 1.37-1.22.6-1.8zM6 18l6-4.5 6 4.5H6z"/></svg>'
+  star: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 2 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.1 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>'
 };
 
 const LIBELLES_STATUT = {
@@ -81,6 +86,17 @@ function numeroDe(id) {
   return correspondance ? correspondance[1] : String(id);
 }
 
+async function naviguer(action) {
+  try {
+    await action();
+  } catch (erreur) {
+    console.error("Navigation depuis les épisodes impossible.", erreur);
+    await demanderConfirmation({
+      titre: "Navigation impossible", message: erreur.message, confirmer: "Fermer", annuler: null,
+    });
+  }
+}
+
 function statutDe({ id, complete, verrouille }, episodeActuel) {
   if (complete) return "termine";
   if (verrouille) return "verrouille";
@@ -88,7 +104,7 @@ function statutDe({ id, complete, verrouille }, episodeActuel) {
   return "disponible";
 }
 
-function creerHud({ sauvegarde, joueur, onRetourAccueil, onDressing }) {
+function creerHud({ sauvegarde, joueur, onDressing, onProfil, onCompte, onNouvellePartie, fichesPersonnages }, surface) {
   const hud = creer("header", "hud-journal");
 
   const marque = creer("div", "hud-marque");
@@ -102,41 +118,44 @@ function creerHud({ sauvegarde, joueur, onRetourAccueil, onDressing }) {
 
   const infos = creer("div", "hud-infos");
 
-  const pseudo = sauvegarde?.playerName || joueur?.pseudo || "Sucrette";
-  const chipJoueur = creer("div", "hud-chip");
+  const pseudo = joueur?.pseudo || sauvegarde?.playerName || "Pommette";
+  const accesProfil = typeof onProfil === "function";
+  const chipJoueur = creer(accesProfil ? "button" : "div", accesProfil ? "hud-chip hud-profil" : "hud-chip");
+  if (accesProfil) {
+    chipJoueur.type = "button";
+    chipJoueur.setAttribute("aria-label", `Mon profil — ${pseudo}`);
+    chipJoueur.addEventListener("click", () => naviguer(onProfil));
+  }
   const initiale = [...String(pseudo)][0]?.toUpperCase() || "S";
   const avatar = creer("span", "hud-avatar", initiale);
   avatar.setAttribute("aria-hidden", "true");
   chipJoueur.append(avatar, creer("span", "", pseudo));
   infos.appendChild(chipJoueur);
 
-  const pa = sauvegarde?.actionPoints ?? 25;
-  const chipPa = creer("div", "hud-chip hud-chip-pa");
-  chipPa.title = "Points d'action";
-  poserIconeEtTexte(chipPa, ICONES.bolt, `${pa} PA`);
-  infos.appendChild(chipPa);
-
-  if (typeof onDressing === "function") {
-    const dressing = creer("button", "hud-accueil hud-dressing");
-    dressing.type = "button";
-    poserIconeEtTexte(dressing, ICONES.hanger, "Dressing");
-    dressing.addEventListener("click", () => onDressing());
-    infos.appendChild(dressing);
+  if (PA_ACTIFS) {
+    const pa = sauvegarde?.actionPoints ?? 25;
+    const chipPa = creer("div", "hud-chip hud-chip-pa");
+    chipPa.title = "Points d'action";
+    poserIconeEtTexte(chipPa, ICONES.bolt, `${pa} PA`);
+    infos.appendChild(chipPa);
   }
 
-  if (typeof onRetourAccueil === "function") {
-    const accueil = creer("button", "hud-accueil");
-    accueil.type = "button";
-    poserIconeEtTexte(accueil, ICONES.home, "Accueil");
-    accueil.addEventListener("click", () => onRetourAccueil());
-    infos.appendChild(accueil);
-  }
+  const menu = creer("div", "journal-menu");
+  installerMenuJeu(menu, {
+    musique: new MusiqueAmbiance(),
+    fiches: fichesPersonnages,
+    getSauvegarde: () => sauvegarde,
+    getInfosPersonnage: id => ({ gauges: sauvegarde?.gauges?.[id] || {} }),
+    onDressing, onProfil, onCompte, onNouvellePartie,
+    surface,
+  });
+  infos.appendChild(menu);
 
   hud.appendChild(infos);
   return hud;
 }
 
-export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episodeActuel, joueur, sauvegarde, onSelect, onRetourAccueil, onDressing }) {
+export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episodeActuel, joueur, sauvegarde, onSelect, onDressing, onProfil, onCompte, onNouvellePartie, fichesPersonnages = [] }) {
   const liste = Array.isArray(episodes) ? episodes : [];
 
   const entrees = liste.map((episode) => {
@@ -148,7 +167,9 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
       statut: statutDe(episode, episodeActuel),
       numero,
       numeroAffiche: /^\d+$/.test(numero) ? numero.padStart(2, "0") : numero,
-      image: meta.image,
+      image: meta.vignette || meta.image,
+      fond: meta.image,
+      vignetteOfficielle: Boolean(meta.vignette),
       synopsis: meta.synopsis,
       bouton: null
     };
@@ -161,13 +182,13 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
   fond.setAttribute("aria-hidden", "true");
   ecran.appendChild(fond);
 
-  ecran.appendChild(creerHud({ sauvegarde, joueur, onRetourAccueil, onDressing }));
+  ecran.appendChild(creerHud({ sauvegarde, joueur, onDressing, onProfil, onCompte, onNouvellePartie, fichesPersonnages }, ecran));
 
   const journal = creer("main", "journal");
 
   // --- Page du journal (liste des épisodes) ---
   const page = creer("section", "journal-page");
-  page.appendChild(creer("h1", "journal-titre", "Journal des épisodes"));
+  page.appendChild(creer("h1", "journal-titre", "Épisodes"));
 
   const nbTermines = entrees.filter((entree) => entree.statut === "termine").length;
   const texteProgression = `${nbTermines} / ${entrees.length} épisodes terminés`;
@@ -242,20 +263,28 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
 
   // --- Logique de sélection ---
   let indexSelection = -1;
+  let lancementEnCours = false;
 
   function peutJouer(entree) {
     return entree.statut === "en-cours" || entree.statut === "disponible";
   }
 
-  function lancer(index) {
+  async function lancer(index) {
     const entree = entrees[index];
-    if (!entree || !peutJouer(entree) || typeof onSelect !== "function") return;
-    onSelect(entree.id);
+    if (lancementEnCours || !entree || !peutJouer(entree) || typeof onSelect !== "function") return;
+    lancementEnCours = true;
+    jouer.disabled = true;
+    try {
+      await naviguer(() => onSelect(entree.id));
+    } finally {
+      lancementEnCours = false;
+      jouer.disabled = !peutJouer(entree);
+    }
   }
 
   function selectionner(index, { focus = false, defiler = false } = {}) {
     const entree = entrees[index];
-    if (!entree) return;
+    if (!entree || lancementEnCours) return;
     const changement = index !== indexSelection;
     indexSelection = index;
 
@@ -266,14 +295,17 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
     if (focus) entree.bouton.focus();
 
     apercu.dataset.statut = entree.statut;
+    scene.classList.toggle("vignette-officielle", entree.vignetteOfficielle);
     poserImage(image, entree.image);
-    poserImage(fond, entree.image);
+    poserImage(fond, entree.fond);
     image.alt = `Illustration : ${entree.titre}`;
     numeroGeant.textContent = entree.numeroAffiche;
     tampon.textContent = LIBELLES_STATUT[entree.statut];
     plaque.textContent = `Épisode ${entree.numero}`;
     titreApercu.textContent = entree.titre;
-    synopsis.textContent = entree.statut === "verrouille" ? SYNOPSIS_VERROUILLE : entree.synopsis;
+    synopsis.textContent = entree.statut === "verrouille" ? SYNOPSIS_VERROUILLE
+      : entree.statut === "termine" ? `${entree.synopsis} Cet épisode est terminé. Le rejeu n'est pas encore disponible ; ta progression est conservée.`
+      : entree.synopsis;
 
     jouer.disabled = !peutJouer(entree);
     poserIconeEtTexte(jouer, ICONES[entree.statut === "termine" ? "check" : entree.statut === "verrouille" ? "lock" : "play"], LIBELLES_BOUTON[entree.statut]);

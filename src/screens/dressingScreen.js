@@ -1,4 +1,4 @@
-// Écran « dressing » : studio de style de Sucrette.
+// Écran « dressing » : studio de style de Pommette.
 // Scène 2D à cadrage partagé, catalogue unique et résumé de la tenue équipée.
 // L'écran travaille sur un brouillon d'apparence : rien n'est enregistré avant « Valider mon apparence ».
 // Un achat, lui, est enregistré immédiatement (via onAchat), car il dépense de la monnaie.
@@ -12,10 +12,12 @@ import {
   trouverElement,
 } from "../engine/appearance.js";
 import { NOM_MONNAIE, acheter, estBoutique, indiceVerrou, prixDe } from "../engine/wardrobe.js";
-import { creerAvatarSucrette, creerMiniature, mettreAJourAvatar } from "../ui/sucretteAvatar.js";
+import { creerAvatarPommette, creerMiniature, mettreAJourAvatar } from "../ui/pommetteAvatar.js";
 import { creerZoomDressing } from "../ui/dressingZoom.js";
 import { installerMenuJeu } from "../ui/gameMenu.js";
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
+import { PA_ACTIFS } from "../engine/saveSystem.js";
+import { demanderConfirmation } from "../ui/gameModal.js";
 
 const CATEGORIES = [
   {
@@ -112,7 +114,7 @@ function appliquerChoix(base, categorie, id) {
  * @param {object} options
  * @param {object} options.catalogue - catalogue d'apparence chargé.
  * @param {object} options.sauvegarde - sauvegarde courante (prénom, monnaie, inventaire, apparence enregistrée).
- * @param {string|null} [options.spriteOrigine] - sprite d'origine de Sucrette (characters.json). Tant que le joueur
+ * @param {string|null} [options.spriteOrigine] - sprite d'origine de Pommette (characters.json). Tant que le joueur
  *   n'a rien choisi, il est affiché à la place des calques ; « Réinitialiser » le rétablit.
  * @param {(apparence: object|null) => Promise<void>|void} options.onValider - enregistre et change d'écran
  *   (apparence null = sprite d'origine) ; s'il échoue, l'écran reste ouvert et affiche un message.
@@ -122,13 +124,40 @@ function appliquerChoix(base, categorie, id) {
  */
 export function lancerEcranDressing(
   conteneurRacine,
-  { catalogue, sauvegarde, spriteOrigine = null, onValider, onAchat, onRetour, navigation = {}, fichesPersonnages = [] } = {},
+  { catalogue, sauvegarde, spriteOrigine = null, onValider, onAchat, onRetour, onProfil, navigation = {}, fichesPersonnages = [], enregistrerGardeSortie } = {},
 ) {
-  const nomJoueur = sauvegarde?.playerName || "Sucrette";
+  const nomJoueur = sauvegarde?.playerName || "Pommette";
   let brouillon = normaliserApparence(sauvegarde?.appearance, catalogue, sauvegarde);
   // false = le joueur porte encore le sprite d'origine ; sans sprite d'origine, on part des calques par défaut.
   let personnalise = Boolean(sauvegarde?.appearance) || !spriteOrigine;
   let occupe = false;
+  const tenueInitiale = JSON.stringify({ personnalise, apparence: brouillon });
+  const tenueModifiee = () => tenueInitiale !== JSON.stringify({ personnalise, apparence: brouillon });
+  enregistrerGardeSortie?.(async () => {
+    if (occupe) {
+      afficherStatut("Attends la fin de l'enregistrement avant de quitter.");
+      return false;
+    }
+    if (!tenueModifiee()) return true;
+    definirOccupe(true);
+    try {
+      return Boolean(await demanderConfirmation({
+        titre: "Quitter sans valider ta tenue ?",
+        message: "Tes modifications de tenue seront abandonnées. Les achats déjà enregistrés restent dans ta garde-robe.",
+        confirmer: "Abandonner la tenue",
+        annuler: "Rester dans le dressing",
+        avertissement: true,
+      }));
+    } finally {
+      definirOccupe(false);
+    }
+  });
+  const prevenirFermeture = event => {
+    if (!tenueModifiee() && !occupe) return;
+    event.preventDefault();
+    event.returnValue = "";
+  };
+  window.addEventListener("beforeunload", prevenirFermeture);
 
   let mode = "garde-robe"; // "garde-robe" | "boutique"
   let indexCategorie = 0;
@@ -168,7 +197,7 @@ export function lancerEcranDressing(
   }
   entete.appendChild(creer("p", "dressing-signature", "L’atelier des possibles"));
   const enteteDroite = creer("div", "dressing-entete-droite");
-  if (Number.isFinite(sauvegarde.actionPoints)) {
+  if (PA_ACTIFS && Number.isFinite(sauvegarde.actionPoints)) {
     const pa = creer("span", "dressing-ressource");
     pa.title = "Points d’action";
     pa.append(icone("energie"), creer("span", "", `${sauvegarde.actionPoints} PA`));
@@ -181,9 +210,9 @@ export function lancerEcranDressing(
     getInfosPersonnage: (id) => ({ gauges: sauvegarde.gauges?.[id] || {} }),
     getSauvegarde: () => sauvegarde,
     onRetourEpisodes: navigation.scenario,
-    onRetourAccueil: navigation.accueil,
     onIllustrations: navigation.galerie,
     onDressing: () => activerMode("garde-robe"),
+    onProfil,
   });
   const boutonOuvrir = creer("button", "dressing-ouvrir");
   boutonOuvrir.type = "button";
@@ -244,7 +273,7 @@ export function lancerEcranDressing(
   const hauteur = Number(catalogue.canvas.height);
   perso.style.width = `${largeur}px`;
   perso.style.height = `${hauteur}px`;
-  const avatar = creerAvatarSucrette(assemblerCalques(brouillon, catalogue), catalogue.canvas, { etiquette: nomJoueur });
+  const avatar = creerAvatarPommette(assemblerCalques(brouillon, catalogue), catalogue.canvas, { etiquette: nomJoueur });
   perso.appendChild(avatar);
   let spriteOrigineImg = null;
   if (spriteOrigine) {
@@ -360,12 +389,12 @@ export function lancerEcranDressing(
   // element = null -> carte « Aucun » (catégories facultatives).
   function creerVisuel(categorie, element) {
     if (!element) {
-      const vide = creer("span", "miniature-sucrette miniature-vide");
+      const vide = creer("span", "miniature-pommette miniature-vide");
       vide.appendChild(icone("aucun"));
       return vide;
     }
     if (element.previewAsset) {
-      const cadre = creer("span", "miniature-sucrette");
+      const cadre = creer("span", "miniature-pommette");
       const image = creer("img", "dressing-miniature-dediee");
       image.src = element.previewAsset;
       image.alt = "";
@@ -797,5 +826,8 @@ export function lancerEcranDressing(
   activerMode(mode);
   activerCategorie(indexCategorie);
   if (!personnalise) afficherStatut("Tu portes le sprite d'origine. Choisis un élément pour la personnaliser.");
-  return () => zoom.detruire();
+  return () => {
+    zoom.detruire();
+    window.removeEventListener("beforeunload", prevenirFermeture);
+  };
 }

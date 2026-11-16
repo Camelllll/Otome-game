@@ -25,6 +25,7 @@ export function lireJeton() {
 }
 
 export function memoriserJeton(jeton) {
+  if (jeton !== lireJeton()) viderImagesPrivees();
   try {
     localStorage.setItem(CLE_JETON, jeton);
   } catch (erreur) {
@@ -33,10 +34,54 @@ export function memoriserJeton(jeton) {
 }
 
 export function oublierJeton() {
+  viderImagesPrivees();
   try {
     localStorage.removeItem(CLE_JETON);
   } catch (erreur) {
     console.warn("Impossible d'effacer le jeton de connexion.", erreur);
+  }
+}
+
+const imagesPrivees = new Map();
+let generationImages = 0;
+
+export function viderImagesPrivees() {
+  generationImages += 1;
+  for (const valeur of imagesPrivees.values()) {
+    valeur.then(url => URL.revokeObjectURL(url)).catch(() => {});
+  }
+  imagesPrivees.clear();
+}
+
+export async function chargerImagePrivee(chemin) {
+  const url = new URL(chemin, `${API_URL}/`);
+  const api = new URL(API_URL);
+  if (url.origin !== api.origin || !/^\/api\/illustrations\/\d+\/file$/.test(url.pathname)) {
+    throw new ApiError("Cette illustration ne possède pas d’accès privé valide.");
+  }
+  const jeton = lireJeton();
+  if (!jeton) throw new ApiError("Connecte-toi pour consulter cette illustration.", 401);
+  const cle = `${jeton}:${url.href}`;
+  if (imagesPrivees.has(cle)) return imagesPrivees.get(cle);
+  const generation = generationImages;
+  const chargement = (async () => {
+    let reponse;
+    try {
+      reponse = await fetch(url.href, { headers: { Authorization: `Bearer ${jeton}`, Accept: "image/*" }, cache: "no-store" });
+    } catch (erreur) {
+      throw new ApiError("Impossible de charger l’illustration. Vérifie ta connexion.", 0, erreur);
+    }
+    if (!reponse.ok) throw new ApiError("Illustration indisponible ou non débloquée.", reponse.status);
+    const blob = await reponse.blob();
+    if (generation !== generationImages || jeton !== lireJeton()) throw new ApiError("La session a changé.", 401);
+    return URL.createObjectURL(blob);
+  })();
+  imagesPrivees.set(cle, chargement);
+  try {
+    return await chargement;
+  } catch (erreur) {
+    imagesPrivees.delete(cle);
+    throw erreur;
   }
 }
 

@@ -17,12 +17,12 @@ class GameContentController extends Controller
 {
     private const JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
-    /** Sert une image des catégories « Portraits et sprites », « Décors » et « Illustrations » de la médiathèque (lecture publique). */
+    /** Les illustrations ont une route privée distincte, contrôlée pour chaque joueur. */
     public function characterMedia(int $id): BinaryFileResponse
     {
         $asset = MediaAsset::query()
             ->where('id', $id)
-            ->whereIn('category', ['characters', 'backgrounds', 'illustrations', 'music'])
+            ->whereIn('category', ['characters', 'backgrounds', 'music'])
             ->where('is_archived', false)
             ->firstOrFail();
         $disk = Storage::disk('studio');
@@ -53,6 +53,9 @@ class GameContentController extends Controller
     private function mediaUrl(string $path, Collection $assets, ?Collection $byName = null): string
     {
         $asset = $assets->get(hash('sha256', $this->canonicalPath($path)));
+        if (! $asset && preg_match('#/(?:api/(?:media|illustrations)|studio/media)/(\d+)/file(?:\?|$)#', $path, $match)) {
+            $asset = $assets->firstWhere('id', (int) $match[1]);
+        }
         if (! $asset && $byName !== null && $path !== '') {
             $asset = $byName->get($this->fileNameKey($path));
         }
@@ -60,7 +63,7 @@ class GameContentController extends Controller
             return $path;
         }
 
-        return route('game.character-media', ['id' => $asset->id, 'v' => $asset->updated_at?->timestamp ?? 0]);
+        return route($asset->category === 'illustrations' ? 'game.illustration-file' : 'game.character-media', ['id' => $asset->id, 'v' => $asset->updated_at?->timestamp ?? 0]);
     }
 
     private function withMediaSprites(mixed $data, Collection $assets): mixed
@@ -89,7 +92,7 @@ class GameContentController extends Controller
             ->where('category', 'characters')
             ->where('is_archived', false)
             ->whereNotNull('source_key')
-            ->get(['id', 'source_key', 'updated_at'])
+            ->get(['id', 'category', 'source_key', 'updated_at'])
             ->keyBy('source_key');
 
         return response()->json([
@@ -164,9 +167,8 @@ class GameContentController extends Controller
         $cgs = MediaAsset::query()
             ->where('category', 'illustrations')
             ->where('is_archived', false)
-            ->whereNotNull('source_key')
-            ->get(['id', 'source_key', 'updated_at'])
-            ->keyBy('source_key');
+            ->get(['id', 'category', 'source_key', 'updated_at'])
+            ->keyBy(fn ($asset) => $asset->source_key ?? 'id-'.$asset->id);
 
         return response()->json(
             $this->withMediaBackgrounds($episode->publishedVersion->data, $assets, $byName, $cgs),
@@ -210,7 +212,13 @@ class GameContentController extends Controller
             if ($key === 'background' && is_string($value)) {
                 $data[$key] = $this->mediaUrl($value, $assets, $byName);
             } elseif ($key === 'cg' && is_string($value)) {
-                $data[$key] = $this->mediaUrl($value, $cgs);
+                $url = $this->mediaUrl($value, $cgs);
+                if ($value !== '' && $url === $value && ! str_contains($url, '/api/illustrations/')) {
+                    $data[$key] = null;
+                    $data['cgUnavailable'] = true;
+                } else {
+                    $data[$key] = $url;
+                }
             } elseif ($key === 'music' && is_string($value) && $value !== '') {
                 $assetId = $this->musicAssetIdFromUrl($value);
                 if ($assetId !== null) {
@@ -271,11 +279,11 @@ class GameContentController extends Controller
             ->with('mediaAsset:id,category,is_archived,updated_at')
             ->orderBy('id')
             ->get()
-            ->filter(fn (Illustration $i) => $i->mediaAsset !== null && ! $i->mediaAsset->is_archived)
+            ->filter(fn (Illustration $i) => $i->mediaAsset !== null && $i->mediaAsset->category === 'illustrations' && ! $i->mediaAsset->is_archived)
             ->map(fn (Illustration $i) => [
                 'id' => $i->slug,
                 'title' => $i->title,
-                'image' => route('game.character-media', [
+                'image' => route('game.illustration-file', [
                     'id' => $i->mediaAsset->id,
                     'v' => $i->mediaAsset->updated_at?->timestamp ?? 0,
                 ]),
@@ -285,7 +293,7 @@ class GameContentController extends Controller
                 'unlockNodeId' => $i->unlock_node_id,
                 'unlockCondition' => $i->unlock_condition,
                 'spoilerLevel' => $i->spoiler_level,
-                'rarity' => $i->rarity ?? 'common',
+                'rarity' => $i->rarity === 'ultra_rare' ? 'epic' : ($i->rarity ?? 'common'),
             ])
             ->values();
 

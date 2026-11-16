@@ -1,4 +1,4 @@
-// Rendu de Sucrette par calques PNG superposés. Un conteneur, une <img> par calque.
+// Rendu de Pommette par calques PNG superposés. Un conteneur, une <img> par calque.
 // Tous les calques ont les dimensions du sprite de base et sont placés en `inset: 0` en pourcentage :
 // l'alignement reste donc identique à toutes les tailles d'écran. Aucune image fusionnée n'est produite.
 
@@ -9,7 +9,7 @@ function afficherSource(img, src) {
 
 function creerImage(calque) {
   const img = document.createElement("img");
-  img.className = "calque-sucrette";
+  img.className = "calque-pommette";
   img.dataset.slot = calque.slot;
   img.alt = "";
   img.draggable = false;
@@ -41,9 +41,9 @@ const jetons = new WeakMap();
  * @param {{width: number, height: number}} canvas - dimensions du sprite de base.
  * @param {{etiquette?: string}} options - texte alternatif ; vide = purement décoratif.
  */
-export function creerAvatarSucrette(calques, canvas, { etiquette = "Sucrette" } = {}) {
+export function creerAvatarPommette(calques, canvas, { etiquette = "Pommette" } = {}) {
   const pile = document.createElement("div");
-  pile.className = "sucrette-calques";
+  pile.className = "pommette-calques";
   if (canvas?.width && canvas?.height) pile.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
   if (etiquette) {
     pile.setAttribute("role", "img");
@@ -89,8 +89,8 @@ export async function mettreAJourAvatar(pile, calques) {
  */
 export function creerMiniature(calques, canvas, focus) {
   const cadre = document.createElement("span");
-  cadre.className = "miniature-sucrette";
-  const pile = creerAvatarSucrette(calques, canvas, { etiquette: "" });
+  cadre.className = "miniature-pommette";
+  const pile = creerAvatarPommette(calques, canvas, { etiquette: "" });
   const largeur = 100 / focus.w;
   const rapport = canvas.height / canvas.width;
   pile.style.width = `${largeur}%`;
