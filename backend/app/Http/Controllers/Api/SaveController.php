@@ -114,7 +114,7 @@ class SaveController extends Controller
             'effects' => ['nullable', 'array'],
         ]);
 
-        $episode = Episode::query()->where('slug', $data['episodeId'])->whereNotNull('published_version_id')->with('publishedVersion')->firstOrFail();
+        $episode = Episode::query()->where('slug', $data['episodeId'])->availableInGame()->with('publishedVersion')->firstOrFail();
         $node = $episode->publishedVersion?->data['nodes'][$data['nodeId']] ?? [];
         $option = $node['options'][$data['optionIndex']] ?? null;
         abort_unless(($node['type'] ?? '') === 'choice' && is_array($option), 422, 'Ce choix ne correspond pas à une option publiée.');

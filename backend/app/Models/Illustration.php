@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -23,6 +24,13 @@ class Illustration extends Model
     protected function casts(): array
     {
         return ['character_ids' => 'array', 'spoiler_level' => 'integer'];
+    }
+
+    public function scopeAvailableInGame(Builder $query): Builder
+    {
+        return $query->when(config('game.demo'), fn (Builder $query) => $query
+            ->where(fn (Builder $query) => $query->whereNull('episode_id')
+                ->orWhereIn('episode_id', Episode::query()->availableInGame()->select('slug'))));
     }
 
     public function mediaAsset(): BelongsTo

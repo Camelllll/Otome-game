@@ -9,6 +9,7 @@ use App\Models\MediaAsset;
 use App\Models\PlayerChoice;
 use App\Models\PlayerIllustration;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -36,13 +37,14 @@ class IllustrationAccess
 
     public function canView(User $user, MediaAsset $asset): bool
     {
-        $rows = PlayerIllustration::query()->where('user_id', $user->id)->get();
+        $rows = $this->acquisitions($user)->get();
         $assets = collect([$asset]);
         foreach ($rows as $row) {
             if ($this->resolve($row->illustration_path, $assets)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -52,7 +54,7 @@ class IllustrationAccess
         $dates = [];
         $unavailable = [];
         $assets = MediaAsset::query()->where('category', 'illustrations')->where('is_archived', false)->get();
-        foreach (PlayerIllustration::query()->where('user_id', $user->id)->orderBy('acquired_at')->get() as $row) {
+        foreach ($this->acquisitions($user)->orderBy('acquired_at')->get() as $row) {
             $asset = $this->resolve($row->illustration_path, $assets);
             if ($asset && ! array_key_exists($asset->id, $dates)) {
                 $dates[$asset->id] = $row->acquired_at?->toIso8601String();
@@ -64,7 +66,7 @@ class IllustrationAccess
                 ];
             }
         }
-        $metadata = Illustration::query()->whereIn('media_asset_id', array_keys($dates))->orderBy('id')->get()->keyBy('media_asset_id');
+        $metadata = Illustration::query()->availableInGame()->whereIn('media_asset_id', array_keys($dates))->orderBy('id')->get()->keyBy('media_asset_id');
         $characters = Character::query()->get()->mapWithKeys(fn ($c) => [($c->data['id'] ?? $c->slug) => $c->name]);
 
         return $assets->whereIn('id', array_keys($dates))
@@ -84,13 +86,20 @@ class IllustrationAccess
             })->concat(array_values($unavailable))->sortByDesc('acquiredAt')->values();
     }
 
+    private function acquisitions(User $user): Builder
+    {
+        return PlayerIllustration::query()->where('user_id', $user->id)
+            ->when(config('game.demo'), fn ($query) => $query
+                ->whereIn('episode_id', Episode::query()->availableInGame()->select('slug')));
+    }
+
     /**
      * Rejoue le journal avec les options publiées, jamais avec les effets/flags envoyés par le client.
      * On peut parcourir les répliques linéaires, mais pas franchir un choix absent du journal.
      */
     public function assertReachable(User $user, int $slot, string $episodeId, string $nodeId): void
     {
-        $documents = Episode::query()->whereNotNull('published_version_id')->with('publishedVersion')->get()
+        $documents = Episode::query()->availableInGame()->with('publishedVersion')->get()
             ->mapWithKeys(fn ($episode) => [$episode->slug => $episode->publishedVersion?->data]);
         $document = $documents->get($episodeId);
         abort_unless(is_array($document) && isset($document['nodes'][$nodeId]), 422, 'Moment publié introuvable.');
@@ -98,7 +107,9 @@ class IllustrationAccess
         $flags = [];
         $pointers = [];
         $visited = [];
-        $journal = PlayerChoice::query()->where('user_id', $user->id)->where('slot', $slot)->orderBy('id')->get();
+        $journal = PlayerChoice::query()->where('user_id', $user->id)->where('slot', $slot)
+            ->when(config('game.demo'), fn ($query) => $query->whereIn('episode_id', $documents->keys()))
+            ->orderBy('id')->get();
         foreach ($journal as $choice) {
             $doc = $documents->get($choice->episode_id);
             if (! is_array($doc)) {

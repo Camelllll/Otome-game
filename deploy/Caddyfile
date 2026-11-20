@@ -1,9 +1,9 @@
-{
+il est en 8080{
 	frankenphp
 	auto_https off
 }
 
-:80 {
+:{$PORT:80} {
 	root * /app/public
 	encode zstd gzip
 	rewrite / /index.html

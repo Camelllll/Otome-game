@@ -30,12 +30,20 @@ Sur Railway, définir `APP_URL` avec l'adresse publique complète en `https://` 
 ## Déploiement Railway : jeu et Studio sur le même domaine
 
 1. Sur le service Laravel existant, régler **Root Directory** sur `/` et choisir **Dockerfile** comme builder. Le [Dockerfile](../Dockerfile) est à la racine du dépôt. Retirer toute commande de démarrage personnalisée issue de Railpack ; la commande de l'image applique les migrations et démarre FrankenPHP.
-2. Garder les variables du service (`APP_KEY`, `APP_URL` en HTTPS, `APP_ENV=production`, `APP_DEBUG=false`, `DB_CONNECTION=mysql` et les références MySQL). Garder le domaine existant, avec le port cible **80** s'il est demandé, et le volume médias sur `/app/storage/app/studio-media` s'il est déjà monté. Le stockage MySQL reste sur son propre service.
+2. Garder les variables du service (`APP_KEY`, `APP_URL` en HTTPS, `APP_ENV=production`, `APP_DEBUG=false`, `DB_CONNECTION=mysql` et les références MySQL). Garder le domaine existant et faire correspondre son **Target Port** à `PORT` si cette variable est définie, ou à **80** sinon. Garder le volume médias sur `/app/storage/app/studio-media` s'il est déjà monté. Le stockage MySQL reste sur son propre service.
 3. Vérifier `/` (jeu), `/api/episodes` (API), `/studio` (connexion Studio) et `/up` (vérification de santé). Le jeu appelle l’API du même domaine. En local, le serveur de développement séparé continue d’utiliser l’API sur `127.0.0.1:8001`.
 
 Le build ne copie dans le dossier public que les fichiers du jeu autorisés par [la liste du serveur local](../scripts/public-game.php), en plus des assets du Studio. Il ne transfère ni la base ni la médiathèque. Ne pas importer le contenu complet sur le domaine public avant de restreindre l’accès aux épisodes et fonctionnalités hors démo.
 
 L’image PHP installe `pdo_mysql` pour la connexion à MySQL et `zip` pour que Composer puisse extraire les archives des dépendances pendant le build.
+
+### Isoler la démo des modifications locales
+
+Sur Railway, définir `GAME_DEMO=true` dans les variables du service Laravel. Le jeu ne propose que les épisodes publiés `episode1` et `episode2` ; les autres restent disponibles dans le Studio. La fin de l’épisode 2 ne propose pas de continuer si sa destination est hors démo. Les autres fonctionnalités restent actives.
+
+Connecter Railway à la branche `demo` et laisser le déploiement automatique désactivé. Garder `GAME_DEMO=false` en local et continuer le travail sur `main` ou une branche de travail, avec la base et la médiathèque locales. Les modifications faites dans le Studio Railway affectent les données de la démo même sans déploiement.
+
+Avant de rouvrir le domaine, vérifier que `/api/episodes` ne renvoie que les deux premiers épisodes et que `/api/episodes/episode3` ainsi que `/api/episodes/episode3/thumbnail` renvoient `404`.
 
 ## Import des épisodes
 

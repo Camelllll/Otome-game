@@ -144,7 +144,7 @@ class GameContentController extends Controller
     public function episodes(): JsonResponse
     {
         $episodes = Episode::query()
-            ->whereNotNull('published_version_id')
+            ->availableInGame()
             ->orderBy('position')
             ->orderBy('slug')
             ->get(['slug', 'title', 'description', 'thumbnail_path', 'updated_at']);
@@ -168,7 +168,7 @@ class GameContentController extends Controller
     {
         $episode = Episode::query()
             ->where('slug', $slug)
-            ->whereNotNull('published_version_id')
+            ->availableInGame()
             ->firstOrFail();
         $disk = Storage::disk('studio');
         abort_unless($episode->thumbnail_path && $disk->exists($episode->thumbnail_path), 404, 'Vignette introuvable.');
@@ -183,7 +183,7 @@ class GameContentController extends Controller
     {
         $episode = Episode::query()
             ->where('slug', $slug)
-            ->whereNotNull('published_version_id')
+            ->availableInGame()
             ->with('publishedVersion')
             ->first();
 
@@ -205,8 +205,19 @@ class GameContentController extends Controller
             ->get(['id', 'category', 'source_key', 'updated_at'])
             ->keyBy(fn ($asset) => $asset->source_key ?? 'id-'.$asset->id);
 
+        $data = $this->withMediaBackgrounds($episode->publishedVersion->data, $assets, $byName, $cgs);
+        if (config('game.demo') && isset($data['nodes'])) {
+            $available = Episode::query()->availableInGame()->pluck('slug')->all();
+            foreach ($data['nodes'] as &$node) {
+                if (isset($node['nextEpisode']) && ! in_array($node['nextEpisode'], $available, true)) {
+                    $node['nextEpisode'] = null;
+                }
+            }
+            unset($node);
+        }
+
         return response()->json(
-            $this->withMediaBackgrounds($episode->publishedVersion->data, $assets, $byName, $cgs),
+            $data,
             200,
             [],
             self::JSON_FLAGS
@@ -311,6 +322,7 @@ class GameContentController extends Controller
         $episodeTitles = Episode::query()->pluck('title', 'slug');
 
         $rows = Illustration::query()
+            ->availableInGame()
             ->with('mediaAsset:id,category,is_archived,updated_at')
             ->orderBy('id')
             ->get()

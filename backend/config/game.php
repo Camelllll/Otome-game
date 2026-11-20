@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'demo' => env('GAME_DEMO', false),
+
     // Règles de jeu appliquées par le serveur (portées depuis les fonctions SQL game_* de Supabase).
     'rules' => [
         'gaugeMin' => -100,
