@@ -25,6 +25,8 @@ composer studio
 
 Lors du premier paramétrage sur ce Mac, les dépendances, la base et le fichier `.env` sont déjà préparés. Ne pas écraser ce dernier avec `.env.example`.
 
+Sur Railway, définir `APP_URL` avec l'adresse publique complète en `https://` dans les variables du service Laravel. Le Studio génère alors ses liens, formulaires et URL CSS/JS en HTTPS, même si le proxy communique avec Laravel en HTTP. Le Studio local garde son URL en HTTP.
+
 ## Import des épisodes
 
 ```sh

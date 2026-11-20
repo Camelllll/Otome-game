@@ -6,6 +6,7 @@ use App\Livewire\EpisodeEditor;
 use App\Livewire\EpisodeIndex;
 use App\Models\Episode;
 use App\Models\User;
+use App\Providers\AppServiceProvider;
 use App\Services\EpisodeDocument;
 use App\Services\EpisodeWriter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,6 +51,19 @@ class StudioTest extends TestCase
         $this->get('/')->assertRedirect('/studio');
         $this->get('/studio')->assertRedirect('/login');
         $this->actingAs(User::factory()->create())->get('/studio')->assertForbidden();
+    }
+
+    public function test_studio_links_use_https_behind_the_proxy_when_the_app_url_is_https(): void
+    {
+        config(['app.url' => 'https://studio.example.com']);
+        $this->app->getProvider(AppServiceProvider::class)->boot();
+        $this->withoutVite();
+
+        $this->get('http://studio.example.com/login')
+            ->assertOk()
+            ->assertSee('action="https://studio.example.com/login"', false);
+
+        $this->assertSame('https://studio.example.com/build/assets/app.css', asset('build/assets/app.css'));
     }
 
     public function test_admin_can_login_but_player_cannot(): void
