@@ -1,6 +1,7 @@
 *
 !Dockerfile
 !deploy/Caddyfile
+!deploy/php.ini
 !index.html
 !style.css
 !carnet.css
