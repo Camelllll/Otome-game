@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\CharacterEditor;
 use App\Livewire\EpisodeEditor;
 use App\Models\Character;
 use App\Models\Episode;
@@ -13,6 +14,26 @@ use Tests\TestCase;
 class CharacterCatalogTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_game_uses_the_studio_name_without_changing_the_dialogue_identifier(): void
+    {
+        $character = Character::create(['slug' => 'liam', 'name' => 'Liam', 'data' => [
+            'id' => 'liam', 'name' => 'Liam', 'tagline' => 'La même fiche',
+        ]]);
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        Livewire::test(CharacterEditor::class)
+            ->call('editer', $character->id)
+            ->set('name', 'Nouveau nom')
+            ->call('sauvegarder')
+            ->assertHasNoErrors();
+
+        $this->assertSame('Liam', $character->fresh()->data['name']);
+        $this->getJson('/api/characters')->assertOk()
+            ->assertJsonPath('crushs.0.name', 'Nouveau nom')
+            ->assertJsonPath('crushs.0.id', 'liam')
+            ->assertJsonPath('crushs.0.tagline', 'La même fiche');
+    }
 
     public function test_editor_lists_entire_catalog_and_preserves_historical_speakers(): void
     {

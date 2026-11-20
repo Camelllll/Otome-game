@@ -117,6 +117,8 @@ Ensuite, la rédactrice utilise uniquement la médiathèque : ajouter un fichier
 
 `php artisan studio:import-characters /chemin/characters.json` importe un tableau de lignes avec `id`, `is_player`, `is_secondary` et `data` (fiche originale complète). Les fiches existantes ne sont jamais écrasées et une relance ne crée pas de doublon. L'import initial utilise les 20 fiches de la sauvegarde SQL, plus complète que le JSON historique local. Les épisodes ne sont pas modifiés par cet import. L'administration visuelle des fiches reste une étape distincte.
 
+Le nom affiché dans le jeu provient du champ **Nom** de la fiche du Studio, pas du nom historique contenu dans le JSON importé. Renommer la fiche ne change pas l’identifiant utilisé dans les dialogues et ne demande pas de republier les épisodes.
+
 Les épisodes importés peuvent contenir des liens invalides hérités de la sauvegarde. Ils restent éditables, mais ces liens doivent être corrigés avant publication.
 
 ## Vérifications locales

@@ -79,11 +79,13 @@ class GameContentController extends Controller
         return route($asset->category === 'illustrations' ? 'game.illustration-file' : 'game.character-media', ['id' => $asset->id, 'v' => $asset->updated_at?->timestamp ?? 0]);
     }
 
-    private function withMediaSprites(mixed $data, Collection $assets): mixed
+    private function characterData(?Character $character, Collection $assets): mixed
     {
+        $data = $character?->data;
         if (! is_array($data)) {
             return $data;
         }
+        $data['name'] = $character->name;
         if (isset($data['sprite']) && is_string($data['sprite'])) {
             $data['sprite'] = $this->mediaUrl($data['sprite'], $assets);
         }
@@ -100,7 +102,7 @@ class GameContentController extends Controller
 
     public function characters(): JsonResponse
     {
-        $rows = Character::query()->orderBy('id')->get(['is_player', 'is_secondary', 'data']);
+        $rows = Character::query()->orderBy('id')->get(['name', 'is_player', 'is_secondary', 'data']);
         $assets = MediaAsset::query()
             ->where('category', 'characters')
             ->where('is_archived', false)
@@ -109,11 +111,11 @@ class GameContentController extends Controller
             ->keyBy('source_key');
 
         return response()->json([
-            'player' => $this->withMediaSprites($rows->first(fn (Character $c) => $c->is_player)?->data, $assets),
+            'player' => $this->characterData($rows->first(fn (Character $c) => $c->is_player), $assets),
             'crushs' => $rows->filter(fn (Character $c) => ! $c->is_player && ! $c->is_secondary)
-                ->map(fn (Character $c) => $this->withMediaSprites($c->data, $assets))->values(),
+                ->map(fn (Character $c) => $this->characterData($c, $assets))->values(),
             'secondary' => $rows->filter(fn (Character $c) => ! $c->is_player && $c->is_secondary)
-                ->map(fn (Character $c) => $this->withMediaSprites($c->data, $assets))->values(),
+                ->map(fn (Character $c) => $this->characterData($c, $assets))->values(),
         ], 200, [], self::JSON_FLAGS);
     }
 
