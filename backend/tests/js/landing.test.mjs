@@ -483,6 +483,7 @@ function routeur(hash, joueur) {
         getCharacters: async () => ({}),
         getEpisode: async () => ({}),
         chargerCatalogueApparence: async () => null,
+        aUneApparenceEquipee: apparence.aUneApparenceEquipee,
         reconcilierPossessions: () => false,
         accorderPiecesDemo: () => false,
         aplatirPersonnages: () => ({}),
@@ -648,7 +649,8 @@ test('le carnet ne propose que les collections et statistiques disponibles', asy
         MutationObserver: class { observe() {} },
         AbortController,
         matchMedia: () => ({ matches: true }),
-        appelApi: async () => ({ illustrationsDebloquees: 2, meilleurLovometre: { valeur: 40, personnage: 'Isaac' } }),
+        appelApi: async () => ({ illustrationsDebloquees: 2, meilleurLovometre: { valeur: 40, personnage: 'Isaac', personnageId: 'isaac' } }),
+        getCharacters: async () => ({ crushs: [characters.crushs[0], { ...characters.crushs[1], portraits: { default: 'isaac-portrait.png' } }] }),
         listerIllustrationsDebloquees: async () => [],
         creerCollectionIllustrations: () => new Element('div'),
         creerCarnet: options => {
@@ -678,7 +680,21 @@ test('le carnet ne propose que les collections et statistiques disponibles', asy
     }
     assert.equal(retoursAccueil, 3);
     assert.equal(retoursJeu, 0);
-    assert.match(root.textContent, /40 %/);
+    const lovometre = root.querySelector('.pda-stat-lovometre');
+    assert.equal(lovometre.querySelector('h3').textContent, 'Meilleur Lovomètre');
+    assert.equal(lovometre.querySelector('.pda-stat-valeur').textContent, '40 %');
+    assert.equal(lovometre.querySelector('p').textContent, 'Isaac');
+    const avatar = lovometre.querySelector('.pda-stat-avatar');
+    const portrait = avatar.querySelector('img');
+    assert.equal(portrait.src, 'isaac-portrait.png');
+    assert.equal(avatar.querySelector('span').textContent, 'I');
+    assert.equal(portrait.hidden, true);
+    portrait.naturalWidth = 100;
+    portrait.naturalHeight = 250;
+    await portrait.emit('load');
+    assert.equal(portrait.hidden, false);
+    assert.equal(avatar.querySelector('span').hidden, true);
+    assert.ok(portrait.classList.contains('portrait-recadrage'));
     assert.match(root.textContent, /Illustrations débloquées/);
     assert.doesNotMatch(root.textContent, /Trophées|Bonnes réponses|Succès débloqués/);
 });
@@ -712,17 +728,21 @@ test("le compte conserve le retour à l'accueil sur ses deux pages et accepte le
     assert.equal(retoursJeu, 2);
 });
 
-function monterDressing({ confirmation = false, onValider = async () => {} } = {}) {
+function monterDressing({ confirmation = false, onValider = async () => {}, tenue = { top: 'a' } } = {}) {
     const ecouteurs = new Map();
     const modales = [];
     let garde;
     let detruit = false;
     const catalogue = {
         canvas: { width: 600, height: 1200 }, basePath: '', base: { file: 'body.png' },
-        defaults: { top: 'a' },
-        items: ['a', 'b'].map(id => ({ id, category: 'top', label: id, layers: [] })),
+        defaults: { top: 'a', skin: 'peau' },
+        items: [
+            ...['a', 'b'].map(id => ({ id, category: 'top', label: id, layers: [] })),
+            { id: 'peau', category: 'skin', label: 'Peau claire', layers: [] },
+            { id: 'bleus', category: 'eyes', label: 'Yeux bleus', layers: [] },
+        ],
     };
-    const sauvegarde = { appearance: apparence.apparenceParDefaut(catalogue), currency: 0 };
+    const sauvegarde = { appearance: tenue, currency: 0 };
     const contexte = {
         ...apparence, ...gardeRobe,
         document: { createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag) },
@@ -756,6 +776,25 @@ function monterDressing({ confirmation = false, onValider = async () => {} } = {
     });
     return { root, ecouteurs, modales, garde, nettoyer, sauvegarde, detruit: () => detruit };
 }
+
+test('choisir des yeux ne change pas la peau ou les vêtements et les yeux restent équipés à la réouverture', async () => {
+    let tenue;
+    const { root } = monterDressing({ tenue: null, onValider: async valeur => { tenue = valeur; } });
+    const boutonCategorie = (ecran, libelle) =>
+        ecran.all().find(e => e.classList.contains('dressing-categorie') && e.textContent === libelle);
+    await boutonCategorie(root, 'Peau').emit('click');
+    assert.equal(root.all().find(e => e.dataset.id === 'peau').attributes['aria-pressed'], 'false');
+    await boutonCategorie(root, 'Yeux').emit('click');
+    await root.all().find(e => e.dataset.id === 'bleus').emit('click');
+    await root.all().find(e => e.classList.contains('dressing-bouton-principal')).emit('click');
+    assert.equal(tenue.eyes, 'bleus');
+    assert.equal(tenue.skin, null);
+    assert.equal(tenue.top, null);
+
+    const { root: rouvert } = monterDressing({ tenue });
+    await boutonCategorie(rouvert, 'Yeux').emit('click');
+    assert.equal(rouvert.all().find(e => e.dataset.id === 'bleus').attributes['aria-pressed'], 'true');
+});
 
 test('quitter le dressing préserve les changements si on refuse, sans alerte quand la tenue est inchangée', async () => {
     for (const confirmation of [false, true]) {

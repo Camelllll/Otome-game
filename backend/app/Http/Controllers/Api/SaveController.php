@@ -29,6 +29,7 @@ class SaveController extends Controller
             'label' => ['nullable', 'string', 'max:500'],
             // Ancien client : le champ reste accepté, mais le nom vient uniquement du compte.
             'playerName' => ['nullable', 'string', 'max:500'],
+            'appearance' => ['sometimes', 'nullable', 'array'],
             'currentEpisode' => ['nullable', 'string', 'max:500'],
             'currentNode' => ['nullable', 'string', 'max:500'],
             'currentBackground' => ['nullable', 'string', 'max:2000'],

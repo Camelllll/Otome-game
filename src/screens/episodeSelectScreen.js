@@ -167,10 +167,10 @@ export function lancerEcranSelectionEpisode(conteneurRacine, { episodes, episode
       statut: statutDe(episode, episodeActuel),
       numero,
       numeroAffiche: /^\d+$/.test(numero) ? numero.padStart(2, "0") : numero,
-      image: meta.vignette || meta.image,
+      image: episode.thumbnail || meta.vignette || meta.image,
       fond: meta.image,
-      vignetteOfficielle: Boolean(meta.vignette),
-      synopsis: meta.synopsis,
+      vignetteOfficielle: Boolean(episode.thumbnail || meta.vignette),
+      synopsis: episode.description || meta.synopsis || SYNOPSIS_PAR_DEFAUT,
       bouton: null
     };
   });

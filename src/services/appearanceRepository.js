@@ -1,18 +1,17 @@
-// Catalogue des éléments d'apparence de Pommette.
-// Aujourd'hui : un fichier JSON statique. Une future migration vers la base de données ne changera
-// que cette fonction (par exemple appelApi("/appearance/catalogue")) : le reste du jeu reçoit le même objet.
+// Les catégories et articles d'apparence sont gérés dans le studio et chargés depuis l'API.
 import { catalogueValide } from "../engine/appearance.js";
-
-const URL_CATALOGUE = "data/appearance/catalogue.json";
+import { API_URL } from "./apiClient.js";
 
 let catalogueEnCache = null;
 
-// Renvoie le catalogue, ou null s'il est indisponible : le jeu retombe alors sur le sprite d'origine.
+// Renvoie null si le studio ou son catalogue est indisponible.
 export async function chargerCatalogueApparence() {
   if (catalogueEnCache) return catalogueEnCache;
   try {
-    // "no-cache" : le navigateur revalide le fichier à chaque chargement, pour ne jamais garder un ancien catalogue.
-    const reponse = await fetch(URL_CATALOGUE, { cache: "no-cache" });
+    const reponse = await fetch(`${API_URL}/appearance/catalogue`, {
+      headers: { Accept: "application/json" },
+      cache: "no-cache",
+    });
     if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`);
     const catalogue = await reponse.json();
     if (!catalogueValide(catalogue)) throw new Error("Format de catalogue invalide.");

@@ -186,6 +186,10 @@ class PlayerProfileTest extends TestCase
         $this->getJson("/api/illustrations/{$asset->id}/file")->assertNotFound();
         $this->putJson('/api/saves/0', ['unlockedIllustrationIds' => [$meta->slug]])->assertOk()->assertJsonPath('unlockedIllustrationIds', []);
         $this->assertDatabaseMissing('player_illustrations', ['user_id' => $other->id]);
+        app(PlayerSaveService::class)->save($other, [], 0)->update(['unlocked_illustration_ids' => [$meta->slug]]);
+        $this->getJson('/api/illustrations')->assertOk()->assertExactJson([]);
+        $this->getJson('/api/profile/stats')->assertOk()->assertJsonPath('illustrationsDebloquees', 0);
+        $this->getJson("/api/illustrations/{$asset->id}/file")->assertNotFound();
         $this->login($owner);
         $this->getJson('/api/illustrations')->assertOk()->assertJsonCount(1)->assertJsonPath('0.title', 'Un souvenir')
             ->assertJsonPath('0.rarity', 'legendary');
@@ -195,7 +199,7 @@ class PlayerProfileTest extends TestCase
 
     public function test_unlock_requires_a_real_published_path_and_ignores_client_effects(): void
     {
-        [$asset, , $source] = $this->illustration();
+        [$asset, $meta, $source] = $this->illustration();
         $this->login();
         $claim = ['path' => $source, 'episodeId' => 'episode1', 'nodeId' => 'cg'];
         $this->postJson('/api/illustrations', $claim)->assertForbidden();
@@ -204,6 +208,12 @@ class PlayerProfileTest extends TestCase
         $this->assertSame([], PlayerChoice::firstOrFail()->flags);
         $this->postJson('/api/illustrations', $claim)->assertForbidden();
         $this->postJson('/api/saves/0/choices', ['episodeId' => 'episode1', 'nodeId' => 'choice', 'optionIndex' => 0])->assertCreated();
+        $meta->update(['unlock_node_id' => 'branch']);
+        $this->postJson('/api/illustrations', array_replace($claim, ['nodeId' => 'branch']))->assertForbidden();
+        Storage::disk('studio')->delete($asset->file_path);
+        $this->postJson('/api/illustrations', $claim)->assertNotFound();
+        $this->getJson('/api/illustrations')->assertOk()->assertExactJson([]);
+        Storage::disk('studio')->put($asset->file_path, 'png-bytes');
         $this->postJson('/api/illustrations', $claim)->assertOk()->assertJsonPath('rarity', 'legendary');
         $this->postJson('/api/illustrations', $claim)->assertOk();
         $this->assertDatabaseCount('player_illustrations', 1);

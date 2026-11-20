@@ -89,7 +89,7 @@
                                 </select>
                             </label>
                         </div>
-                        <p class="muted">Les moments marqués ★ affichent déjà une illustration dans l'épisode.</p>
+                        <p class="muted">Les moments marqués ★ affichent déjà une illustration dans l'épisode. Associer une fiche à un moment ne suffit pas à débloquer l'image : elle doit être affichée par la scène publiée.</p>
                     </fieldset>
 
                     <label>Niveau de révélation

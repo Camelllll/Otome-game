@@ -3,7 +3,7 @@
 // L'écran travaille sur un brouillon d'apparence : rien n'est enregistré avant « Valider mon apparence ».
 // Un achat, lui, est enregistré immédiatement (via onAchat), car il dépense de la monnaie.
 import {
-  apparenceParDefaut,
+  CLES_APPARENCE,
   assemblerCalques,
   cleInventaire,
   elementsDeCategorie,
@@ -27,24 +27,16 @@ const CATEGORIES = [
     sections: [
       { categorie: "top", titre: "Hauts" },
       { categorie: "bottom", titre: "Bas" },
-      { categorie: "outfit", titre: "Robes", optionnel: true, type: "dress" },
-      { categorie: "outfit", titre: "Ensembles", optionnel: true, type: "set" },
-      { categorie: "top", titre: "Manteaux", type: "coat" },
+      { categorie: "outfit", titre: "Tenues complètes", optionnel: true },
       { categorie: "shoes", titre: "Chaussures", optionnel: true },
     ],
   },
   { id: "hair", label: "Cheveux", icone: "cheveux", sections: [{ categorie: "hair", titre: "Coiffures" }] },
-  { id: "face", label: "Visage", icone: "corps", sections: [{ categorie: "skin", titre: "Teint" }] },
+  { id: "skin", label: "Peau", icone: "corps", sections: [{ categorie: "skin", titre: "Couleurs de peau" }] },
   { id: "eyes", label: "Yeux", icone: "visage", sections: [{ categorie: "eyes", titre: "Couleurs des yeux" }] },
   { id: "eyebrows", label: "Sourcils", icone: "sourcils", sections: [{ categorie: "eyebrows", titre: "Sourcils" }] },
   { id: "mouth", label: "Lèvres", icone: "levres", sections: [{ categorie: "mouth", titre: "Maquillage des lèvres" }] },
-  {
-    id: "accessory",
-    label: "Accessoires",
-    icone: "accessoire",
-    sections: [{ categorie: "accessory", titre: "Accessoires", optionnel: true, type: "accessory" }],
-  },
-  { id: "jewelry", label: "Bijoux", icone: "bijou", sections: [{ categorie: "accessory", titre: "Bijoux", optionnel: true, type: "jewelry" }] },
+  { id: "accessory", label: "Accessoires", icone: "accessoire", sections: [{ categorie: "accessory", titre: "Accessoires", optionnel: true }] },
 ];
 
 const FOCUS_PAR_DEFAUT = { x: 0.5, y: 0.3, w: 0.8 };
@@ -114,8 +106,8 @@ function appliquerChoix(base, categorie, id) {
  * @param {object} options
  * @param {object} options.catalogue - catalogue d'apparence chargé.
  * @param {object} options.sauvegarde - sauvegarde courante (prénom, monnaie, inventaire, apparence enregistrée).
- * @param {string|null} [options.spriteOrigine] - sprite d'origine de Pommette (characters.json). Tant que le joueur
- *   n'a rien choisi, il est affiché à la place des calques ; « Réinitialiser » le rétablit.
+ * @param {string|null} [options.spriteOrigine] - sprite d'origine de Pommette, utilisé seul avant
+ *   personnalisation et comme base de secours si aucune peau n'est équipée.
  * @param {(apparence: object|null) => Promise<void>|void} options.onValider - enregistre et change d'écran
  *   (apparence null = sprite d'origine) ; s'il échoue, l'écran reste ouvert et affiche un message.
  * @param {(annuler: () => void) => Promise<void>|void} options.onAchat - enregistre la sauvegarde juste après un achat (monnaie et
@@ -128,11 +120,10 @@ export function lancerEcranDressing(
 ) {
   const nomJoueur = sauvegarde?.playerName || "Pommette";
   let brouillon = normaliserApparence(sauvegarde?.appearance, catalogue, sauvegarde);
-  // false = le joueur porte encore le sprite d'origine ; sans sprite d'origine, on part des calques par défaut.
-  let personnalise = Boolean(sauvegarde?.appearance) || !spriteOrigine;
+  const personnalise = () => CLES_APPARENCE.some((cle) => brouillon[cle] != null);
   let occupe = false;
-  const tenueInitiale = JSON.stringify({ personnalise, apparence: brouillon });
-  const tenueModifiee = () => tenueInitiale !== JSON.stringify({ personnalise, apparence: brouillon });
+  const tenueInitiale = JSON.stringify(brouillon);
+  const tenueModifiee = () => tenueInitiale !== JSON.stringify(brouillon);
   enregistrerGardeSortie?.(async () => {
     if (occupe) {
       afficherStatut("Attends la fin de l'enregistrement avant de quitter.");
@@ -167,22 +158,13 @@ export function lancerEcranDressing(
 
   const categories = CATEGORIES.map((categorie) => ({
     ...categorie,
-    sections: categorie.sections.map((section) => ({ ...section, id: section.type || section.categorie })),
+    sections: categorie.sections.map((section) => ({ ...section, id: section.categorie })),
   }));
   indexCategorie = Math.max(0, categories.findIndex((categorie) => categorie.id === "tenue"));
 
   const possedes = (categorie) => elementsDeCategorie(catalogue, categorie).filter((e) => estDebloque(e, sauvegarde));
   const enVente = (categorie) =>
     elementsDeCategorie(catalogue, categorie).filter((e) => estBoutique(e) || !estDebloque(e, sauvegarde));
-  const dansSection = (element, section) => {
-    if (section.type === "jewelry") return element.subcategory === "jewelry";
-    if (section.type === "accessory") return element.subcategory !== "jewelry";
-    if (section.type === "coat") return element.subcategory === "coat";
-    if (section.type === "set") return element.subcategory === "set";
-    if (section.type === "dress") return element.subcategory !== "set";
-    return section.categorie !== "top" || element.subcategory !== "coat";
-  };
-
   const ecran = creer("div", "ecran-dressing");
 
   // Le même menu que dans les dialogues, sans navigation propre au dressing.
@@ -263,7 +245,7 @@ export function lancerEcranDressing(
     return bouton;
   });
 
-  // --- Scène 2D : un seul conteneur transformé pour toutes les images --------
+  // --- Scène 2D : un repère commun à tous les calques -----------------------
   const stage = creer("section", "dressing-stage");
   stage.setAttribute("aria-label", "Aperçu de ton apparence");
   const scene = creer("div", "dressing-scene");
@@ -271,18 +253,8 @@ export function lancerEcranDressing(
   const perso = creer("div", "dressing-perso");
   const largeur = Number(catalogue.canvas.width);
   const hauteur = Number(catalogue.canvas.height);
-  perso.style.width = `${largeur}px`;
-  perso.style.height = `${hauteur}px`;
-  const avatar = creerAvatarPommette(assemblerCalques(brouillon, catalogue), catalogue.canvas, { etiquette: nomJoueur });
+  const avatar = creerAvatarPommette(calquesApercu(), catalogue.canvas, { etiquette: nomJoueur });
   perso.appendChild(avatar);
-  let spriteOrigineImg = null;
-  if (spriteOrigine) {
-    spriteOrigineImg = document.createElement("img");
-    spriteOrigineImg.className = "dressing-sprite-origine";
-    spriteOrigineImg.src = spriteOrigine;
-    spriteOrigineImg.alt = nomJoueur;
-    perso.appendChild(spriteOrigineImg);
-  }
 
   const pastilleNom = creer("p", "dressing-nom", nomJoueur);
   const pastilleEssai = creer("div", "dressing-essai");
@@ -489,10 +461,13 @@ export function lancerEcranDressing(
     if (!categorie) return;
     titrePanneau.textContent = categorie.label;
 
+    if (categorie.id === "eyes" && spriteOrigine && !brouillon.skin && !catalogue.base.file) {
+      liste.appendChild(creer("p", "dressing-vide", "Choisis une couleur de peau dans « Peau » pour voir la couleur de tes yeux. Le sprite d’origine a déjà ses propres iris."));
+    }
+
     const active = sectionActive();
     for (const section of categorie.sections.filter((section) => section === active)) {
-      const elements = (mode === "boutique" ? enVente(section.categorie) : possedes(section.categorie))
-        .filter((element) => dansSection(element, section));
+      const elements = mode === "boutique" ? enVente(section.categorie) : possedes(section.categorie);
       if (elements.length === 0 && !section.optionnel) continue;
       const bloc = creer("section", "dressing-section");
       bloc.appendChild(creer("h3", "dressing-section-titre", section.titre));
@@ -508,7 +483,7 @@ export function lancerEcranDressing(
       bloc.appendChild(grille);
       liste.appendChild(bloc);
     }
-    if (liste.childElementCount === 0) {
+    if (!liste.querySelector(".dressing-section")) {
       liste.appendChild(
         creer(
           "p",
@@ -601,7 +576,7 @@ export function lancerEcranDressing(
 
   function rendreBas() {
     piste.replaceChildren();
-    if (!personnalise) {
+    if (!personnalise() && spriteOrigine) {
       piste.appendChild(creer("span", "dressing-tenue-origine", "Ta tenue d’origine"));
       return;
     }
@@ -615,10 +590,9 @@ export function lancerEcranDressing(
       bouton.setAttribute("aria-label", `Modifier : ${element.label}`);
       bouton.appendChild(creerVisuel(categorie, element));
       bouton.addEventListener("click", () => {
-        const index = categories.findIndex((groupe) => groupe.sections.some((section) =>
-          section.categorie === categorie && dansSection(element, section)));
+        const index = categories.findIndex((groupe) => groupe.sections.some((section) => section.categorie === categorie));
         if (index >= 0) {
-          const section = categories[index].sections.find((s) => s.categorie === categorie && dansSection(element, s));
+          const section = categories[index].sections.find((s) => s.categorie === categorie);
           sectionsActives.set(categories[index].id, section.id);
           activerCategorie(index);
           ouvrirPanneau();
@@ -629,8 +603,9 @@ export function lancerEcranDressing(
   }
 
   // --- États des cartes et aperçu ----------------------------------------------
-  function apparenceAffichee() {
-    return essai ? appliquerChoix(brouillon, essai.categorie, essai.element.id) : brouillon;
+  function calquesApercu() {
+    const apparence = essai ? appliquerChoix(brouillon, essai.categorie, essai.element.id) : brouillon;
+    return assemblerCalques(apparence, catalogue, { spriteOrigine });
   }
 
   function rafraichirEtats() {
@@ -638,7 +613,7 @@ export function lancerEcranDressing(
     for (const carte of cartesPanneau) {
       const categorie = carte.dataset.categorie;
       const id = carte.dataset.id || null;
-      const equipe = personnalise && (brouillon[categorie] ?? null) === id;
+      const equipe = brouillon[categorie] === id;
       carte.classList.toggle("equipee", equipe);
       carte.classList.toggle("essai", Boolean(essai) && essai.categorie === categorie && essai.element.id === id);
       carte.classList.toggle("nouveau", nouveaux.has(carte.dataset.cle));
@@ -653,10 +628,7 @@ export function lancerEcranDressing(
   }
 
   function rafraichirApercu(anime = false) {
-    const montrerCalques = personnalise || Boolean(essai);
-    avatar.hidden = !montrerCalques;
-    if (spriteOrigineImg) spriteOrigineImg.hidden = montrerCalques;
-    if (montrerCalques) mettreAJourAvatar(avatar, assemblerCalques(apparenceAffichee(), catalogue));
+    mettreAJourAvatar(avatar, calquesApercu());
     pastilleEssai.hidden = !essai;
     if (essai) texteEssai.textContent = `Essayage : ${essai.element.label}`;
     rafraichirEtats();
@@ -682,7 +654,7 @@ export function lancerEcranDressing(
   function cadrerCategorie() {
     const categorie = categories[indexCategorie];
     const element = trouverElement(catalogue, "accessory", brouillon.accessory);
-    const focus = ["accessory", "jewelry"].includes(categorie.id) && element?.thumbFocus;
+    const focus = categorie.id === "accessory" && element?.thumbFocus;
     zoom.cadrer(categorie.id, focus ? { x: focus.x, y: focus.y, hauteur: focus.w * largeur / hauteur } : undefined);
   }
 
@@ -703,8 +675,6 @@ export function lancerEcranDressing(
   // --- Actions du joueur -------------------------------------------------------
   function choisir(categorie, id) {
     if (occupe) return;
-    // Premier choix : on quitte le sprite d'origine et on part des calques par défaut du catalogue.
-    personnalise = true;
     essai = null;
     brouillon = normaliserApparence(appliquerChoix(brouillon, categorie, id), catalogue, sauvegarde);
     afficherStatut("");
@@ -773,7 +743,6 @@ export function lancerEcranDressing(
     const cle = cleInventaire(element);
     nouveaux.add(cle);
     essai = null;
-    personnalise = true;
     // Achat réussi : l'élément est équipé tout de suite (le brouillon, pas la sauvegarde de l'apparence).
     brouillon = normaliserApparence(appliquerChoix(brouillon, categorie, element.id), catalogue, sauvegarde);
     afficherSolde();
@@ -788,8 +757,7 @@ export function lancerEcranDressing(
   boutonReinitialiser.addEventListener("click", () => {
     if (occupe) return;
     essai = null;
-    brouillon = normaliserApparence(apparenceParDefaut(catalogue), catalogue, sauvegarde);
-    personnalise = !spriteOrigine;
+    brouillon = normaliserApparence(null, catalogue);
     afficherStatut(
       spriteOrigine
         ? "Sprite d'origine rétabli. Pense à valider pour le conserver."
@@ -806,7 +774,7 @@ export function lancerEcranDressing(
     afficherStatut("Enregistrement…");
     try {
       if (!onValider) throw new Error("Service de sauvegarde indisponible.");
-      await onValider(personnalise ? { ...brouillon } : null);
+      await onValider(personnalise() ? { ...brouillon } : null);
       afficherStatut("");
     } catch (erreur) {
       console.error("Apparence non enregistrée.", erreur);
@@ -825,7 +793,7 @@ export function lancerEcranDressing(
   afficherSolde();
   activerMode(mode);
   activerCategorie(indexCategorie);
-  if (!personnalise) afficherStatut("Tu portes le sprite d'origine. Choisis un élément pour la personnaliser.");
+  if (!personnalise() && spriteOrigine) afficherStatut("Tu portes le sprite d'origine. Choisis un élément pour la personnaliser.");
   return () => {
     zoom.detruire();
     window.removeEventListener("beforeunload", prevenirFermeture);

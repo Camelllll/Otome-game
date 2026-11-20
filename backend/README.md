@@ -1,6 +1,6 @@
 # Pomme d'Amour — studio local
 
-Back-office Laravel 12, Livewire 3 et Tailwind 4, avec une base MariaDB. Le jeu situé à la racine n'est pas modifié.
+Back-office Laravel 12, Livewire 3 et Tailwind 4, avec une base MariaDB. Le jeu à la racine récupère notamment son catalogue d'apparence depuis l'API du studio.
 
 ## Démarrage local
 
@@ -69,13 +69,17 @@ L'onglet **Médiathèque** regroupe les décors (thèmes de scène), illustratio
 - Utiliser `composer studio` (ou `composer dev`) pour démarrer en local : PHP est configuré pour ce processus avec `upload_max_filesize=100M`, `post_max_size=110M`, `memory_limit=512M` et des délais de 600 secondes. Le PHP global du Mac n'est pas modifié. `php artisan serve` seul conserve les limites du PHP système.
 - En production, configurer également les limites du serveur HTTP et de PHP pour autoriser un fichier de 100 Mo avec sa surcharge multipart. La médiathèque affiche les limites PHP réellement actives.
 - Stockage dans `storage/app/studio-media`, sur le disque Laravel `studio`. Sauvegarder ce dossier **avec** la base MariaDB. Aucun lien symbolique public n'est nécessaire.
-- Les fichiers sont servis par une route administrateur. Le futur jeu devra disposer d'une route de diffusion appropriée lors de son raccordement.
+- Les fichiers de la médiathèque restent servis par une route administrateur ; les éléments actifs du Dressing disposent aussi d'une route API publique pour le jeu.
 - Les URL restent stables lors d'un remplacement. Cela modifie le rendu de tous les épisodes référençant ce média, y compris les versions publiées ; les documents narratifs ne sont pas modifiés.
 - Les anciens fichiers remplacés sont conservés et leurs chemins sont enregistrés dans `previous_files`, pour éviter une suppression irréversible. Ils ne sont pas accessibles par l'interface.
 - Archiver masque le média des nouveaux choix, sans supprimer le fichier ni invalider les références existantes.
 - Les décors, musiques et illustrations actifs sont sélectionnables dans l'édition guidée. Les personnages proposés proviennent du catalogue commun en base, pour tous les épisodes, plus l'héroïne, la narration et les éventuels locuteurs historiques hors catalogue. Les personnages portant le même nom sont distingués par leur identifiant. La catégorie portraits ne crée pas de fiche personnage.
 - Le décor se choisit au niveau de la scène ; musique, illustration et personnages présents se règlent dans les cartes de dialogue.
 - Aucun import automatique des médias Supabase : les fichiers sont ajoutés manuellement.
+
+### Dressing
+
+L'onglet **Dressing** permet d'ajouter les catégories Peau, Cheveux, Yeux, Sourcils, Bouche, Hauts, Bas, Chaussures, Tenue complète et Accessoires. Chaque article comprend un nom et un PNG transparent de 3000 × 6000 pixels, aligné sur le sprite de Pommette ; le jeu l'affiche sur son repère 600 × 1200. Un prix vide rend l'article gratuit ; un prix renseigné l'ajoute à la boutique. Le premier article gratuit de chaque catégorie principale devient automatiquement le choix de départ. Le catalogue complet est diffusé par `/api/appearance/catalogue` ; l'archivage retire un article sans supprimer le fichier.
 
 ### Reprise des fichiers du projet
 

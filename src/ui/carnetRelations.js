@@ -1,5 +1,5 @@
 // Carnet de relations : galerie des personnages, fiche du personnage sélectionné et souvenirs partagés.
-import { jaugeEnPourcentageAffichage } from "../engine/relationManager.js";
+import { jaugeEnPourcentageAffichage, jaugeEnPourcentageRemplissage } from "../engine/relationManager.js";
 import { souvenirsDuPersonnage } from "../engine/carnet.js";
 import { getIllustrationsCatalogue } from "../services/gameRepository.js";
 import { PROFILS_CARNET } from "../data/carnetProfils.js";
@@ -60,7 +60,7 @@ function affinite(personnage, contexte) {
   const valeur = jauges[personnage.categorieCarnet === "crush" ? "amour" : "amitie"];
   if (valeur === undefined || valeur === null) return null;
   const pourcentage = jaugeEnPourcentageAffichage(valeur);
-  return Math.max(0, Math.min(100, Number.isFinite(pourcentage) ? pourcentage : 0));
+  return Number.isFinite(pourcentage) ? pourcentage : 0;
 }
 
 function rendreLovometre(personnage, pourcentage) {
@@ -69,7 +69,7 @@ function rendreLovometre(personnage, pourcentage) {
   }
   const jalons = JALONS.map(
     (palier) =>
-      `<li class="carnet-jalon ${pourcentage >= palier ? "atteint" : ""} ${palier === 100 ? "dernier" : ""}" style="--pos:${palier}">${pourcentage >= palier ? ICONES.coeurPlein : ICONES.coeur}</li>`
+      `<li class="carnet-jalon ${pourcentage >= palier ? "atteint" : ""} ${palier === 100 ? "dernier" : ""}" style="--pos:${jaugeEnPourcentageRemplissage(palier)}">${pourcentage >= palier ? ICONES.coeurPlein : ICONES.coeur}</li>`
   ).join("");
   return `
     <div class="carnet-lovo" role="group" aria-label="Affinité">
@@ -77,8 +77,8 @@ function rendreLovometre(personnage, pourcentage) {
         <span class="carnet-lovo-titre">${ICONES.coeurPlein}Affinité</span>
         <strong>${pourcentage}%</strong>
       </div>
-      <div class="carnet-lovo-barre" role="progressbar" aria-label="Affinité avec ${esc(personnage.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pourcentage}">
-        <span style="width:${pourcentage}%"></span>
+      <div class="carnet-lovo-barre" role="meter" aria-label="Affinité avec ${esc(personnage.name)}" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="${pourcentage}" aria-valuetext="${pourcentage} %">
+        <span style="width:${jaugeEnPourcentageRemplissage(pourcentage)}%"></span>
       </div>
       <ol class="carnet-lovo-jalons" aria-hidden="true">${jalons}</ol>
     </div>`;

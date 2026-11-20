@@ -3,7 +3,7 @@ import { afficherBullePersonnage, afficherBarreNarration, afficherFinEpisode } f
 import { afficherLovometre, animerGainLovo, animerPerteLovo } from "../ui/gaugeBar.js";
 import { MusiqueAmbiance } from "../ui/backgroundMusic.js";
 import { installerMenuJeu } from "../ui/gameMenu.js";
-import { enregistrerRencontres, debloquerSouvenirs } from "../engine/carnet.js";
+import { enregistrerRencontres } from "../engine/carnet.js";
 import { sauvegarder } from "../engine/saveSystem.js";
 import { getIllustrationsCatalogue } from "../services/gameRepository.js";
 import { chargerImagePrivee } from "../services/apiClient.js";
@@ -462,7 +462,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
   }
 
   // Un personnage est « rencontré » dès qu'il apparaît réellement dans une scène jouée
-  // (il parle ou il est à l'écran). Un souvenir se débloque quand son moment est affiché.
+  // (il parle ou il est à l'écran).
   function suivreCarnet(affichage) {
     const sauvegardeJeu = moteur.sauvegarde;
     if (extrait || !sauvegardeJeu || !affichage) return;
@@ -470,27 +470,12 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     const idsVus = [...(affichage.onScreen || []), ...personnagesPresents.map((personnage) => personnage.id)];
     if (affichage.estPersonnageSurScene) idsVus.push(affichage.speakerId);
 
-    // La réponse de Pommette fusionnée dans la bulle est aussi affichée : son nœud compte comme vu.
-    const idsNoeuds = [affichage.nodeId];
-    if (affichage.reponsePommette && moteur.noeudCourant?.next) idsNoeuds.push(moteur.noeudCourant.next);
-
     const rencontre = enregistrerRencontres(sauvegardeJeu, idsVus, moteur.personnagesParId);
     if (rencontre) sauvegarder(sauvegardeJeu);
-    for (const fiche of catalogueSouvenirs.filter(illustration =>
-      illustration.episodeId === moteur.episodeData.id && idsNoeuds.includes(illustration.unlockNodeId)
-      && !sauvegardeJeu.unlockedIllustrationIds?.includes(illustration.id))) {
-      signalerIllustration(fiche.image, fiche.unlockNodeId).then(() => {
-        if (!scene.isConnected) return;
-        const souvenir = debloquerSouvenirs(sauvegardeJeu, [fiche], moteur.episodeData.id, idsNoeuds);
-        if (souvenir) sauvegarder(sauvegardeJeu);
-      }).catch(erreur => { messageIllustration.textContent = erreur.message; });
-    }
   }
 
   if (!extrait) getIllustrationsCatalogue().then((liste) => {
     catalogueSouvenirs = liste;
-    // Le premier nœud a pu s'afficher avant l'arrivée du catalogue : on revérifie l'écran courant.
-    if (liste.length) suivreCarnet(affichageCourant);
   });
 
   const demandesIllustrations = new Map();
@@ -539,7 +524,14 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
         messageIllustration.textContent = "Chargement de l’illustration…";
         const chargement = affichage.cgUnavailable
           ? Promise.reject(new Error("Cette illustration doit encore être importée dans la médiathèque privée. Tu peux poursuivre l’histoire."))
-          : signalerIllustration(affichage.cg, affichage.nodeId).then(() => chargerImagePrivee(affichage.cg));
+          : signalerIllustration(affichage.cg, affichage.nodeId).then(acquisition => {
+            const sauvegardeJeu = moteur.sauvegarde;
+            if (acquisition?.id && sauvegardeJeu) {
+              const souvenirs = sauvegardeJeu.unlockedIllustrationIds ??= [];
+              if (!souvenirs.includes(acquisition.id)) souvenirs.push(acquisition.id);
+            }
+            return chargerImagePrivee(affichage.cg);
+          });
         chargement.then(src => {
           if (affichageCourant?.nodeId !== affichage.nodeId) return;
           illustrationCg.src = src;
@@ -560,7 +552,9 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     const [infoLovo] = personnagesPresents.length === 1
       ? moteur.obtenirInfosPersonnages([personnagesPresents[0].id])
       : [];
-    afficherLovometre(lovometreGauche, infoLovo);
+    afficherLovometre(lovometreGauche, infoLovo
+      ? { ...moteur.personnagesParId.get(infoLovo.id), ...infoLovo }
+      : null);
     afficherLovometre(lovometreDroite, null);
 
     if (affichage.type === "end") {

@@ -42,16 +42,6 @@ async function buildCharactersInserts() {
     .join("\n");
 }
 
-async function buildShopInserts() {
-  const shop = await readJson("data/shop.json");
-  return (shop.items || [])
-    .map(
-      (item) =>
-        `insert into shop_items (id, slot, label, price, data) values (${sqlText(item.id)}, ${sqlText(item.slot)}, ${sqlText(item.label || item.name || item.id)}, ${Number(item.price || 0)}, ${sqlJson(item)}) on conflict (id) do update set slot = excluded.slot, label = excluded.label, price = excluded.price, data = excluded.data;`
-    )
-    .join("\n");
-}
-
 async function buildEpisodesInserts() {
   const ids = ["episode1", "episode2", "episode3"];
   const statements = [];
@@ -71,9 +61,8 @@ async function buildEpisodesInserts() {
   return statements.join("\n");
 }
 
-const [charactersSql, shopSql, episodesSql] = await Promise.all([
+const [charactersSql, episodesSql] = await Promise.all([
   buildCharactersInserts(),
-  buildShopInserts(),
   buildEpisodesInserts(),
 ]);
 
@@ -82,9 +71,6 @@ const output = `-- Généré par scripts/generate-seed.mjs à partir des JSON ex
 
 -- Personnages
 ${charactersSql}
-
--- Boutique
-${shopSql}
 
 -- Épisodes
 ${episodesSql}

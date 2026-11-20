@@ -53,8 +53,8 @@ class IllustrationController extends Controller
         $episode = Episode::query()->where('slug', $data['episodeId'])->whereNotNull('published_version_id')->with('publishedVersion')->firstOrFail();
         $node = $episode->publishedVersion?->data['nodes'][$data['nodeId']] ?? [];
         $nodeAsset = isset($node['cg']) ? $this->access->resolve($node['cg']) : null;
-        $linked = Illustration::query()->where('media_asset_id', $asset->id)->where('episode_id', $data['episodeId'])->where('unlock_node_id', $data['nodeId'])->exists();
-        abort_unless($nodeAsset?->id === $asset->id || $linked, 403, 'Cette image ne correspond pas à ce moment de l’histoire.');
+        abort_unless($nodeAsset?->id === $asset->id, 403, 'Cette image n’est pas affichée à ce moment de l’histoire.');
+        abort_unless(Storage::disk('studio')->exists($asset->file_path), 404, 'Le fichier de cette illustration est introuvable.');
         $this->access->assertReachable($request->user(), $data['slot'] ?? 0, $data['episodeId'], $data['nodeId']);
         $path = '/api/illustrations/'.$asset->id.'/file';
         DB::transaction(function () use ($request, $data, $asset, $path) {

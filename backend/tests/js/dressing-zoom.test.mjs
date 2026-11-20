@@ -65,8 +65,12 @@ test('rapid category changes, zoom bounds, resize and teardown affect only the s
         const zoom = creerZoomDressing(cadre, pile, canvas);
         for (const categorie of ['eyes', 'hair', 'mouth', 'tenue', 'eyebrows']) zoom.cadrer(categorie);
         assert.equal(pile.dataset.cadrage, 'eyebrows');
+        const detail = Number.parseFloat(pile.style.width);
+        assert.ok(detail > canvas.width, 'detail is laid out larger than the logical canvas');
         for (let i = 0; i < 20; i++) zoom.agrandir();
         assert.equal(pile.dataset.zoom, '2');
+        close(Number.parseFloat(pile.style.width), 2 * detail);
+        close(Number.parseFloat(pile.style.left) + CADRAGES_DRESSING.eyebrows.x * 2 * detail, 250);
         for (let i = 0; i < 20; i++) zoom.reduire();
         assert.equal(pile.dataset.zoom, '0.6');
         zoom.reinitialiser();
@@ -74,7 +78,8 @@ test('rapid category changes, zoom bounds, resize and teardown affect only the s
         zoom.vueComplete();
         assert.equal(pile.dataset.cadrage, 'tenue');
         resize();
-        assert.match(pile.style.transform, /^translate\(.+\) scale\(.+\)$/);
+        assert.ok(Number.parseFloat(pile.style.height) <= 650);
+        assert.equal(pile.style.transform, undefined);
         cadre.isConnected = false;
         resize();
         assert.equal(disconnected, true);

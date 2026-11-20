@@ -27,29 +27,6 @@ export function enregistrerRencontres(sauvegarde, ids, personnagesParId) {
   return change;
 }
 
-/**
- * Débloque les souvenirs dont le moment de déclenchement vient d'être affiché.
- * @param {object[]} catalogue - illustrations définies dans le studio
- * @param {string} episodeId - épisode en cours
- * @param {string[]} nodeIds - nœuds affichés à l'écran (le nœud courant et, s'il y en a un, celui fusionné dans la bulle)
- * @returns {boolean} true si la sauvegarde a changé.
- */
-export function debloquerSouvenirs(sauvegarde, catalogue, episodeId, nodeIds) {
-  if (!sauvegarde || !Array.isArray(catalogue) || !Array.isArray(nodeIds)) return false;
-  const debloques = listeDeLaSauvegarde(sauvegarde, "unlockedIllustrationIds");
-  let change = false;
-  for (const illustration of catalogue) {
-    if (!illustration?.id || !illustration.unlockNodeId) continue;
-    if (!nodeIds.includes(illustration.unlockNodeId)) continue;
-    if (illustration.episodeId && illustration.episodeId !== episodeId) continue;
-    if (illustration.unlockCondition && illustration.unlockCondition !== "viewed") continue;
-    if (debloques.includes(illustration.id)) continue;
-    debloques.push(illustration.id);
-    change = true;
-  }
-  return change;
-}
-
 // Illustrations liées à un personnage (une illustration peut concerner plusieurs personnages).
 export function souvenirsDuPersonnage(catalogue, personnageId) {
   if (!Array.isArray(catalogue)) return [];

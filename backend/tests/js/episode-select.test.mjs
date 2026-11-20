@@ -57,6 +57,7 @@ test('le journal affiche les bonnes vignettes sans changer les décors ou la sé
             { id: 'episode1', title: 'Première rentrée' },
             { id: 'episode2', title: 'Soirée' },
             { id: 'episode3', title: 'Les cours' },
+            { id: 'bonus', title: 'Chapitre bonus', description: 'Une histoire à part.', thumbnail: '/api/episodes/bonus/thumbnail' },
         ],
         episodeActuel: 'episode1',
         joueur: { pseudo: 'Pommette' },
@@ -112,4 +113,10 @@ test('le journal affiche les bonnes vignettes sans changer les décors ou la sé
     assert.equal(image.src, 'assets/Décors/Salle de TD.jpg');
     assert.equal(fond.src, image.src);
     assert.equal(scene.classList.contains('vignette-officielle'), false);
+
+    chapitres[3].listeners.click();
+    assert.equal(image.src, '/api/episodes/bonus/thumbnail');
+    assert.equal(image.alt, 'Illustration : Chapitre bonus');
+    assert.equal(trouver('apercu-synopsis').textContent, 'Une histoire à part.');
+    assert.ok(scene.classList.contains('vignette-officielle'));
 });

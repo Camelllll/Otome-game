@@ -1,14 +1,13 @@
-// Coordonnées normalisées mesurées sur les PNG du catalogue 600 × 1200.
-// Une transformation unique porte la pile entière, jamais les calques individuels.
+// Coordonnées du repère 600 × 1200, avec des images de dressing en 3000 × 6000.
+// La pile est redimensionnée directement pour que les PNG soient peints à la taille du zoom.
 export const CADRAGES_DRESSING = Object.freeze({
   tenue: { x: 0.48, y: 0.5, hauteur: 1 },
   hair: { x: 0.443, y: 0.205, hauteur: 0.38 },
-  face: { x: 0.475, y: 0.157, hauteur: 0.24 },
+  skin: { x: 0.475, y: 0.157, hauteur: 0.24 },
   eyes: { x: 0.472, y: 0.151, hauteur: 0.12 },
   eyebrows: { x: 0.463, y: 0.142, hauteur: 0.12 },
   mouth: { x: 0.489, y: 0.175, hauteur: 0.1 },
   accessory: { x: 0.48, y: 0.3, hauteur: 0.65 },
-  jewelry: { x: 0.48, y: 0.24, hauteur: 0.4 },
 });
 
 export function calculerCadrage(canvas, cadre, focus, zoom = 1) {
@@ -35,7 +34,10 @@ export function creerZoomDressing(cadre, pile, canvas, { onChanger } = {}) {
     const dimensions = cadre.getBoundingClientRect();
     if (!dimensions.width || !dimensions.height) return;
     const vue = calculerCadrage(canvas, dimensions, focus, zoom);
-    pile.style.transform = `translate(${vue.x}px, ${vue.y}px) scale(${vue.echelle})`;
+    pile.style.width = `${canvas.width * vue.echelle}px`;
+    pile.style.height = `${canvas.height * vue.echelle}px`;
+    pile.style.left = `${vue.x}px`;
+    pile.style.top = `${vue.y}px`;
     pile.dataset.cadrage = categorie;
     pile.dataset.zoom = String(zoom);
     onChanger?.({ zoom, categorie });

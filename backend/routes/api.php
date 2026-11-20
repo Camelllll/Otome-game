@@ -14,8 +14,10 @@ Route::middleware('throttle:120,1')->group(function () {
     Route::get('/backgrounds', [GameContentController::class, 'backgrounds']);
     Route::get('/media/{id}/file', [GameContentController::class, 'characterMedia'])->whereNumber('id')->name('game.character-media');
     Route::get('/episodes', [GameContentController::class, 'episodes']);
+    Route::get('/episodes/{slug}/thumbnail', [GameContentController::class, 'episodeThumbnail'])->where('slug', '[A-Za-z0-9_-]+')->name('game.episode-thumbnail');
     Route::get('/episodes/{slug}', [GameContentController::class, 'episode'])->where('slug', '[A-Za-z0-9_-]+');
     Route::get('/shop', [GameContentController::class, 'shop']);
+    Route::get('/appearance/catalogue', [GameContentController::class, 'appearanceCatalogue']);
     Route::get('/illustrations/catalogue', [GameContentController::class, 'illustrations']);
 });
 

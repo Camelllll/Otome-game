@@ -1,6 +1,7 @@
 import { demanderConfirmation } from "../ui/gameModal.js";
 import { deconnecterJoueur, listerIllustrationsDebloquees } from "../services/playerRepository.js";
 import { appelApi } from "../services/apiClient.js";
+import { getCharacters } from "../services/gameRepository.js";
 import { creerCollectionIllustrations } from "./illustrationGalleryScreen.js";
 import { creerCarnet } from "../ui/carnetRelations.js";
 
@@ -109,7 +110,31 @@ export function construireCarnet(racine, { compte = false, onCarnet, onCompte, o
   return { ecran, gauche, droite, afficherPage, signal: cycle.signal };
 }
 
-function statistiques(stats) {
+function avatarLovometre(nom, personnage) {
+  const avatar = creer("span", "pda-stat-avatar");
+  const initiale = creer("span", "", Array.from(nom)[0].toLocaleUpperCase("fr"));
+  avatar.setAttribute("aria-hidden", "true");
+  avatar.append(initiale);
+  const source = personnage?.portraits?.default || personnage?.sprite;
+  if (!source) return avatar;
+
+  const image = creer("img");
+  image.alt = "";
+  image.hidden = true;
+  image.addEventListener("load", () => {
+    image.classList.toggle("portrait-recadrage", image.naturalHeight >= image.naturalWidth * 1.6);
+    initiale.hidden = true;
+    image.hidden = false;
+  }, { once: true });
+  image.addEventListener("error", () => {
+    console.warn("Portrait du meilleur Lovomètre inaccessible :", source);
+  }, { once: true });
+  avatar.append(image);
+  image.src = source;
+  return avatar;
+}
+
+function statistiques(stats, personnageLovometre) {
   const section = creer("section", "pda-statistiques");
   section.append(creer("h2", "pda-titre-section", "Mes statistiques de jeu"));
   const grille = creer("div", "pda-stats");
@@ -117,8 +142,11 @@ function statistiques(stats) {
     ["illustrations", stats.illustrationsDebloquees, "Illustrations débloquées", "Ta collection personnelle."],
     ["coeur", stats.meilleurLovometre ? `${stats.meilleurLovometre.valeur} %` : "—", "Meilleur Lovomètre", stats.meilleurLovometre?.personnage || "Aucune affinité enregistrée."],
   ].forEach(([nom, valeur, label, detail]) => {
-    const carte = creer("article", "pda-stat");
-    carte.append(icone(nom), creer("strong", "pda-stat-valeur", String(valeur)), creer("h3", "", label), creer("p", "", detail));
+    const estLovometre = nom === "coeur";
+    const carte = creer("article", estLovometre ? "pda-stat pda-stat-lovometre" : "pda-stat");
+    const personnage = estLovometre && stats.meilleurLovometre?.personnage;
+    carte.append(personnage ? avatarLovometre(personnage, personnageLovometre) : icone(nom),
+      creer("strong", "pda-stat-valeur", String(valeur)), creer("h3", "", label), creer("p", "", detail));
     grille.append(carte);
   });
   section.append(grille);
@@ -171,6 +199,7 @@ export async function lancerEcranProfil(racine, { joueur, onRetour, onAccueil, l
   const labels = [["apercu", "Aperçu"], ["statistiques", "Statistiques"], ["illustrations", "Illustrations"]];
   let donnees = null;
   let illustrations = null;
+  let personnageLovometre = null;
   let erreurStats = null;
   let erreurIllustrations = null;
   let vueCollection = null;
@@ -228,7 +257,7 @@ export async function lancerEcranProfil(racine, { joueur, onRetour, onAccueil, l
         carte("Mes relations", "Les rencontres et les affinités de ton histoire.", "coeur", ouvrirRelations),
       );
     } else if (id === "statistiques") {
-      panneau.append(donnees ? statistiques(donnees) : creer("p", erreurStats ? "pda-erreur" : "pda-notice", erreurStats || "Chargement de tes statistiques…"));
+      panneau.append(donnees ? statistiques(donnees, personnageLovometre) : creer("p", erreurStats ? "pda-erreur" : "pda-notice", erreurStats || "Chargement de tes statistiques…"));
     } else {
       panneau.append(creer("h2", "pda-titre-section", "Mes Illustrations"));
       if (illustrations) {
@@ -285,7 +314,17 @@ export async function lancerEcranProfil(racine, { joueur, onRetour, onAccueil, l
   selectionner(onglet, false);
   afficherPage(onglet === "apercu" ? "gauche" : "droite");
   await Promise.all([
-    appelApi("/profile/stats").then(resultat => { donnees = resultat; }).catch(erreur => { erreurStats = erreur.message; }),
+    appelApi("/profile/stats").then(async resultat => {
+      donnees = resultat;
+      const id = resultat.meilleurLovometre?.personnageId;
+      if (!id) return;
+      try {
+        const catalogue = await getCharacters();
+        personnageLovometre = catalogue.crushs?.find(personnage => personnage.id === id);
+      } catch (erreur) {
+        console.warn("Impossible de charger le portrait du meilleur Lovomètre.", erreur);
+      }
+    }).catch(erreur => { erreurStats = erreur.message; }),
     listerIllustrationsDebloquees().then(resultat => { illustrations = resultat; }).catch(erreur => { erreurIllustrations = erreur.message; }),
   ]);
   if (racine.contains(ecran)) selectionner(onglet, false);

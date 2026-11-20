@@ -58,7 +58,7 @@ class MediaLibrary extends Component
 
     public function chooseCategory(string $category): void
     {
-        abort_unless(array_key_exists($category, MediaAsset::CATEGORIES) && $category !== 'characters', 422);
+        abort_unless(array_key_exists($category, MediaAsset::CATEGORIES) && ! in_array($category, ['characters', 'wardrobe'], true), 422);
         $this->category = $category;
         $this->showCarnet = false;
         $this->cancel();
@@ -99,7 +99,7 @@ class MediaLibrary extends Component
     public function save(): void
     {
         $this->validate([
-            'category' => ['required', Rule::in(array_keys(MediaAsset::CATEGORIES))],
+            'category' => ['required', Rule::in(array_diff(array_keys(MediaAsset::CATEGORIES), ['wardrobe']))],
             'label' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:3000'],
         ]);
@@ -168,7 +168,7 @@ class MediaLibrary extends Component
 
         return view('livewire.media-library', [
             'assets' => $assets,
-            'categories' => array_diff_key(MediaAsset::CATEGORIES, ['characters' => true]),
+            'categories' => array_diff_key(MediaAsset::CATEGORIES, ['characters' => true, 'wardrobe' => true]),
             'phpUploadLimit' => ini_get('upload_max_filesize'),
             'phpPostLimit' => ini_get('post_max_size'),
             'uploadLimitMb' => MediaAsset::MAX_UPLOAD_KB / 1024,

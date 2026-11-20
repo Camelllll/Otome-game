@@ -1,6 +1,6 @@
 // Boutique du dressing : prix, possession et achat d'éléments d'apparence.
 // Séparation des données :
-//   - catalogue global : data/appearance/catalogue.json (un élément vendu a `unlock: { type: "shop", price }`) ;
+//   - catalogue global : API du studio (un élément vendu a `unlock: { type: "shop", price }`) ;
 //   - inventaire du joueur : `sauvegarde.inventory` (clés `wardrobe:<catégorie>:<id>`, voir cleInventaire) ;
 //   - apparence équipée : `sauvegarde.appearance`.
 // La monnaie est `sauvegarde.currency`. Tout est déjà persisté par le système de sauvegarde existant.

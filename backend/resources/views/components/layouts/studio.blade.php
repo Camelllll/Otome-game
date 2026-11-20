@@ -15,7 +15,8 @@
             <a class="nav-link {{ request()->routeIs('studio.index', 'studio.edit', 'studio.preview') ? 'nav-active' : '' }}" href="{{ route('studio.index') }}">Épisodes <span>↗</span></a>
             <a class="nav-link {{ request()->routeIs('studio.characters') ? 'nav-active' : '' }}" href="{{ route('studio.characters') }}">Personnages <span>↗</span></a>
             <a class="nav-link {{ request()->routeIs('studio.media*') ? 'nav-active' : '' }}" href="{{ route('studio.media') }}">Médiathèque <span>↗</span></a>
-            <div class="sidebar-note">Ton prochain chapitre<br>commence ici.<p>Studio local · MariaDB<br>Le jeu existant reste indépendant.</p></div>
+            <a class="nav-link {{ request()->routeIs('studio.wardrobe') ? 'nav-active' : '' }}" href="{{ route('studio.wardrobe') }}">Dressing <span>↗</span></a>
+            <div class="sidebar-note">Ton prochain chapitre<br>commence ici.<p>Studio local · MariaDB<br>Le dressing est synchronisé avec le jeu.</p></div>
             @auth
                 <div class="account">{{ auth()->user()->name }}<small>Administrateur</small>
                     <form action="{{ route('logout') }}" method="post">@csrf<button class="text-button">Se déconnecter</button></form>

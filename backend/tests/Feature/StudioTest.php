@@ -9,7 +9,9 @@ use App\Models\User;
 use App\Services\EpisodeDocument;
 use App\Services\EpisodeWriter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -77,6 +79,37 @@ class StudioTest extends TestCase
         Livewire::test(EpisodeIndex::class)->set('title', 'Un chapitre')->set('slug', 'episode7')->call('create')->assertHasNoErrors();
         $this->assertDatabaseHas('episodes', ['slug' => 'episode7']);
         Livewire::test(EpisodeIndex::class)->set('title', 'Autre')->set('slug', 'episode7')->call('create')->assertHasErrors('slug');
+    }
+
+    public function test_episode_metadata_and_thumbnail_are_editable_and_public_when_published(): void
+    {
+        Storage::fake('studio');
+        $this->actingAs($this->admin());
+        $episode = $this->episode();
+
+        Livewire::test(EpisodeIndex::class)
+            ->call('edit', $episode->id)
+            ->set('editTitle', 'La rentrée')
+            ->set('editDescription', 'Une nouvelle vie commence sur le campus.')
+            ->set('thumbnail', UploadedFile::fake()->image('rentree.png'))
+            ->call('saveMetadata')
+            ->assertHasNoErrors()
+            ->assertSee('Les informations de l’épisode ont été mises à jour.');
+
+        $episode->refresh();
+        $this->assertSame('La rentrée', $episode->title);
+        $this->assertSame('Une nouvelle vie commence sur le campus.', $episode->description);
+        Storage::disk('studio')->assertExists($episode->thumbnail_path);
+        $this->getJson('/api/episodes')->assertOk()->assertJsonCount(0);
+        $this->get(route('game.episode-thumbnail', ['slug' => $episode->slug]))->assertNotFound();
+
+        $episode->published_version_id = $episode->latestVersion()->id;
+        $episode->save();
+        $response = $this->getJson('/api/episodes')->assertOk()
+            ->assertJsonPath('0.title', 'La rentrée')
+            ->assertJsonPath('0.description', 'Une nouvelle vie commence sur le campus.');
+        $this->assertStringContainsString('/api/episodes/episode1/thumbnail', $response->json('0.thumbnail'));
+        $this->get(route('game.episode-thumbnail', ['slug' => $episode->slug]))->assertOk();
     }
 
     public function test_guided_edit_preserves_unknown_properties_and_published_version(): void

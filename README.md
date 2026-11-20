@@ -26,12 +26,18 @@ L'extrait public conserve son cadrage actuel.
 
 ## Lovomètre en jeu
 
-Le lovomètre conserve son habillage d'origine : cœur, nom du personnage et
-pourcentage centré dans la barre, sans curseur pomme. Un reflet discret traverse
-périodiquement la partie remplie, sous le texte du pourcentage. Il est désactivé
-avec la préférence système de réduction des animations.
-Les valeurs négatives gardent leur signe et une barre vide ; les calculs et les
-animations de gain/perte restent inchangés. Le même composant sert à l'extrait public.
+Le HUD ivoire en haut à gauche de la scène affiche le portrait du personnage
+(`portraits.default`, sinon `sprite`), puis le cœur, le nom et le score signé
+sur une même ligne, sans capsule. La barre épaisse occupe toute la largeur sous cette ligne.
+La barre est vide à −100 %, à moitié remplie à 0 % et pleine à 100 %.
+Le même composant sert au jeu et à l'extrait public. Le carnet de relations,
+les sauvegardes et la logique de dialogue ne sont pas modifiés.
+
+La carte apparaît en fondu, la barre évolue sans être recréée et les animations
+de gain et de perte partent du cœur ou le rejoignent. Le HUD n'intercepte aucun
+clic et respecte la préférence de réduction des animations. La largeur maximale
+(`--lovo-largeur`), les couleurs et les durées, dont `--lovo-transition`, sont
+réglables sur `.lovometre` dans `style.css`.
 La version précédente est conservée dans `backups/lovometre-2026-11-16-2335/` :
 `gaugeBar.js` est une copie du composant, et `lovometre.css` contient ses styles
 et les anciens ajustements de l'extrait. Ces fichiers ne sont pas chargés par le jeu.
@@ -52,6 +58,9 @@ La sidebar conserve le logo officiel et les accès Mon carnet et Compte.
 Le carnet réunit les illustrations, les statistiques réellement suivies et
 l'accès Mes relations, qui réutilise le carnet de personnages du jeu avec les
 rencontres et les jauges de la dernière partie, sans créer de sauvegarde.
+La carte Meilleur Lovomètre indique le meilleur score enregistré, le nom du
+personnage correspondant et son portrait, y compris dans l'affichage compact.
+Si le portrait est indisponible, la carte affiche son initiale.
 Les trophées et les indicateurs Bonnes réponses / Succès ne sont pas proposés
 tant que ces fonctionnalités ne sont pas disponibles.
 Le logo revient toujours à l'accueil ; un accès Retour au jeu conserve le
@@ -105,11 +114,14 @@ La route publique `/api/media/{id}/file` ne sert plus d'illustrations.
 `/api/illustrations/{id}/file` exige Sanctum et une acquisition du joueur,
 avec cache privé `no-store`. Le frontend charge ces images avec son jeton,
 puis utilise des URL Blob révoquées à la fin de session. Le catalogue ne donne
-pas de fichier public de remplacement. Le déblocage vérifie l'image, le
-moment publié et le parcours possible à partir du journal de choix. Les effets
+pas de fichier public de remplacement. Le déblocage vérifie que le fichier
+existe et que la scène publiée affiche cette image sur le parcours du joueur,
+vérifié à partir du journal de choix. Une fiche Studio seule ne débloque rien. Les effets
 et flags du journal sont pris dans l'option publiée, pas dans la requête.
 Ajouter des identifiants au payload d'une sauvegarde ne crée plus d'acquisition.
-Les collections existantes restent conservées : aucune réécriture automatique.
+La galerie réunit les acquisitions enregistrées pour le compte, toutes parties
+confondues. Un identifiant présent uniquement dans une sauvegarde ne compte pas.
+Les acquisitions déjà enregistrées sont conservées sans réécriture.
 Un ancien journal incompatible avec une version désormais publiée est refusé
 explicitement ; sa réconciliation doit être examinée, pas simulée côté client.
 Une CG publiée non importée est signalée à son apparition sans empêcher de
@@ -303,8 +315,9 @@ passer `PA_ACTIFS` à `true` dans `src/engine/saveSystem.js` et `paEnabled` à
 ## Dressing et boutique
 
 Le dressing conserve les PNG alignés de Pommette et leur ordre de superposition.
-`styles/dressing.css` ne s'applique qu'à cet écran. Les anciens calques de démonstration
-(910 × 1727) ne sont pas compatibles avec le catalogue actuel (600 × 1200).
+`styles/dressing.css` ne s'applique qu'à cet écran. Le repère d'affichage est de
+600 × 1200 ; les images téléversées depuis le studio mesurent 3000 × 6000.
+Les anciens calques de démonstration (910 × 1727) ne sont pas compatibles.
 
 ### Interface 2D et cadrages
 
@@ -314,28 +327,24 @@ Le dressing conserve les PNG alignés de Pommette et leur ordre de superposition
 - Le fond est un studio abstrait rose poudré/crème, dessiné uniquement en CSS.
   Les décors illustrés et leur sélecteur jour/nuit ont été retirés du dressing ;
   aucune préférence de décor n'est désormais chargée ou enregistrée.
-- `src/ui/dressingZoom.js` : cadrages mesurés sur les PNG 600 × 1200.
-  Une unique transformation CSS porte tout le conteneur des calques (et le
-  sprite d'origine), sans moteur 3D ni modification des images.
+- `src/ui/dressingZoom.js` : cadrages mesurés sur le repère 600 × 1200.
+  La pile de calques est redimensionnée à la taille du zoom, de sorte que le
+  navigateur dessine directement les PNG d'origine à la bonne taille.
 - `src/screens/dressingScreen.js` : catégories, catalogue unique garde-robe/boutique,
   brouillon, achats et résumé des pièces portées. Aucun second catalogue en bas.
 
-Tenues ouvre la vue en pied ; Cheveux, Visage, Yeux, Sourcils et Lèvres cadrent
+Tenues ouvre la vue en pied ; Cheveux, Peau, Yeux, Sourcils et Lèvres cadrent
 automatiquement la zone correspondante. Les contrôles permettent d'agrandir,
 réduire, rétablir le cadrage de la catégorie ou retrouver la vue en pied.
 Les transitions respectent `prefers-reduced-motion`. Sur mobile, la scène et
 les catégories restent visibles pendant la consultation du catalogue.
 
-Pour distinguer les sous-catégories sans modifier la sauvegarde, une entrée peut
-préciser `subcategory: "coat"` pour un haut, `"set"` pour un ensemble ou
-`"jewelry"` pour un accessoire. Sans précision, un `outfit` est une robe.
-Le `thumbFocus` individuel d'un accessoire sert aussi au cadrage automatique
-de sa zone. Les catégories vides n'affichent aucun vêtement fictif.
+Les catégories vides n'affichent aucun article fictif.
 La qualité maximale du zoom reste limitée par la résolution des PNG existants.
 
 Les données sont séparées sans changer le format de sauvegarde existant :
 
-- Catalogue et prix : `data/appearance/catalogue.json`.
+- Catalogue et prix : onglet **Dressing** du back-office, diffusé par `/api/appearance/catalogue`.
 - Possessions : `inventory`, avec des clés `wardrobe:<category>:<id>`.
 - Apparence validée : `appearance` ; les essayages restent un brouillon.
 - Monnaie : `currency`, en gemmes comme dans le reste du jeu. Un versement de
@@ -345,39 +354,25 @@ Les données sont séparées sans changer le format de sauvegarde existant :
 Un achat est enregistré immédiatement par la sauvegarde Laravel ; un échec annule
 la dépense et réécrit le tampon hors-ligne. Valider sauvegarde l'apparence puis
 revient à l'écran précédent. Quitter ou réinitialiser ne retire pas les achats.
-Un objet déjà porté dans une ancienne sauvegarde reste possédé après migration.
+Les achats restent dans l'inventaire ; les anciennes apparences statiques
+absentes du dressing reviennent au sprite d'origine.
 
-### Ajouter un vêtement à vendre
+### Ajouter un élément au dressing
 
-Déposer un vrai PNG transparent **600 × 1200**, aligné sur le corps existant, dans
-`assets/Personnages/Sucrette/v2/`, puis ajouter une entrée au catalogue, par exemple
-(chemin à remplacer par celui du fichier réellement ajouté) :
+Dans le back-office, ouvrir l'onglet **Dressing**, choisir une catégorie
+(Peau, Cheveux, Yeux, Sourcils, Bouche, Hauts, Bas, Chaussures, Tenue complète
+ou Accessoires), donner un nom et importer un PNG transparent de **3000 × 6000**
+aligné sur le sprite. Laisser le prix vide rend l'élément disponible gratuitement
+dans la garde-robe, sans l'équiper. Renseigner un prix le place dans la boutique.
 
-```json
-{
-  "id": "pull-creme",
-  "category": "top",
-  "label": "Pull crème",
-  "layers": [{ "slot": "top", "file": "hauts/pull-creme.png" }],
-  "unlock": { "type": "shop", "price": 120 }
-}
-```
-
-Le prix doit être un entier positif ou nul. `unlock.type: "default"` indique un
-objet possédé par défaut. `previewAsset` peut fournir le chemin complet d'une
-miniature dédiée ; sinon le dressing recadre les calques avec `thumbFocus`.
-Les catégories sont `skin`, `hair`, `eyes`, `eyebrows`, `mouth`, `top`, `bottom`,
-`outfit`, `shoes`, `accessory`. Une coiffure peut fournir des slots `hair-back`
-et `hair-front`. Les chaussures et accessoires n'apparaissent dans les listes
-que lorsqu'un vrai asset a été ajouté ; aucun faux vêtement n'est généré.
-
-Une condition facultative se place dans `unlock.requires` :
-`{ "type": "flag", "flag": "bal", "hint": "Après le bal" }`,
-`{ "type": "episode", "episode": "episode2" }` ou
-`{ "type": "level", "level": 3 }` (lit `stats.level`).
-La boutique est une démonstration utilisant la sauvegarde existante, pas un
-système de paiement : le serveur borne les données mais ne vérifie pas encore
-les prix et possessions contre le catalogue.
+Les nouveaux articles, leur image et leur prix sont transmis au jeu par l'API.
+Une peau équipée remplace le sprite d'origine de Pommette. Les PNG de la
+catégorie Yeux sont des couleurs d'iris : ils passent **derrière** la peau,
+qui porte les pupilles et les cils, avec des ouvertures transparentes pour
+la couleur. Si le sprite d'origine a déjà des iris opaques, il faut équiper
+une peau avec ces ouvertures pour voir la couleur choisie.
+Les anciens identifiants d'apparence qui n'existent plus dans le catalogue
+reviennent au sprite d'origine plutôt que d'afficher une tenue vide.
 
 Tests ciblés :
 

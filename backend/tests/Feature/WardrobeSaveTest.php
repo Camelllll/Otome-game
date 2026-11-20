@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Services\PlayerSaveService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class WardrobeSaveTest extends TestCase
@@ -13,28 +13,32 @@ class WardrobeSaveTest extends TestCase
 
     public function test_wardrobe_currency_inventory_and_equipment_survive_database_reload(): void
     {
-        $user = User::factory()->create();
-        $service = app(PlayerSaveService::class);
-        $payload = $service->defaultSave($user, 0);
-        $payload['currency'] = 150;
-        $payload['inventory'] = ['story-item', 'wardrobe:eyes:verts'];
-        $payload['flags'] = ['demo-dressing-pieces'];
-        $payload['appearance'] = ['eyes' => 'verts', 'shoes' => null, 'bottom' => 'pantalon1-bleu'];
-        $service->save($user, $payload, 0);
+        Sanctum::actingAs(User::factory()->create());
+        $payload = [
+            'currency' => 150,
+            'inventory' => ['story-item', 'wardrobe:eyes:studio-42'],
+            'flags' => ['demo-dressing-pieces'],
+            'appearance' => ['eyes' => 'studio-42', 'skin' => null, 'top' => null],
+        ];
+        $this->putJson('/api/saves/0', $payload)
+            ->assertOk()
+            ->assertJsonPath('appearance.eyes', 'studio-42');
 
-        $loaded = $service->load($user, 0);
-        $this->assertSame(150, $loaded['currency']);
-        $this->assertSame($payload['inventory'], $loaded['inventory']);
-        $this->assertSame($payload['flags'], $loaded['flags']);
-        $this->assertSame('verts', $loaded['appearance']['eyes']);
-        $this->assertArrayHasKey('shoes', $loaded['appearance']);
-        $this->assertNull($loaded['appearance']['shoes']);
+        $this->getJson('/api/saves/0')->assertOk()
+            ->assertJsonPath('appearance.eyes', 'studio-42')
+            ->assertJsonPath('appearance.skin', null)
+            ->assertJsonPath('appearance.top', null)
+            ->assertJsonPath('inventory', $payload['inventory'])
+            ->assertJsonPath('flags', $payload['flags'])
+            ->assertJsonPath('currency', 150);
 
-        $loaded['appearance'] = null;
-        $service->save($user, $loaded, 0);
-        $reset = $service->load($user, 0);
-        $this->assertNull($reset['appearance']);
-        $this->assertSame($payload['inventory'], $reset['inventory']);
-        $this->assertSame(150, $reset['currency']);
+        unset($payload['appearance']);
+        $this->putJson('/api/saves/0', $payload)->assertOk()
+            ->assertJsonPath('appearance.eyes', 'studio-42');
+
+        $this->putJson('/api/saves/0', $payload + ['appearance' => null])->assertOk()
+            ->assertJsonPath('appearance', null)
+            ->assertJsonPath('inventory', $payload['inventory'])
+            ->assertJsonPath('currency', 150);
     }
 }

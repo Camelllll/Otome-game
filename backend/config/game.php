@@ -18,31 +18,8 @@ return [
         'maxCompletedEpisodes' => 200,
     ],
 
-    // Boutique (ancien data/shop.json et table shop_items).
+    // Monnaie historique de la boutique ; ses articles viennent du dressing en base.
     'shop' => [
         'currency' => ['name' => 'Gemmes', 'id' => 'gemmes'],
-        'items' => [
-            [
-                'id' => 'haut_pull_rose',
-                'name' => 'Pull rose pastel',
-                'slot' => 'haut',
-                'price' => 50,
-                'sprite' => 'assets/Personnages/Perso principal.png',
-            ],
-            [
-                'id' => 'bas_jean_clair',
-                'name' => 'Jean clair',
-                'slot' => 'bas',
-                'price' => 40,
-                'sprite' => 'assets/Personnages/Perso principal.png',
-            ],
-            [
-                'id' => 'coiffure_couette',
-                'name' => 'Couettes',
-                'slot' => 'coiffure',
-                'price' => 30,
-                'sprite' => 'assets/Personnages/Perso principal.png',
-            ],
-        ],
     ],
 ];

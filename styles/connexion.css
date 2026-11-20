@@ -395,8 +395,6 @@
   .entree-scene .bulle-personnage { width: min(280px, 44cqw); max-height: 35cqh; }
   .entree-scene .barre-narration { padding: 18px 14px; max-height: 52cqh; overflow-y: auto; }
   .entree-scene .avatar-joueur { display: none; }
-  .entree-scene .lovometre-cadre { min-width: 0; max-width: calc(100cqw - 32px); }
-  .entree-scene .lovometre-barre { width: min(200px, 50cqw); }
   .entree-scene .fin-episode-panneau { max-width: 90cqw; padding: 25px 15px; }
   .entree-invitation { min-height: 390px; padding: 75px 35px; }
   .entree-footer { justify-content: center; padding: 28px 6%; }

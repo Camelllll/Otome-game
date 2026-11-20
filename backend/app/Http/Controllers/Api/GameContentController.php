@@ -17,12 +17,25 @@ class GameContentController extends Controller
 {
     private const JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
+    private const APPEARANCE_SLOTS = [
+        'skin' => 'body',
+        'hair' => 'hair-front',
+        'eyes' => 'eyes',
+        'eyebrows' => 'eyebrows',
+        'mouth' => 'mouth',
+        'top' => 'top',
+        'bottom' => 'bottom',
+        'shoes' => 'shoes',
+        'outfit' => 'outfit',
+        'accessory' => 'accessory',
+    ];
+
     /** Les illustrations ont une route privée distincte, contrôlée pour chaque joueur. */
     public function characterMedia(int $id): BinaryFileResponse
     {
         $asset = MediaAsset::query()
             ->where('id', $id)
-            ->whereIn('category', ['characters', 'backgrounds', 'music'])
+            ->whereIn('category', ['characters', 'backgrounds', 'music', 'wardrobe'])
             ->where('is_archived', false)
             ->firstOrFail();
         $disk = Storage::disk('studio');
@@ -134,14 +147,36 @@ class GameContentController extends Controller
             ->whereNotNull('published_version_id')
             ->orderBy('position')
             ->orderBy('slug')
-            ->get(['slug', 'title']);
+            ->get(['slug', 'title', 'description', 'thumbnail_path', 'updated_at']);
 
         return response()->json(
-            $episodes->map(fn (Episode $e) => ['id' => $e->slug, 'title' => $e->title])->values(),
+            $episodes->map(fn (Episode $e) => [
+                'id' => $e->slug,
+                'title' => $e->title,
+                'description' => $e->description,
+                'thumbnail' => $e->thumbnail_path
+                    ? route('game.episode-thumbnail', ['slug' => $e->slug, 'v' => $e->updated_at?->timestamp ?? 0])
+                    : null,
+            ])->values(),
             200,
             [],
             self::JSON_FLAGS
         );
+    }
+
+    public function episodeThumbnail(string $slug): BinaryFileResponse
+    {
+        $episode = Episode::query()
+            ->where('slug', $slug)
+            ->whereNotNull('published_version_id')
+            ->firstOrFail();
+        $disk = Storage::disk('studio');
+        abort_unless($episode->thumbnail_path && $disk->exists($episode->thumbnail_path), 404, 'Vignette introuvable.');
+
+        return response()->file($disk->path($episode->thumbnail_path), [
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
     }
 
     public function episode(string $slug): JsonResponse
@@ -303,11 +338,85 @@ class GameContentController extends Controller
     public function shop(): JsonResponse
     {
         $shop = config('game.shop');
-        $items = array_map(
-            fn (array $item) => ['label' => $item['name']] + $item,
-            $shop['items']
-        );
+        $items = MediaAsset::query()
+            ->where('category', 'wardrobe')
+            ->where('is_archived', false)
+            ->orderBy('id')
+            ->get(['id', 'label', 'appearance_category', 'wardrobe_slot', 'price', 'updated_at'])
+            ->map(fn (MediaAsset $asset) => [
+                'id' => 'studio-'.$asset->id,
+                'label' => $asset->label,
+                'name' => $asset->label,
+                'slot' => $asset->appearance_category ?? $asset->wardrobe_slot,
+                'price' => $asset->price ?? 0,
+                'sprite' => route('game.character-media', [
+                    'id' => $asset->id,
+                    'v' => $asset->updated_at?->timestamp ?? 0,
+                ]),
+            ])
+            ->values();
 
         return response()->json(['currency' => $shop['currency'], 'items' => $items], 200, [], self::JSON_FLAGS);
+    }
+
+    /** Catalogue d'apparence entièrement géré depuis le studio. */
+    public function appearanceCatalogue(): JsonResponse
+    {
+        $items = MediaAsset::query()
+            ->where('category', 'wardrobe')
+            ->where('is_archived', false)
+            ->orderBy('id')
+            ->get(['id', 'label', 'wardrobe_slot', 'appearance_category', 'price', 'updated_at'])
+            ->map(function (MediaAsset $asset) {
+                $category = $asset->appearance_category ?? $asset->wardrobe_slot;
+                if (! isset(self::APPEARANCE_SLOTS[$category])) {
+                    return null;
+                }
+
+                $unlock = $asset->price === null
+                    ? ['type' => 'default']
+                    : ['type' => 'shop', 'price' => $asset->price];
+
+                return [
+                    'id' => 'studio-'.$asset->id,
+                    'category' => $category,
+                    'label' => $asset->label,
+                    'layers' => [[
+                        'slot' => self::APPEARANCE_SLOTS[$category],
+                        'file' => route('game.character-media', [
+                            'id' => $asset->id,
+                            'v' => $asset->updated_at?->timestamp ?? 0,
+                        ]),
+                    ]],
+                    'unlock' => $unlock,
+                ];
+            })
+            ->filter()
+            ->values();
+
+        $defaults = array_fill_keys([
+            'skin', 'hair', 'eyes', 'eyebrows', 'mouth', 'outfit', 'top', 'bottom', 'shoes', 'accessory',
+        ], null);
+
+        return response()->json([
+            'version' => 2,
+            'basePath' => '',
+            'canvas' => ['width' => 600, 'height' => 1200],
+            'base' => ['file' => ''],
+            'defaults' => $defaults,
+            'thumbFocus' => [
+                'skin' => ['x' => 0.48, 'y' => 0.52, 'w' => 1.95],
+                'hair' => ['x' => 0.444, 'y' => 0.205, 'w' => 0.55],
+                'eyes' => ['x' => 0.472, 'y' => 0.151, 'w' => 0.2],
+                'eyebrows' => ['x' => 0.463, 'y' => 0.142, 'w' => 0.2],
+                'mouth' => ['x' => 0.49, 'y' => 0.175, 'w' => 0.2],
+                'top' => ['x' => 0.48, 'y' => 0.33, 'w' => 0.55],
+                'bottom' => ['x' => 0.532, 'y' => 0.626, 'w' => 1.2],
+                'outfit' => ['x' => 0.48, 'y' => 0.52, 'w' => 1.95],
+                'shoes' => ['x' => 0.5, 'y' => 0.85, 'w' => 0.5],
+                'accessory' => ['x' => 0.48, 'y' => 0.15, 'w' => 0.5],
+            ],
+            'items' => $items,
+        ], 200, [], self::JSON_FLAGS);
     }
 }

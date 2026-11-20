@@ -2,23 +2,21 @@
 // Ce module ne touche jamais au DOM : chaque fonction est pure et testable seule.
 //
 // Une seule configuration décrit l'apparence active (stockée dans la sauvegarde, clé `appearance`) :
-//   { version: 1, skin: "peau-claire", hair: "coupe1-chatain", eyes: "bleu", eyebrows: "chatains",
-//     mouth: "nude", outfit: null, top: "pull1-rayures", bottom: "pantalon1-bleu", accessory: null }
+//   { version: 1, skin: "studio-1", hair: "studio-2", eyes: "studio-3", eyebrows: null,
+//     mouth: null, outfit: null, top: "studio-4", bottom: null, shoes: null, accessory: null }
 // `outfit` (robe, tenue complète) remplace `top` et `bottom` quand il est renseigné.
 // `accessory: null` désactive l'accessoire.
 
 export const VERSION_APPARENCE = 1;
 
 export const CLES_APPARENCE = Object.freeze(["skin", "hair", "eyes", "eyebrows", "mouth", "outfit", "top", "bottom", "shoes", "accessory"]);
-// Ces clés ne peuvent jamais rester vides : sans elles, l'écran serait vide.
-const CLES_OBLIGATOIRES = Object.freeze(["skin", "hair", "eyes", "eyebrows", "mouth", "top", "bottom"]);
 
 // Ordre de rendu explicite : plus la valeur est grande, plus le calque est au premier plan.
 export const ORDRE_CALQUES = Object.freeze({
   "hair-back": 5,
+  eyes: 8, // La couleur apparaît à travers les ouvertures du calque de peau.
   body: 10,
   mouth: 15,
-  eyes: 20,
   eyebrows: 25,
   bottom: 30,
   shoes: 35,
@@ -80,30 +78,19 @@ export function estDebloque(element, sauvegarde = null) {
   return false;
 }
 
-export function apparenceParDefaut(catalogue) {
-  const defauts = catalogue?.defaults || {};
-  const apparence = { version: VERSION_APPARENCE };
-  for (const cle of CLES_APPARENCE) apparence[cle] = defauts[cle] ?? null;
-  return apparence;
+export function aUneApparenceEquipee(apparence, catalogue, sauvegarde) {
+  return CLES_APPARENCE.some((categorie) => {
+    const element = trouverElement(catalogue, categorie, apparence?.[categorie]);
+    return element && estDebloque(element, sauvegarde);
+  });
 }
 
-// Rend toujours une apparence complète et valide : identifiant inconnu, mauvaise catégorie ou
-// élément verrouillé sont remplacés par la valeur par défaut. Ancienne sauvegarde (null) = apparence par défaut.
+// Un emplacement vide, inconnu ou verrouillé reste vide : le catalogue ne choisit jamais à la place du joueur.
 export function normaliserApparence(brute, catalogue, sauvegarde = null) {
-  const defauts = apparenceParDefaut(catalogue);
-  if (!catalogue) return defauts;
-  const source = brute && typeof brute === "object" ? brute : {};
   const resultat = { version: VERSION_APPARENCE };
   for (const cle of CLES_APPARENCE) {
-    const valeur = source[cle];
-    const element = trouverElement(catalogue, cle, valeur);
-    if (element && estDebloque(element, sauvegarde)) {
-      resultat[cle] = element.id;
-    } else if (valeur === null && !CLES_OBLIGATOIRES.includes(cle)) {
-      resultat[cle] = null;
-    } else {
-      resultat[cle] = defauts[cle];
-    }
+    const element = trouverElement(catalogue, cle, brute?.[cle]);
+    resultat[cle] = element && estDebloque(element, sauvegarde) ? element.id : null;
   }
   return resultat;
 }
@@ -124,12 +111,12 @@ function calquesDeElement(element, apparence) {
 // Assemble la liste ordonnée des calques à afficher pour une apparence, sans rien compléter :
 // une clé absente ou nulle n'affiche rien (utile pour les miniatures). Pour l'apparence active,
 // passer par resoudreCalques.
-export function assemblerCalques(apparence, catalogue) {
+export function assemblerCalques(apparence, catalogue, { spriteOrigine = null } = {}) {
   if (!catalogue) return [];
   const a = apparence || {};
   const parSlot = new Map();
 
-  const ajouter = (couche, id) => {
+  const ajouter = (couche, id, urlDirecte = false) => {
     if (!couche?.file || !Object.hasOwn(ORDRE_CALQUES, couche.slot)) {
       console.warn(`Calque ignoré (slot ou fichier invalide) : ${id}`, couche);
       return;
@@ -137,7 +124,7 @@ export function assemblerCalques(apparence, catalogue) {
     parSlot.set(couche.slot, {
       slot: couche.slot,
       z: ORDRE_CALQUES[couche.slot],
-      src: `${catalogue.basePath}${couche.file}`,
+      src: urlDirecte || /^https?:\/\//i.test(couche.file) ? couche.file : `${catalogue.basePath}${couche.file}`,
       id,
     });
   };
@@ -149,9 +136,11 @@ export function assemblerCalques(apparence, catalogue) {
     return true;
   };
 
-  // Corps par défaut du catalogue, remplacé par la peau choisie (même slot « body »).
-  ajouter({ slot: "body", file: catalogue.base.file }, "body");
   ajouterElement("skin");
+  if (!parSlot.has("body")) {
+    if (catalogue.base.file) ajouter({ slot: "body", file: catalogue.base.file }, "body");
+    else if (spriteOrigine) ajouter({ slot: "body", file: spriteOrigine }, "sprite-origine", true);
+  }
   ajouterElement("hair");
   ajouterElement("eyes");
   ajouterElement("eyebrows");
@@ -167,6 +156,6 @@ export function assemblerCalques(apparence, catalogue) {
 }
 
 // Point d'entrée du jeu : apparence enregistrée (ou null) -> calques prêts à afficher.
-export function resoudreCalques(apparence, catalogue, sauvegarde = null) {
-  return assemblerCalques(normaliserApparence(apparence, catalogue, sauvegarde), catalogue);
+export function resoudreCalques(apparence, catalogue, sauvegarde = null, options) {
+  return assemblerCalques(normaliserApparence(apparence, catalogue, sauvegarde), catalogue, options);
 }

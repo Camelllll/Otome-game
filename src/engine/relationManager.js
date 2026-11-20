@@ -34,6 +34,11 @@ export function jaugeEnPourcentageAffichage(valeur) {
   return Math.round(Math.max(JAUGE_MIN, Math.min(JAUGE_MAX, valeur ?? 0)));
 }
 
+// Le score reste signé ; seul le remplissage place la relation neutre au milieu.
+export function jaugeEnPourcentageRemplissage(valeur) {
+  return (jaugeEnPourcentageAffichage(valeur) - JAUGE_MIN) * 100 / (JAUGE_MAX - JAUGE_MIN);
+}
+
 // Enregistre des marqueurs de choix (ex. "liam_pause") dans la sauvegarde :
 // ils servent aux nœuds "branch" pour aiguiller l'histoire selon les réponses passées.
 export function poserFlags(sauvegarde, flags) {

@@ -11,7 +11,7 @@ import { lancerEcranCompte } from "./screens/accountScreen.js";
 import { lancerEcranDressing } from "./screens/dressingScreen.js";
 import { accorderPiecesDemo, reconcilierPossessions } from "./engine/wardrobe.js";
 import { chargerCatalogueApparence } from "./services/appearanceRepository.js";
-import { resoudreCalques } from "./engine/appearance.js";
+import { aUneApparenceEquipee, resoudreCalques } from "./engine/appearance.js";
 import { listerFichesCarnet } from "./engine/carnet.js";
 import { normaliserNomJoueur } from "./engine/playerName.js";
 import { demanderConfirmation } from "./ui/gameModal.js";
@@ -188,9 +188,11 @@ async function lancerEpisode(idEpisode, sauvegarde, joueur) {
 
   const personnagesParId = aplatirPersonnages(charactersData);
   // Calques de Pommette uniquement si le joueur a personnalisé son apparence ; sinon sprite d'origine (null).
-  const apparencePommette = catalogueApparence && sauvegarde.appearance
+  const apparencePommette = aUneApparenceEquipee(sauvegarde.appearance, catalogueApparence, sauvegarde)
     ? {
-        calques: resoudreCalques(sauvegarde.appearance, catalogueApparence, sauvegarde),
+        calques: resoudreCalques(sauvegarde.appearance, catalogueApparence, sauvegarde, {
+          spriteOrigine: charactersData.player?.sprite,
+        }),
         canvas: catalogueApparence.canvas
       }
     : null;

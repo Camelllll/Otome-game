@@ -1,13 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { assemblerCalques, cleInventaire, estDebloque, normaliserApparence } from '../../../src/engine/appearance.js';
+import { aUneApparenceEquipee, assemblerCalques, cleInventaire, estDebloque, normaliserApparence, resoudreCalques } from '../../../src/engine/appearance.js';
 import { acheter, accorderPiecesDemo, indiceVerrou, PIECES_DEMO, prixDe, reconcilierPossessions } from '../../../src/engine/wardrobe.js';
 
-const root = new URL('../../../', import.meta.url);
-const catalogue = JSON.parse(readFileSync(new URL('data/appearance/catalogue.json', root)));
-const yeux = catalogue.items.find(item => item.id === 'verts');
-const pantalon = catalogue.items.find(item => item.id === 'pantalon1-blanc');
+const fichier = nom => `http://127.0.0.1:8001/api/media/${nom}/file`;
+const article = (id, category, slot, unlock = { type: 'default' }) => ({
+    id,
+    category,
+    label: id,
+    layers: [{ slot, file: fichier(id) }],
+    unlock,
+});
+const yeux = article('yeux-verts', 'eyes', 'eyes', { type: 'shop', price: 150 });
+const pantalon = article('pantalon-blanc', 'bottom', 'bottom', { type: 'shop', price: 200 });
+const catalogue = {
+    version: 2,
+    basePath: '',
+    canvas: { width: 600, height: 1200 },
+    base: { file: '' },
+    defaults: {
+        skin: 'peau-claire',
+        hair: 'cheveux-chatains',
+        eyes: 'yeux-bleus',
+        eyebrows: 'sourcils-chatains',
+        mouth: 'bouche-nude',
+        outfit: null,
+        top: 'pull-rayure',
+        bottom: 'pantalon-bleu',
+        shoes: null,
+        accessory: null,
+    },
+    items: [
+        article('peau-claire', 'skin', 'body'),
+        article('cheveux-chatains', 'hair', 'hair-front'),
+        article('yeux-bleus', 'eyes', 'eyes'),
+        yeux,
+        article('sourcils-chatains', 'eyebrows', 'eyebrows'),
+        article('bouche-nude', 'mouth', 'mouth'),
+        article('pull-rayure', 'top', 'top'),
+        article('pantalon-bleu', 'bottom', 'bottom'),
+        pantalon,
+    ],
+};
 const save = () => ({ currency: 300, inventory: ['story-item'], flags: [], appearance: null });
 
 test('demo currency is granted only once, including after reload', () => {
@@ -81,7 +115,7 @@ test('purchased equipment and currency survive a save round-trip', () => {
     assert.equal(recharge.currency, 150);
     assert.equal(estDebloque(yeux, recharge), true);
     assert.equal(normaliserApparence(recharge.appearance, catalogue, recharge).eyes, yeux.id);
-    assert.equal(normaliserApparence({ bottom: pantalon.id }, catalogue, recharge).bottom, catalogue.defaults.bottom);
+    assert.equal(normaliserApparence({ bottom: pantalon.id }, catalogue, recharge).bottom, null);
 });
 
 test('migration preserves previously equipped shop items and runs only once', () => {
@@ -93,16 +127,32 @@ test('migration preserves previously equipped shop items and runs only once', ()
     assert.equal(joueur.currency, 300);
 });
 
-test('all catalogued PNG layers exist on the original aligned canvas', () => {
-    for (const item of catalogue.items) {
-        for (const layer of item.layers) {
-            const png = readFileSync(new URL(catalogue.basePath + layer.file, root));
-            assert.equal(png.toString('hex', 0, 8), '89504e470d0a1a0a');
-            assert.equal(png.readUInt32BE(16), catalogue.canvas.width, layer.file);
-            assert.equal(png.readUInt32BE(20), catalogue.canvas.height, layer.file);
-        }
-    }
-    const layers = assemblerCalques(normaliserApparence(null, catalogue), catalogue);
+test('studio catalogues use dynamic image URLs and assemble all configured appearance slots', () => {
+    const layers = assemblerCalques(normaliserApparence(catalogue.defaults, catalogue), catalogue);
     assert.equal(new Set(layers.map(layer => layer.slot)).size, layers.length);
     assert.deepEqual(layers.map(layer => layer.z), layers.map(layer => layer.z).toSorted((a, b) => a - b));
+    assert.ok(layers.some(layer => layer.slot === 'body'));
+    assert.ok(layers.every(layer => layer.src.startsWith('http://127.0.0.1:8001/api/media/')));
+});
+
+test('a partial studio catalogue keeps the original character in front of the iris after reload', () => {
+    const partiel = { ...catalogue, defaults: {}, items: [yeux] };
+    const joueur = { ...save(), appearance: { eyes: yeux.id }, inventory: [cleInventaire(yeux)] };
+    const options = { spriteOrigine: '/assets/pommette.png' };
+    assert.equal(aUneApparenceEquipee(joueur.appearance, partiel, joueur), true);
+    assert.equal(aUneApparenceEquipee({ eyes: 'ancien-id' }, partiel, joueur), false);
+    assert.deepEqual(resoudreCalques(joueur.appearance, partiel, joueur, options)
+        .map(layer => [layer.slot, layer.src]), [
+        ['eyes', fichier(yeux.id)],
+        ['body', options.spriteOrigine],
+    ]);
+    assert.deepEqual(assemblerCalques(null, partiel, options).map(layer => layer.slot), ['body']);
+});
+
+test('the studio skin keeps the original pupil and lash artwork in front of the selected iris', () => {
+    const layers = resoudreCalques({ skin: 'peau-claire', eyes: 'yeux-bleus' }, catalogue, null, { spriteOrigine: '/assets/pommette.png' });
+    assert.deepEqual(layers.map(layer => [layer.slot, layer.src]), [
+        ['eyes', fichier('yeux-bleus')],
+        ['body', fichier('peau-claire')],
+    ]);
 });

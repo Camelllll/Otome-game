@@ -8,7 +8,6 @@ use App\Models\Illustration;
 use App\Models\MediaAsset;
 use App\Models\PlayerChoice;
 use App\Models\PlayerIllustration;
-use App\Models\PlayerSave;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -44,13 +43,10 @@ class IllustrationAccess
                 return true;
             }
         }
-        $slugs = PlayerSave::query()->where('user_id', $user->id)->get()
-            ->flatMap(fn ($save) => $save->unlocked_illustration_ids ?? [])->unique();
-
-        return Illustration::query()->where('media_asset_id', $asset->id)->whereIn('slug', $slugs)->exists();
+        return false;
     }
 
-    /** Réunit les deux collections historiques sans compter deux fois une même image. */
+    /** Liste les acquisitions du compte sans compter deux fois une même image. */
     public function collection(User $user): Collection
     {
         $dates = [];
@@ -66,13 +62,6 @@ class IllustrationAccess
                     'characters' => [], 'characterIds' => [], 'rarity' => null,
                     'acquiredAt' => $row->acquired_at?->toIso8601String(),
                 ];
-            }
-        }
-        $slugs = PlayerSave::query()->where('user_id', $user->id)->get()
-            ->flatMap(fn ($save) => $save->unlocked_illustration_ids ?? [])->unique();
-        foreach (Illustration::query()->whereIn('slug', $slugs)->get() as $illustration) {
-            if ($illustration->media_asset_id && ! array_key_exists($illustration->media_asset_id, $dates)) {
-                $dates[$illustration->media_asset_id] = null;
             }
         }
         $metadata = Illustration::query()->whereIn('media_asset_id', array_keys($dates))->orderBy('id')->get()->keyBy('media_asset_id');
