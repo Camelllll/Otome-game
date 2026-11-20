@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\Character;
 use App\Models\MediaAsset;
 use App\Models\User;
-use App\Services\CharacterPreview;
+use App\Services\MediaOptimizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -103,7 +103,7 @@ class CharacterMediaApiTest extends TestCase
         imagesavealpha($image, true);
         imagefill($image, 0, 0, imagecolorallocatealpha($image, 255, 0, 0, 127));
         imagepng($image, $source);
-        $previews = app(CharacterPreview::class);
+        $previews = app(MediaOptimizer::class);
         $paths = [];
         try {
             $response = $this->get("/api/media/{$asset->id}/preview")->assertOk()
@@ -149,7 +149,7 @@ class CharacterMediaApiTest extends TestCase
         $this->get("/api/media/{$asset->id}/preview")->assertNotFound();
         $this->get($asset->spriteUrl())->assertNotFound();
         $this->actingAs(User::factory()->create(['is_admin' => true]))
-            ->get($asset->previewUrl())->assertNotFound();
+            ->get($asset->previewUrl())->assertOk()->assertHeader('Cache-Control', 'no-store, private');
     }
 
     public function test_failed_preview_is_logged_and_original_is_not_cached(): void
@@ -185,7 +185,7 @@ class CharacterMediaApiTest extends TestCase
 
             $this->assertNotFalse(ini_set('memory_limit', '512M'));
             $this->artisan('studio:warm-character-previews')->assertSuccessful();
-            $previews = app(CharacterPreview::class);
+            $previews = app(MediaOptimizer::class);
             $paths = [$previews->path($asset), $previews->path($asset, true)];
             $this->assertSame([700, 1400], array_slice(getimagesize($paths[0]), 0, 2));
             $this->assertSame([1200, 2400], array_slice(getimagesize($paths[1]), 0, 2));

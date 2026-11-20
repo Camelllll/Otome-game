@@ -1,19 +1,21 @@
 // Rendu de Pommette par calques PNG superposés. Un conteneur, une <img> par calque.
 // Tous les calques ont les dimensions du sprite de base et sont placés en `inset: 0` en pourcentage :
 // l'alignement reste donc identique à toutes les tailles d'écran. Aucune image fusionnée n'est produite.
+import { urlMedia } from "../services/mediaDelivery.js";
 
 function afficherSource(img, src) {
   img.style.visibility = "";
   img.src = src;
 }
 
-function creerImage(calque) {
+function creerImage(calque, lazy = false) {
   const img = document.createElement("img");
   img.className = "calque-pommette";
   img.dataset.slot = calque.slot;
   img.alt = "";
   img.draggable = false;
   img.decoding = "async";
+  img.loading = lazy ? "lazy" : "eager";
   img.style.zIndex = String(calque.z);
   // Un calque introuvable ne doit pas afficher d'icône d'image cassée.
   img.addEventListener("error", () => {
@@ -41,7 +43,7 @@ const jetons = new WeakMap();
  * @param {{width: number, height: number}} canvas - dimensions du sprite de base.
  * @param {{etiquette?: string}} options - texte alternatif ; vide = purement décoratif.
  */
-export function creerAvatarPommette(calques, canvas, { etiquette = "Pommette" } = {}) {
+export function creerAvatarPommette(calques, canvas, { etiquette = "Pommette", lazy = false } = {}) {
   const pile = document.createElement("div");
   pile.className = "pommette-calques";
   if (canvas?.width && canvas?.height) pile.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
@@ -51,7 +53,7 @@ export function creerAvatarPommette(calques, canvas, { etiquette = "Pommette" } 
   } else {
     pile.setAttribute("aria-hidden", "true");
   }
-  for (const calque of calques) pile.appendChild(creerImage(calque));
+  for (const calque of calques) pile.appendChild(creerImage(calque, lazy));
   return pile;
 }
 
@@ -90,7 +92,7 @@ export async function mettreAJourAvatar(pile, calques) {
 export function creerMiniature(calques, canvas, focus) {
   const cadre = document.createElement("span");
   cadre.className = "miniature-pommette";
-  const pile = creerAvatarPommette(calques, canvas, { etiquette: "" });
+  const pile = creerAvatarPommette(calques.map(calque => ({ ...calque, src: urlMedia(calque.src, { miniature: true }) })), canvas, { etiquette: "", lazy: true });
   const largeur = 100 / focus.w;
   const rapport = canvas.height / canvas.width;
   pile.style.width = `${largeur}%`;

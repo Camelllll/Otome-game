@@ -76,7 +76,7 @@ function creerCarteIllustration(illustration, index) {
   const erreur = element("p", "pda-erreur");
   erreur.setAttribute("role", "alert");
   if (illustration.path) {
-    chargerImagePrivee(illustration.path).then(src => {
+    chargerImagePrivee(illustration.path, { miniature: true }).then(src => {
       image.src = src;
       agrandir.disabled = false;
     }).catch(cause => { erreur.textContent = cause.message; });
@@ -85,7 +85,21 @@ function creerCarteIllustration(illustration, index) {
   }
   image.addEventListener("error", () => { erreur.textContent = "Cette illustration n’a pas pu être affichée."; agrandir.disabled = true; });
   agrandir.append(image);
-  agrandir.addEventListener("click", () => ouvrirIllustration(image.src, titre, illustration));
+  agrandir.addEventListener("click", async () => {
+    agrandir.disabled = true;
+    agrandir.setAttribute("aria-busy", "true");
+    erreur.textContent = "Chargement de l’illustration…";
+    try {
+      const src = await chargerImagePrivee(illustration.path);
+      if (carte.isConnected) ouvrirIllustration(src, titre, illustration);
+      erreur.textContent = "";
+    } catch (cause) {
+      erreur.textContent = cause.message;
+    } finally {
+      agrandir.disabled = false;
+      agrandir.removeAttribute("aria-busy");
+    }
+  });
   media.append(agrandir, erreur);
   carte.append(media, informationsIllustration(illustration, titre));
   return carte;

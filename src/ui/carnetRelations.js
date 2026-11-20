@@ -324,7 +324,7 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
         : "";
     zoneSouvenirs.innerHTML = `${entete(compteur)}<div class="carnet-souvenirs-liste">${cartes}${vide}</div>${aDecouvrir}`;
     for (const image of zoneSouvenirs.querySelectorAll("[data-image-privee]")) {
-      chargerImagePrivee(image.dataset.imagePrivee).then(src => { image.src = src; }).catch(erreur => {
+      chargerImagePrivee(image.dataset.imagePrivee, { miniature: true }).then(src => { image.src = src; }).catch(erreur => {
         image.replaceWith(document.createTextNode(erreur.message));
       });
     }

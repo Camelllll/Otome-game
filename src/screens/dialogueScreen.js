@@ -31,6 +31,15 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
 
   const decor = document.createElement("img");
   decor.className = "decor";
+  decor.decoding = "async";
+  decor.fetchPriority = "high";
+  let erreurDecor = false;
+  decor.addEventListener("load", () => { erreurDecor = false; actualiserChargement(); });
+  decor.addEventListener("error", () => {
+    erreurDecor = true;
+    console.warn("Décor inaccessible :", decor.src);
+    actualiserChargement();
+  });
   scene.appendChild(decor);
 
   // Trois emplacements permettent de garder les interlocuteurs côte à côte dans les scènes de groupe.
@@ -41,6 +50,9 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     cadre.className = "cadre-personnage";
     const sprite = document.createElement("img");
     sprite.className = "sprite-personnage";
+    sprite.crossOrigin = "anonymous";
+    sprite.decoding = "async";
+    sprite.fetchPriority = "high";
     const emplacement = { cadre, sprite, id: null, ajustementPret: false, erreur: false };
     sprite.addEventListener("load", () => {
       emplacement.erreur = false;
@@ -61,6 +73,35 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
   };
   const emplacements = [creerEmplacement(), creerEmplacement(), creerEmplacement()];
   scene.appendChild(zonePersonnages);
+  const chargementMedias = document.createElement("div");
+  chargementMedias.className = "statut-chargement-medias";
+  chargementMedias.hidden = true;
+  const texteChargement = document.createElement("span");
+  texteChargement.setAttribute("role", "status");
+  const reessayerMedias = document.createElement("button");
+  reessayerMedias.type = "button";
+  reessayerMedias.textContent = "Réessayer";
+  reessayerMedias.addEventListener("click", () => {
+    if (erreurDecor) { erreurDecor = false; decor.src = decor.src; }
+    emplacements.filter(emplacement => emplacement.id && emplacement.erreur).forEach(emplacement => {
+      emplacement.erreur = false;
+      emplacement.sprite.src = emplacement.sprite.src;
+    });
+    actualiserChargement();
+  });
+  chargementMedias.append(texteChargement, reessayerMedias);
+  scene.appendChild(chargementMedias);
+
+  function actualiserChargement() {
+    const erreur = erreurDecor || emplacements.some(emplacement => emplacement.id && emplacement.erreur);
+    const enCours = (decor.getAttribute("src") && !decor.complete)
+      || emplacements.some(emplacement => emplacement.id && !emplacement.erreur && !imageScenePrete(emplacement.sprite, emplacement.ajustementPret));
+    chargementMedias.hidden = !erreur && !enCours;
+    reessayerMedias.hidden = !erreur;
+    texteChargement.textContent = erreur
+      ? "Certaines images n’ont pas pu être chargées. Tu peux réessayer."
+      : "Chargement des images…";
+  }
 
   const zoneBulle = document.createElement("div");
   zoneBulle.className = "zone-bulle";
@@ -323,6 +364,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
       emplacement.cadre.style.visibility = visible ? "visible" : "hidden";
       emplacement.cadre.style.opacity = visible ? "1" : "0";
     }
+    actualiserChargement();
   }
 
   // Le cadre d'un personnage est bien plus large que son dessin (object-fit: contain) :
@@ -500,7 +542,10 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     if (!affichage) return;
     affichageCourant = affichage;
 
-    if (affichage.background) decor.src = affichage.background;
+    if (affichage.background && decor.getAttribute("src") !== affichage.background) {
+      erreurDecor = false;
+      decor.src = affichage.background;
+    }
     mettreAJourPersonnages(affichage);
     suivreCarnet(affichage);
 

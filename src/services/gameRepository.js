@@ -1,15 +1,16 @@
 // Accès en lecture seule au contenu du jeu (personnages, épisodes publiés, boutique) via l'API Laravel.
 import { appelApi, ApiError } from "./apiClient.js";
+import { adapterMedias } from "./mediaDelivery.js";
 
 // Forme { player, crushs, secondary } attendue par aplatirPersonnages().
 export async function getCharacters() {
-  return appelApi("/characters", { authentifie: false });
+  return adapterMedias(await appelApi("/characters", { authentifie: false }));
 }
 
 export async function getBackgrounds() {
   const donnees = await appelApi("/backgrounds", { authentifie: false });
   if (!Array.isArray(donnees)) throw new ApiError("Le catalogue des décors reçu est invalide.");
-  return donnees;
+  return adapterMedias(donnees);
 }
 
 // Liste les épisodes publiés (visibles par les joueurs) : [{ id, title }].
@@ -19,7 +20,7 @@ export async function getPublishedEpisodesList() {
 }
 
 export async function getEpisode(episodeId) {
-  return appelApi(`/episodes/${encodeURIComponent(episodeId)}`, { authentifie: false });
+  return adapterMedias(await appelApi(`/episodes/${encodeURIComponent(episodeId)}`, { authentifie: false }));
 }
 
 export async function getShop() {

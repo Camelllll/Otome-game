@@ -168,35 +168,57 @@ identifiant dans `/api/characters`, qui fournit leurs sprites versionnés depuis
 la médiathèque. Leur ordre ne dépend pas de celui du catalogue, et aucun autre
 personnage ne leur est substitué si ces assets manquent.
 
-L'accueil et les cartes de personnages du Studio utilisent des aperçus WebP
-transparents (1400 pixels maximum), générés depuis les médias de personnages
-du Studio. En jeu, les sprites et portraits utilisent une version WebP distincte
-de meilleure définition (2400 pixels maximum, qualité 90), sans recadrage :
-transparence, marges et proportions restent conservées pour le placement en scène.
-Les originaux restent inchangés dans le Studio. Les GIF restent
-inchangés pour préserver leur animation. Les aperçus sont versionnés après
-modification du média et mis en cache dans `backend/storage/app/character-previews` ;
-le cache navigateur du Studio est privé. Les illustrations ne passent pas par
-ces routes. En cas d'échec de génération, l'erreur est journalisée et l'original
-est servi sans mise en cache.
+### Médias optimisés et connexions lentes
 
-Après déploiement, exécuter `php artisan studio:warm-character-previews`
-depuis le dossier de l'application Laravel (`backend` localement, `/app` dans
-le conteneur) pour préparer les médias existants avant leur première visite.
-Cette commande prépare aussi les sprites de jeu ; la relancer après activation
-de ce format, même si les aperçus de l'accueil ont déjà été générés.
-La commande signale les fichiers manquants ou erreurs et peut être relancée.
-Sans cette préparation, le premier affichage attend la génération ; les aperçus
-sont ensuite réutilisés tant que leur cache serveur est conservé. Le stockage
-de ce cache doit être persistant si l'on souhaite éviter sa régénération après
-redéploiement. PHP nécessite GD avec WebP (inclus dans l'image Docker).
-La génération décode les grands PNG en mémoire : le conteneur configure
-`memory_limit=512M` et doit disposer de mémoire suffisante. Les générations
-sont sérialisées sur une même instance. Si la limite PHP est trop basse,
-le préchauffage signale le média concerné et les visites utilisent l'original
-en journalisant l'erreur, plutôt que d'interrompre le processus PHP.
-L'extrait jouable est chargé à l'approche de sa section pour ne pas concurrencer
-les portraits visibles à l'ouverture.
+`MediaOptimizer` conserve les originaux du Studio et génère des variantes :
+
+- Personnages : WebP transparent, 1400 pixels maximum à l'accueil et 2400
+  en scène (qualité 90), sans recadrage ni changement de proportions.
+- Décors et illustrations : WebP, 2560 pixels maximum ; 1600 en mode compact.
+- Miniatures : 640 pixels maximum dans la médiathèque et les collections.
+- Dressing : WebP **sans perte**, mêmes dimensions et mêmes pixels visibles
+  pour les calques équipés. Les miniatures séparées sont limitées à 1400 pixels,
+  chargées paresseusement et ne remplacent jamais les calques du personnage.
+- Musiques : MP3 stéréo 128 kbit/s, préparé par FFmpeg. Une version optimisée
+  n'est servie que si elle est plus petite que l'original. Les GIF et WebP animés
+  restent inchangés. Cette règle de poids s'applique aussi aux images.
+
+Les variantes sont privées sur disque dans `.variants` **à l'intérieur du disque
+`studio`** (`backend/storage/app/studio-media/.variants` par défaut), donc sur le
+même volume persistant que les originaux. Ne jamais exposer ce dossier via un
+serveur statique. Les illustrations, miniatures comprises, restent servies par
+la route authentifiée avec vérification d'acquisition, `private, no-store` et
+`Vary: Authorization`. La session du navigateur réutilise ses URL Blob privées
+et les révoque à la déconnexion. Les autres médias utilisent des URL versionnées
+et un cache navigateur d'un jour ; les miniatures du Studio restent privées.
+
+Après déploiement, exécuter `php artisan studio:optimize-media` depuis le dossier
+Laravel (`/app` dans le conteneur, `backend` localement). La commande est
+relançable : elle prépare les images et musiques actives, réutilise les variantes
+existantes et signale chaque fichier manquant ou erreur. La lancer aussi après
+ajout ou remplacement de médias. L'ancienne commande
+`studio:warm-character-previews` reste disponible pour les personnages seuls.
+Les anciens caches `storage/app/character-previews` ne sont plus utilisés.
+
+Sans préchauffage, les images sont générées à leur première visite. Les musiques
+ne sont **jamais transcodées pendant une visite** : leur original est servi
+sans cache tant que la version compacte n'a pas été préparée. Les générations
+sont sérialisées par type, pour qu'une conversion audio ne bloque pas les images ;
+PHP nécessite GD/WebP et FFmpeg (inclus dans Docker).
+La limite PHP est de 512 Mo et le conteneur doit disposer de mémoire suffisante.
+Un manque de mémoire estimé ou un échec d'optimisation est journalisé, avec
+repli sur l'original sans cache plutôt qu'une image silencieusement absente.
+
+Lorsque le navigateur expose `Save-Data`, un réseau 2G/3G ou un débit inférieur
+à 1,5 Mbit/s, les personnages, décors et illustrations utilisent le format
+compact (`size=compact`). Sans cette information, la qualité normale est conservée.
+L'extrait ne charge ses images qu'à l'approche de sa section. Les collections
+chargent des vignettes privées et ne demandent l'image détaillée qu'à l'ouverture.
+Le son désactivé ne télécharge pas la musique, et le lecteur libère sa source
+à la coupure du son. En scène, les images visibles ont priorité, un statut de
+chargement et une commande de nouvelle tentative en cas d'erreur réseau.
+Le jeu ne télécharge pas tous les médias à l'avance et ne garantit pas une
+partie intégralement hors ligne.
 
 La section Concept, dans `src/ui/conceptSection.js`, alterne avec le Hero et les
 Personnages bordeaux : fond crème `#FFF8F2` et ivoire `#FFF0E4`, titres bordeaux
@@ -208,7 +230,7 @@ aucune image externe ni illustration de personnage générée n'est utilisée.
 Entre le Hero et Concept, une vague SVG bordeaux/crème remplace le bloc
 intermédiaire, sans bande vide. Une seconde vague rejoint les Personnages.
 L'ancre Concept conserve la vague sous la navbar et active le lien dès celle-ci.
-Les sprites du Hero restent les originaux, aux proportions natives (`height: auto`).
+Les sprites optimisés du Hero conservent leurs proportions natives (`height: auto`).
 Leur conteneur élargi borne le rendu avec `overflow: clip` et un masque
 progressif limité à sa boîte : les images ne peuvent plus réapparaître en
 rectangle sous le fondu (`mask-clip: no-clip` et les hauteurs forcées sont retirés).

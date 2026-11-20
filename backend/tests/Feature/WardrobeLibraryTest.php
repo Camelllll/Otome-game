@@ -54,7 +54,7 @@ class WardrobeLibraryTest extends TestCase
         $this->assertSame(75, $catalogue->json('items.0.unlock.price'));
         $this->assertSame('top', $catalogue->json('items.0.layers.0.slot'));
         $this->assertStringContainsString("/api/media/{$asset->id}/file", $catalogue->json('items.0.layers.0.file'));
-        $this->get($catalogue->json('items.0.layers.0.file'))->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->get($catalogue->json('items.0.layers.0.file'))->assertOk()->assertHeader('Content-Type', 'image/webp');
         $this->getJson('/api/shop')->assertJsonPath('items.0.id', 'studio-'.$asset->id);
     }
 

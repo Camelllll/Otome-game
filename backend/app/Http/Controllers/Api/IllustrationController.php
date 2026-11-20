@@ -9,6 +9,7 @@ use App\Models\MediaAsset;
 use App\Models\PlayerIllustration;
 use App\Models\PlayerSave;
 use App\Services\IllustrationAccess;
+use App\Services\MediaOptimizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,19 +26,11 @@ class IllustrationController extends Controller
             ->header('Cache-Control', 'private, no-store');
     }
 
-    public function file(Request $request, int $id): BinaryFileResponse
+    public function file(Request $request, int $id, MediaOptimizer $optimizer): BinaryFileResponse
     {
         $asset = MediaAsset::query()->where('category', 'illustrations')->where('is_archived', false)->findOrFail($id);
         abort_unless($this->access->canView($request->user(), $asset), 404);
-        $disk = Storage::disk('studio');
-        abort_unless($disk->exists($asset->file_path), 404);
-
-        return response()->file($disk->path($asset->file_path), [
-            'Content-Type' => $asset->mime_type,
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'private, no-store',
-            'Vary' => 'Authorization',
-        ])->setPrivate();
+        return $optimizer->response($request, $asset, private: true, size: $optimizer->requestedSize($request));
     }
 
     public function store(Request $request): JsonResponse

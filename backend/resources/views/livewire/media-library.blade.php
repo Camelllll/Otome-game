@@ -33,7 +33,7 @@
                                 <div class="audio-art" aria-hidden="true">♫</div>
                                 <audio controls preload="none" src="{{ $asset->url() }}" aria-label="{{ $asset->label }}"></audio>
                             @else
-                                <img src="{{ $asset->url() }}" alt="{{ $asset->label }}" loading="lazy">
+                                <img src="{{ $asset->previewUrl() }}" alt="{{ $asset->label }}" loading="lazy" decoding="async">
                             @endif
                         </div>
                         <div class="card-body"><span class="badge">{{ $categories[$asset->category] }} · {{ number_format($asset->size / 1024, 0, ',', ' ') }} Ko</span><h3>{{ $asset->label }}</h3><p class="muted media-description">{{ $asset->description ?: 'Aucune description' }}</p>

@@ -7,7 +7,9 @@ use App\Models\Character;
 use App\Models\Episode;
 use App\Models\Illustration;
 use App\Models\MediaAsset;
+use App\Services\MediaOptimizer;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -31,21 +33,14 @@ class GameContentController extends Controller
     ];
 
     /** Les illustrations ont une route privée distincte, contrôlée pour chaque joueur. */
-    public function characterMedia(int $id): BinaryFileResponse
+    public function characterMedia(Request $request, int $id, MediaOptimizer $optimizer): BinaryFileResponse
     {
         $asset = MediaAsset::query()
             ->where('id', $id)
             ->whereIn('category', ['characters', 'backgrounds', 'music', 'wardrobe'])
             ->where('is_archived', false)
             ->firstOrFail();
-        $disk = Storage::disk('studio');
-        abort_unless($disk->exists($asset->file_path), 404, 'Fichier média introuvable.');
-
-        return response()->file($disk->path($asset->file_path), [
-            'Content-Type' => $asset->mime_type,
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'public, max-age=86400',
-        ]);
+        return $optimizer->response($request, $asset, scene: $asset->category === 'characters', size: $optimizer->requestedSize($request));
     }
 
     /** Même normalisation que LocalMediaImporter::canonical(), pour retrouver la clé source_key. */
@@ -86,7 +81,9 @@ class GameContentController extends Controller
             return $asset->spriteUrl();
         }
 
-        return route($asset->category === 'illustrations' ? 'game.illustration-file' : 'game.character-media', ['id' => $asset->id, 'v' => $asset->updated_at?->timestamp ?? 0]);
+        return $asset->category === 'illustrations'
+            ? route('game.illustration-file', ['id' => $asset->id, 'v' => $asset->updated_at?->timestamp ?? 0])
+            : $asset->gameUrl();
     }
 
     private function characterData(?Character $character, Collection $assets): mixed
@@ -143,15 +140,12 @@ class GameContentController extends Controller
                 ->where('is_archived', false)
                 ->orderByDesc('updated_at')
                 ->orderByDesc('id')
-                ->get(['id', 'label', 'source_path', 'updated_at'])
+                ->get(['id', 'category', 'file_path', 'label', 'source_path', 'updated_at'])
                 ->map(fn (MediaAsset $asset) => [
                     'id' => $asset->id,
                     'label' => $asset->label,
                     'sourcePath' => $asset->source_path,
-                    'image' => route('game.character-media', [
-                        'id' => $asset->id,
-                        'v' => $asset->updated_at?->timestamp ?? 0,
-                    ]),
+                    'image' => $asset->gameUrl(),
                 ]),
             200,
             [],
@@ -173,7 +167,7 @@ class GameContentController extends Controller
                 'title' => $e->title,
                 'description' => $e->description,
                 'thumbnail' => $e->thumbnail_path
-                    ? route('game.episode-thumbnail', ['slug' => $e->slug, 'v' => $e->updated_at?->timestamp ?? 0])
+                    ? route('game.episode-thumbnail', ['slug' => $e->slug, 'v' => $e->updated_at?->timestamp ?? 0, 'format' => 'webp-v2'])
                     : null,
             ])->values(),
             200,
@@ -182,7 +176,7 @@ class GameContentController extends Controller
         );
     }
 
-    public function episodeThumbnail(string $slug): BinaryFileResponse
+    public function episodeThumbnail(Request $request, string $slug, MediaOptimizer $optimizer): BinaryFileResponse
     {
         $episode = Episode::query()
             ->where('slug', $slug)
@@ -191,10 +185,12 @@ class GameContentController extends Controller
         $disk = Storage::disk('studio');
         abort_unless($episode->thumbnail_path && $disk->exists($episode->thumbnail_path), 404, 'Vignette introuvable.');
 
-        return response()->file($disk->path($episode->thumbnail_path), [
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'public, max-age=86400',
+        $asset = (new MediaAsset)->forceFill([
+            'id' => -$episode->id, 'category' => 'backgrounds', 'file_path' => $episode->thumbnail_path,
+            'mime_type' => $disk->mimeType($episode->thumbnail_path), 'updated_at' => $episode->updated_at,
         ]);
+
+        return $optimizer->response($request, $asset, size: 'thumbnail');
     }
 
     public function episode(string $slug): JsonResponse
@@ -212,7 +208,7 @@ class GameContentController extends Controller
             ->where('is_archived', false)
             ->whereNotNull('source_key')
             ->orderBy('updated_at')
-            ->get(['id', 'source_key', 'source_path', 'updated_at']);
+            ->get(['id', 'category', 'file_path', 'source_key', 'source_path', 'updated_at']);
         // Repli : à nom de fichier égal, le décor actif le plus récent (dernier après le tri) l'emporte.
         $byName = $assets->filter(fn (MediaAsset $a) => $a->source_path !== null)
             ->keyBy(fn (MediaAsset $a) => $this->fileNameKey($a->source_path));
@@ -222,8 +218,10 @@ class GameContentController extends Controller
             ->where('is_archived', false)
             ->get(['id', 'category', 'source_key', 'updated_at'])
             ->keyBy(fn ($asset) => $asset->source_key ?? 'id-'.$asset->id);
+        $music = MediaAsset::query()->where('category', 'music')->where('is_archived', false)
+            ->get(['id', 'category', 'file_path', 'updated_at'])->keyBy('id');
 
-        $data = $this->withMediaBackgrounds($episode->publishedVersion->data, $assets, $byName, $cgs);
+        $data = $this->withMediaBackgrounds($episode->publishedVersion->data, $assets, $byName, $cgs, $music);
         if (config('game.demo') && isset($data['nodes'])) {
             $available = Episode::query()->availableInGame()->pluck('slug')->all();
             foreach ($data['nodes'] as &$node) {
@@ -265,7 +263,7 @@ class GameContentController extends Controller
      *   leur propre music (vide ou absente) héritent de la musique de la scène.
      * - si un nœud a sa propre music, elle prend le dessus (override de scène).
      */
-    private function withMediaBackgrounds(mixed $data, Collection $assets, Collection $byName, Collection $cgs): mixed
+    private function withMediaBackgrounds(mixed $data, Collection $assets, Collection $byName, Collection $cgs, Collection $music): mixed
     {
         if (! is_array($data)) {
             return $data;
@@ -286,17 +284,13 @@ class GameContentController extends Controller
             } elseif ($key === 'music' && is_string($value) && $value !== '') {
                 $assetId = $this->musicAssetIdFromUrl($value);
                 if ($assetId !== null) {
-                    $asset = MediaAsset::query()
-                        ->where('id', $assetId)
-                        ->where('category', 'music')
-                        ->where('is_archived', false)
-                        ->first(['id', 'updated_at']);
+                    $asset = $music->get($assetId);
                     $data[$key] = $asset !== null
-                        ? route('game.character-media', ['id' => $asset->id, 'v' => $asset->updated_at?->timestamp ?? 0])
+                        ? $asset->gameUrl()
                         : '';
                 }
             } elseif (is_array($value)) {
-                $data[$key] = $this->withMediaBackgrounds($value, $assets, $byName, $cgs);
+                $data[$key] = $this->withMediaBackgrounds($value, $assets, $byName, $cgs, $music);
             }
         }
 
@@ -372,17 +366,14 @@ class GameContentController extends Controller
             ->where('category', 'wardrobe')
             ->where('is_archived', false)
             ->orderBy('id')
-            ->get(['id', 'label', 'appearance_category', 'wardrobe_slot', 'price', 'updated_at'])
+            ->get(['id', 'category', 'file_path', 'label', 'appearance_category', 'wardrobe_slot', 'price', 'updated_at'])
             ->map(fn (MediaAsset $asset) => [
                 'id' => 'studio-'.$asset->id,
                 'label' => $asset->label,
                 'name' => $asset->label,
                 'slot' => $asset->appearance_category ?? $asset->wardrobe_slot,
                 'price' => $asset->price ?? 0,
-                'sprite' => route('game.character-media', [
-                    'id' => $asset->id,
-                    'v' => $asset->updated_at?->timestamp ?? 0,
-                ]),
+                'sprite' => $asset->gameUrl(),
             ])
             ->values();
 
@@ -396,7 +387,7 @@ class GameContentController extends Controller
             ->where('category', 'wardrobe')
             ->where('is_archived', false)
             ->orderBy('id')
-            ->get(['id', 'label', 'wardrobe_slot', 'appearance_category', 'price', 'updated_at'])
+            ->get(['id', 'category', 'file_path', 'label', 'wardrobe_slot', 'appearance_category', 'price', 'updated_at'])
             ->map(function (MediaAsset $asset) {
                 $category = $asset->appearance_category ?? $asset->wardrobe_slot;
                 if (! isset(self::APPEARANCE_SLOTS[$category])) {
@@ -413,10 +404,7 @@ class GameContentController extends Controller
                     'label' => $asset->label,
                     'layers' => [[
                         'slot' => self::APPEARANCE_SLOTS[$category],
-                        'file' => route('game.character-media', [
-                            'id' => $asset->id,
-                            'v' => $asset->updated_at?->timestamp ?? 0,
-                        ]),
+                        'file' => $asset->gameUrl(),
                     ]],
                     'unlock' => $unlock,
                 ];

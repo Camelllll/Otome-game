@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\CharacterPreview;
+use App\Services\MediaOptimizer;
 use Illuminate\Database\Eloquent\Model;
 
 class MediaAsset extends Model
@@ -41,7 +41,7 @@ class MediaAsset extends Model
     {
         return route($public ? 'game.character-preview' : 'studio.media.preview', [
             $public ? 'id' : 'mediaAsset' => $this->id,
-            'v' => app(CharacterPreview::class)->version($this),
+            'v' => app(MediaOptimizer::class)->version($this),
         ]);
     }
 
@@ -49,7 +49,15 @@ class MediaAsset extends Model
     {
         return route('game.character-sprite', [
             'id' => $this->id,
-            'v' => app(CharacterPreview::class)->version($this, true),
+            'v' => app(MediaOptimizer::class)->version($this, true),
+        ]);
+    }
+
+    public function gameUrl(): string
+    {
+        return route('game.character-media', [
+            'id' => $this->id,
+            'v' => app(MediaOptimizer::class)->version($this, $this->category === 'characters'),
         ]);
     }
 }

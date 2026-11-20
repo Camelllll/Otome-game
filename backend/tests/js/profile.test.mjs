@@ -100,6 +100,27 @@ test('une réponse image arrivée après la fin de session est rejetée', async 
     await assert.rejects(attente, /session a changé/);
 });
 
+test('les vignettes privées sont distinctes de la version détaillée et réutilisées pendant la session', async t => {
+    stockage(t);
+    memoriserJeton('test-token');
+    const demandes = [];
+    t.mock.method(globalThis, 'fetch', async (url, options) => {
+        demandes.push({ url, options });
+        return new Response('image');
+    });
+    t.mock.method(URL, 'createObjectURL', () => `blob:image-${demandes.length}`);
+    t.mock.method(URL, 'revokeObjectURL', () => {});
+    const url = 'http://127.0.0.1:8001/api/illustrations/10/file';
+    const miniature = await chargerImagePrivee(url, { miniature: true });
+    const detail = await chargerImagePrivee(url);
+    assert.notEqual(miniature, detail);
+    assert.equal(await chargerImagePrivee(url, { miniature: true }), miniature);
+    assert.equal(demandes.length, 2);
+    assert.match(demandes[0].url, /size=thumbnail/);
+    assert.equal(demandes[1].url, url);
+    assert.ok(demandes.every(d => d.options.headers.Authorization === 'Bearer test-token' && d.options.cache === 'no-store'));
+});
+
 test('la déconnexion attend le serveur et ne supprime pas la progression', async t => {
     const donnees = stockage(t);
     memoriserJeton('test-token');

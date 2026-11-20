@@ -19,6 +19,7 @@ RUN php scripts/build-game.php /out
 FROM dunglas/frankenphp:php8.4-trixie
 WORKDIR /app
 RUN install-php-extensions pdo_mysql zip gd
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY backend/ ./
 RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs storage/app/studio-media bootstrap/cache \

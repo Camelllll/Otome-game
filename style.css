@@ -1607,6 +1607,29 @@ html, body {
   overflow: hidden;
 }
 
+.statut-chargement-medias:not([hidden]) {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100% - 24px);
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #fff8f2;
+  color: #4b0615;
+  font-size: 13px;
+  box-shadow: 0 2px 12px #0002;
+}
+
+.statut-chargement-medias button {
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
 .decor {
   position: absolute;
   inset: 0;

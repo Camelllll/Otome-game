@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\MediaAsset;
-use App\Services\CharacterPreview;
+use App\Services\MediaOptimizer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -14,7 +14,7 @@ class WarmCharacterPreviews extends Command
 
     protected $description = 'Prépare les aperçus et les sprites de jeu des personnages de la médiathèque.';
 
-    public function handle(CharacterPreview $previews): int
+    public function handle(MediaOptimizer $previews): int
     {
         $failed = false;
         MediaAsset::query()->where('category', 'characters')->where('is_archived', false)

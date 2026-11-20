@@ -34,6 +34,12 @@ const JINGLES_REVELATION = {
 // Instance unique partagée par tout le jeu.
 let instancePartagee = null;
 
+function lire(audio) {
+  audio.play().catch(erreur => {
+    if (!["NotAllowedError", "AbortError"].includes(erreur.name)) console.warn("Lecture de la musique impossible.", erreur);
+  });
+}
+
 export class MusiqueAmbiance {
   constructor() {
     if (instancePartagee) return instancePartagee;
@@ -62,15 +68,23 @@ export class MusiqueAmbiance {
     if (this._audioUrl && this.active) {
       if (!this._audio || this._audio.error || this._audio.networkState === 3 /* NETWORK_NO_SOURCE */) {
         if (this._audio) { this._audio.pause(); this._audio.src = ""; }
-        this._audio = new Audio(this._audioUrl);
-        this._audio.loop = true;
-        this._audio.volume = 0.6;
+        this._creerAudio();
       }
       if (this._audio.paused) {
         this._audio.volume = 0.6;
-        this._audio.play().catch(() => {});
+        lire(this._audio);
       }
     }
+  }
+
+  _creerAudio() {
+    const audio = new Audio();
+    audio.preload = "none";
+    audio.loop = true;
+    audio.volume = 0.6;
+    audio.src = this._audioUrl;
+    this._audio = audio;
+    return audio;
   }
 
   // Court jingle d'apparition d'une illustration : plus le niveau de révélation est élevé, plus il est ample.
@@ -120,19 +134,16 @@ export class MusiqueAmbiance {
 
     this._audioUrl = urlNormee;
 
-    if (!urlNormee) return;
+    if (!urlNormee || !this.active) return;
 
     // On crée l'élément audio mais on NE tente PAS play() ici :
     // si l'interaction utilisateur n'a pas encore eu lieu, l'appel serait rejeté.
     // C'est demarrer() — déclenché au premier pointerdown — qui lance effectivement la lecture.
-    const audio = new Audio(urlNormee);
-    audio.loop = true;
-    audio.volume = this.active ? 0.6 : 0;
-    this._audio = audio;
+    const audio = this._creerAudio();
 
     // Si l'interaction a déjà eu lieu (contexte audio déjà actif et running), on peut jouer immédiatement.
     if (this.context && this.context.state === "running" && this.active) {
-      audio.play().catch(() => {});
+      lire(audio);
     }
     // Sinon : demarrer() sera appelé au premier clic et lancera la lecture.
   }
@@ -148,13 +159,15 @@ export class MusiqueAmbiance {
     if (this.active) {
       if (this._audio && this._audioUrl) {
         this._audio.volume = 0.6;
-        this._audio.play().catch(() => {});
+        lire(this._audio);
       }
       await this.demarrer();
     } else {
       if (this._audio) {
-        this._audio.volume = 0;
         this._audio.pause();
+        this._audio.removeAttribute("src");
+        this._audio.load();
+        this._audio = null;
       }
       if (this.context) await this.context.suspend();
     }

@@ -197,6 +197,27 @@ class PlayerProfileTest extends TestCase
         $this->getJson("/api/illustrations/{$asset->id}/file")->assertOk();
     }
 
+    public function test_optimized_illustration_variants_keep_the_same_acquisition_checks(): void
+    {
+        [$asset, , $source] = $this->illustration();
+        $image = imagecreatetruecolor(2800, 1800);
+        imagepng($image, Storage::disk('studio')->path($asset->file_path), 0);
+        unset($image);
+        $owner = $this->login();
+        PlayerIllustration::create(['user_id' => $owner->id, 'path_hash' => hash('sha256', $source), 'illustration_path' => $source]);
+        foreach (['thumbnail' => [640, 411], 'compact' => [1600, 1029], 'display' => [2560, 1646]] as $size => $dimensions) {
+            $response = $this->getJson("/api/illustrations/{$asset->id}/file?size={$size}")->assertOk()
+                ->assertHeader('Cache-Control', 'no-store, private')
+                ->assertHeader('Content-Type', 'image/webp');
+            $this->assertContains('Authorization', $response->baseResponse->getVary());
+            $this->assertSame($dimensions, array_slice(getimagesize($response->baseResponse->getFile()->getPathname()), 0, 2));
+        }
+        $this->login();
+        $this->getJson("/api/illustrations/{$asset->id}/file?size=thumbnail")->assertNotFound();
+        $this->getJson("/api/illustrations/{$asset->id}/file?size=compact")->assertNotFound();
+        $this->getJson("/api/media/{$asset->id}/file?size=thumbnail")->assertNotFound();
+    }
+
     public function test_unlock_requires_a_real_published_path_and_ignores_client_effects(): void
     {
         [$asset, $meta, $source] = $this->illustration();

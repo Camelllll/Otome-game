@@ -1,6 +1,8 @@
 // Client HTTP de l'API Laravel (backend/). Authentification par jeton Bearer (Sanctum).
 // L'URL de l'API peut être remplacée avant le chargement du jeu :
 //   <script>window.OTOME_API_URL = "https://mon-domaine.fr/api";</script>
+import { urlMedia } from "./mediaDelivery.js";
+
 const origine = globalThis.location;
 const URL_PAR_DEFAUT = origine && /^https?:$/.test(origine.protocol) && !["127.0.0.1", "localhost", "[::1]"].includes(origine.hostname)
   ? new URL("/api", origine.origin).href
@@ -56,12 +58,13 @@ export function viderImagesPrivees() {
   imagesPrivees.clear();
 }
 
-export async function chargerImagePrivee(chemin) {
-  const url = new URL(chemin, `${API_URL}/`);
+export async function chargerImagePrivee(chemin, { miniature = false } = {}) {
+  let url = new URL(chemin, `${API_URL}/`);
   const api = new URL(API_URL);
   if (url.origin !== api.origin || !/^\/api\/illustrations\/\d+\/file$/.test(url.pathname)) {
     throw new ApiError("Cette illustration ne possède pas d’accès privé valide.");
   }
+  url = new URL(urlMedia(url.href, { miniature }));
   const jeton = lireJeton();
   if (!jeton) throw new ApiError("Connecte-toi pour consulter cette illustration.", 401);
   const cle = `${jeton}:${url.href}`;

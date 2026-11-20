@@ -206,6 +206,44 @@ test('landing uses lightweight character previews and loads the excerpt only nea
     assert.equal(appels.filter(a => a.url.endsWith('/episodes/episode1')).length, 1);
 });
 
+test('scene images show loading, offer a retry after failure and do not reload an unchanged background', async t => {
+    t.mock.method(console, 'warn', () => {});
+    const { trouver } = monter(t);
+    await terminerChargement();
+    const decor = trouver('.decor');
+    let source = decor.src;
+    let demandes = 0;
+    Object.defineProperty(decor, 'src', {
+        get: () => source,
+        set: value => { source = value; demandes++; },
+    });
+    decor.setAttribute('src', source);
+    decor.complete = false;
+    await decor.emit('error');
+    const statut = trouver('.statut-chargement-medias');
+    const reessayer = statut.querySelector('button');
+    assert.equal(statut.hidden, false);
+    assert.equal(reessayer.hidden, false);
+    await reessayer.emit('click');
+    assert.equal(demandes, 1);
+    assert.equal(statut.hidden, false);
+    assert.equal(reessayer.hidden, true);
+    assert.match(statut.textContent, /Chargement des images/);
+    decor.complete = true;
+    await decor.emit('load');
+    assert.equal(statut.hidden, true);
+    await trouver('.barre-narration').emit('click');
+    assert.equal(demandes, 1);
+    assert.equal(statut.hidden, false);
+    const sprite = trouver('.sprite-personnage');
+    assert.equal(sprite.crossOrigin, 'anonymous');
+    sprite.complete = true;
+    sprite.naturalWidth = 600;
+    sprite.currentSrc = sprite.src;
+    await sprite.emit('load');
+    assert.equal(statut.hidden, true);
+});
+
 test('carousel arrows, progress and keyboard reach Sasha without scrolling the page vertically', async t => {
     const { trouver } = monter(t);
     await terminerChargement();
