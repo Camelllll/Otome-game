@@ -42,6 +42,11 @@ class CharacterPreview
             if ($info === false || $info[0] * $info[1] > 40000000) {
                 throw new RuntimeException("Image invalide ou trop grande pour l'aperçu du média {$asset->id}.");
             }
+            $limit = ini_parse_quantity(ini_get('memory_limit'));
+            $required = memory_get_usage(true) + $info[0] * $info[1] * 8 + 32 * 1024 * 1024;
+            if ($limit >= 0 && $required > $limit) {
+                throw new RuntimeException("Mémoire PHP insuffisante pour l'aperçu du média {$asset->id} ; augmenter memory_limit.");
+            }
             $image = match ($info[2]) {
                 IMAGETYPE_PNG => imagecreatefrompng($original),
                 IMAGETYPE_JPEG => imagecreatefromjpeg($original),

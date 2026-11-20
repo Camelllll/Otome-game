@@ -185,6 +185,11 @@ Sans cette préparation, le premier affichage attend la génération ; les aper�
 sont ensuite réutilisés tant que leur cache serveur est conservé. Le stockage
 de ce cache doit être persistant si l'on souhaite éviter sa régénération après
 redéploiement. PHP nécessite GD avec WebP (inclus dans l'image Docker).
+La génération décode les grands PNG en mémoire : le conteneur configure
+`memory_limit=512M` et doit disposer de mémoire suffisante. Les générations
+sont sérialisées sur une même instance. Si la limite PHP est trop basse,
+le préchauffage signale le média concerné et les visites utilisent l'original
+en journalisant l'erreur, plutôt que d'interrompre le processus PHP.
 L'extrait jouable est chargé à l'approche de sa section pour ne pas concurrencer
 les portraits visibles à l'ouverture.
 

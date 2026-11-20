@@ -26,5 +26,6 @@ RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/fra
 COPY --from=studio-assets /app/public/build ./public/build
 COPY --from=game-assets /out ./public
 COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY deploy/php.ini /usr/local/etc/php/conf.d/99-otome.ini
 EXPOSE 80
 CMD ["sh", "-c", "php artisan migrate --force && exec frankenphp run --config /etc/caddy/Caddyfile --adapter caddyfile"]

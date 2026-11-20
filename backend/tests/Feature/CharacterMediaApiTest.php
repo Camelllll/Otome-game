@@ -147,4 +147,35 @@ class CharacterMediaApiTest extends TestCase
             ->assertHeader('Content-Type', 'image/png')
             ->assertHeader('Cache-Control', 'no-store, private');
     }
+
+    public function test_large_character_preview_handles_low_memory_and_can_be_retried(): void
+    {
+        Storage::fake('studio');
+        $asset = $this->makeAsset('characters', 'characters/large.png');
+        $source = Storage::disk('studio')->path($asset->file_path);
+        $image = imagecreatetruecolor(3000, 6000);
+        imagepng($image, $source);
+        unset($image);
+
+        $previousLimit = ini_get('memory_limit');
+        $path = null;
+        try {
+            $this->assertNotFalse(ini_set('memory_limit', '128M'));
+            $this->artisan('studio:warm-character-previews')
+                ->expectsOutputToContain('Mémoire PHP insuffisante')
+                ->assertFailed();
+            \Illuminate\Support\Facades\Log::shouldReceive('warning')->once();
+            $this->get("/api/media/{$asset->id}/preview")->assertOk()
+                ->assertHeader('Content-Type', 'image/png')
+                ->assertHeader('Cache-Control', 'no-store, private');
+
+            $this->assertNotFalse(ini_set('memory_limit', '512M'));
+            $this->artisan('studio:warm-character-previews')->assertSuccessful();
+            $path = app(CharacterPreview::class)->path($asset);
+            $this->assertSame([700, 1400], array_slice(getimagesize($path), 0, 2));
+        } finally {
+            ini_set('memory_limit', $previousLimit);
+            if ($path && is_file($path)) unlink($path);
+        }
+    }
 }
