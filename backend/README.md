@@ -35,6 +35,8 @@ Sur Railway, définir `APP_URL` avec l'adresse publique complète en `https://` 
 
 Le build ne copie dans le dossier public que les fichiers du jeu autorisés par [la liste du serveur local](../scripts/public-game.php), en plus des assets du Studio. Il ne transfère ni la base ni la médiathèque. Ne pas importer le contenu complet sur le domaine public avant de restreindre l’accès aux épisodes et fonctionnalités hors démo.
 
+L’image PHP installe `pdo_mysql` pour la connexion à MySQL et `zip` pour que Composer puisse extraire les archives des dépendances pendant le build.
+
 ## Import des épisodes
 
 ```sh
