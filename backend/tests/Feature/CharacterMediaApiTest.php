@@ -44,12 +44,14 @@ class CharacterMediaApiTest extends TestCase
 
         $response = $this->getJson('/api/characters')->assertOk();
 
-        $this->assertStringContainsString("/api/media/{$asset->id}/file", $response->json('crushs.0.sprite'));
+        $this->assertSame($asset->spriteUrl(), $response->json('crushs.0.sprite'));
         $this->assertStringContainsString("/api/media/{$asset->id}/preview?v=", $response->json('crushs.0.spritePreview'));
         $this->assertSame($response->json('crushs.0.sprite'), $response->json('crushs.0.portraits.default'));
         $this->assertSame('assets/autre.png', $response->json('crushs.0.portraits.autre'));
         Character::query()->update(['data' => json_encode(['id' => 'liam', 'sprite' => $asset->url()])]);
         $this->assertStringContainsString("/api/media/{$asset->id}/preview?v=", $this->getJson('/api/characters')->json('crushs.0.spritePreview'));
+        Character::query()->update(['data' => json_encode(['id' => 'liam', 'sprite' => $asset->spriteUrl()])]);
+        $this->getJson('/api/characters')->assertJsonPath('crushs.0.sprite', $asset->spriteUrl());
         $this->get("/api/media/{$asset->id}/file")->assertOk();
     }
 
@@ -62,6 +64,7 @@ class CharacterMediaApiTest extends TestCase
 
         $this->getJson('/api/characters')->assertOk()->assertJsonPath('crushs.0.sprite', $source);
         $this->get("/api/media/{$archived->id}/file")->assertNotFound();
+        $this->get("/api/media/{$archived->id}/sprite")->assertNotFound();
 
         $illustration = $this->makeAsset('illustrations', 'assets/Illustrations/cg.png', true);
         $this->get("/api/media/{$illustration->id}/file")->assertNotFound();
@@ -111,17 +114,27 @@ class CharacterMediaApiTest extends TestCase
             $this->assertSame([1600, 3200], array_slice(getimagesize($source), 0, 2));
             $this->get("/api/media/{$asset->id}/preview", ['If-None-Match' => $response->headers->get('ETag')])->assertStatus(304);
 
+            $sprite = $this->get($asset->spriteUrl())->assertOk()->assertHeader('Content-Type', 'image/webp');
+            $paths[] = $sprite->baseResponse->getFile()->getPathname();
+            $this->assertSame([1200, 2400], array_slice(getimagesize($paths[1]), 0, 2));
+            $this->assertSame(127, (imagecolorat(imagecreatefromwebp($paths[1]), 0, 0) >> 24) & 0x7f);
+            $this->assertNotSame($response->headers->get('ETag'), $sprite->headers->get('ETag'));
+            $this->get($asset->spriteUrl(), ['If-None-Match' => $sprite->headers->get('ETag')])->assertStatus(304);
+
             $this->get($asset->previewUrl())->assertRedirect('/login');
             $this->actingAs(User::factory()->create(['is_admin' => true]))->get($asset->previewUrl())
                 ->assertOk()->assertHeader('Cache-Control', 'max-age=86400, private');
             $oldUrl = $asset->previewUrl();
+            $oldSpriteUrl = $asset->spriteUrl();
             Storage::disk('studio')->put('characters/replacement.png', file_get_contents($source));
             $asset->update(['file_path' => 'characters/replacement.png']);
             $this->assertNotSame($oldUrl, $asset->previewUrl());
+            $this->assertNotSame($oldSpriteUrl, $asset->spriteUrl());
             $paths[] = $previews->path($asset);
-            $this->assertNotSame($paths[0], $paths[1]);
+            $this->assertNotSame($paths[0], $paths[2]);
             $asset->update(['is_archived' => true]);
             $this->get("/api/media/{$asset->id}/preview")->assertNotFound();
+            $this->get($asset->spriteUrl())->assertNotFound();
         } finally {
             foreach ($paths as $path) {
                 if (is_file($path)) unlink($path);
@@ -134,6 +147,7 @@ class CharacterMediaApiTest extends TestCase
         Storage::fake('studio');
         $asset = $this->makeAsset('illustrations', 'illustrations/private.png');
         $this->get("/api/media/{$asset->id}/preview")->assertNotFound();
+        $this->get($asset->spriteUrl())->assertNotFound();
         $this->actingAs(User::factory()->create(['is_admin' => true]))
             ->get($asset->previewUrl())->assertNotFound();
     }
@@ -158,7 +172,7 @@ class CharacterMediaApiTest extends TestCase
         unset($image);
 
         $previousLimit = ini_get('memory_limit');
-        $path = null;
+        $paths = [];
         try {
             $this->assertNotFalse(ini_set('memory_limit', '128M'));
             $this->artisan('studio:warm-character-previews')
@@ -171,11 +185,15 @@ class CharacterMediaApiTest extends TestCase
 
             $this->assertNotFalse(ini_set('memory_limit', '512M'));
             $this->artisan('studio:warm-character-previews')->assertSuccessful();
-            $path = app(CharacterPreview::class)->path($asset);
-            $this->assertSame([700, 1400], array_slice(getimagesize($path), 0, 2));
+            $previews = app(CharacterPreview::class);
+            $paths = [$previews->path($asset), $previews->path($asset, true)];
+            $this->assertSame([700, 1400], array_slice(getimagesize($paths[0]), 0, 2));
+            $this->assertSame([1200, 2400], array_slice(getimagesize($paths[1]), 0, 2));
         } finally {
             ini_set('memory_limit', $previousLimit);
-            if ($path && is_file($path)) unlink($path);
+            foreach ($paths as $path) {
+                if (is_file($path)) unlink($path);
+            }
         }
     }
 }

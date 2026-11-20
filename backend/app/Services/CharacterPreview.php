@@ -8,12 +8,12 @@ use RuntimeException;
 
 class CharacterPreview
 {
-    public function version(MediaAsset $asset): string
+    public function version(MediaAsset $asset, bool $scene = false): string
     {
-        return substr(hash('sha256', $asset->file_path.'|'.$asset->updated_at?->format('U.u').'|v1'), 0, 20);
+        return substr(hash('sha256', $asset->file_path.'|'.$asset->updated_at?->format('U.u').($scene ? '|scene-v1' : '|v1')), 0, 20);
     }
 
-    public function path(MediaAsset $asset): string
+    public function path(MediaAsset $asset, bool $scene = false): string
     {
         $disk = Storage::disk('studio');
         $original = $disk->path($asset->file_path);
@@ -25,7 +25,7 @@ class CharacterPreview
         if (! is_dir($directory) && ! @mkdir($directory, 0755, true) && ! is_dir($directory)) {
             throw new RuntimeException('Impossible de créer le dossier des aperçus.');
         }
-        $target = $directory.'/'.$asset->id.'-'.$this->version($asset).'.webp';
+        $target = $directory.'/'.$asset->id.'-'.$this->version($asset, $scene).'.webp';
         if (is_file($target)) {
             return $target;
         }
@@ -56,7 +56,7 @@ class CharacterPreview
             if ($image === false) {
                 throw new RuntimeException("Impossible de décoder le média {$asset->id}.");
             }
-            $scale = min(1, 1400 / max($info[0], $info[1]));
+            $scale = min(1, ($scene ? 2400 : 1400) / max($info[0], $info[1]));
             $preview = imagecreatetruecolor(max(1, (int) round($info[0] * $scale)), max(1, (int) round($info[1] * $scale)));
             if ($preview === false) {
                 throw new RuntimeException("Impossible de créer l'aperçu du média {$asset->id}.");
@@ -69,7 +69,7 @@ class CharacterPreview
                 throw new RuntimeException("Impossible de créer un fichier temporaire pour le média {$asset->id}.");
             }
             try {
-                if (! imagewebp($preview, $temporary, 82) || ! rename($temporary, $target)) {
+                if (! imagewebp($preview, $temporary, $scene ? 90 : 82) || ! rename($temporary, $target)) {
                     throw new RuntimeException("Impossible d'enregistrer l'aperçu du média {$asset->id}.");
                 }
             } finally {

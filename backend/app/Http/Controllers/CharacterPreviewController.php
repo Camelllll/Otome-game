@@ -26,13 +26,20 @@ class CharacterPreviewController extends Controller
         return $this->respond($request, $mediaAsset, $previews, true);
     }
 
-    private function respond(Request $request, MediaAsset $asset, CharacterPreview $previews, bool $private): BinaryFileResponse
+    public function sprite(Request $request, int $id, CharacterPreview $previews): BinaryFileResponse
+    {
+        $asset = MediaAsset::query()->where('category', 'characters')->where('is_archived', false)->findOrFail($id);
+
+        return $this->respond($request, $asset, $previews, false, true);
+    }
+
+    private function respond(Request $request, MediaAsset $asset, CharacterPreview $previews, bool $private, bool $scene = false): BinaryFileResponse
     {
         $disk = Storage::disk('studio');
         abort_unless($disk->exists($asset->file_path), 404, 'Fichier média introuvable.');
         $failed = false;
         try {
-            $path = $previews->path($asset);
+            $path = $previews->path($asset, $scene);
         } catch (Throwable $exception) {
             Log::warning("Aperçu impossible pour le média {$asset->id} ; original utilisé.", ['exception' => $exception]);
             $path = $disk->path($asset->file_path);
@@ -44,7 +51,7 @@ class CharacterPreviewController extends Controller
         ]);
         $response->headers->set('Cache-Control', $failed ? 'no-store' : (($private ? 'private' : 'public').', max-age=86400'));
         if (! $failed) {
-            $response->setEtag($previews->version($asset));
+            $response->setEtag($previews->version($asset, $scene));
             $response->isNotModified($request);
         }
 

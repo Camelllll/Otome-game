@@ -65,7 +65,7 @@ class GameContentController extends Controller
     private function findMedia(string $path, Collection $assets, ?Collection $byName = null): ?MediaAsset
     {
         $asset = $assets->get(hash('sha256', $this->canonicalPath($path)));
-        if (! $asset && preg_match('#/(?:api/(?:media|illustrations)|studio/media)/(\d+)/file(?:\?|$)#', $path, $match)) {
+        if (! $asset && preg_match('#/(?:api/(?:media|illustrations)|studio/media)/(\d+)/(?:file|sprite|preview)(?:\?|$)#', $path, $match)) {
             $asset = $assets->firstWhere('id', (int) $match[1]);
         }
         if (! $asset && $byName !== null && $path !== '') {
@@ -81,6 +81,9 @@ class GameContentController extends Controller
         $asset = $this->findMedia($path, $assets, $byName);
         if (! $asset) {
             return $path;
+        }
+        if ($asset->category === 'characters') {
+            return $asset->spriteUrl();
         }
 
         return route($asset->category === 'illustrations' ? 'game.illustration-file' : 'game.character-media', ['id' => $asset->id, 'v' => $asset->updated_at?->timestamp ?? 0]);

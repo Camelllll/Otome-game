@@ -44,4 +44,12 @@ class MediaAsset extends Model
             'v' => app(CharacterPreview::class)->version($this),
         ]);
     }
+
+    public function spriteUrl(): string
+    {
+        return route('game.character-sprite', [
+            'id' => $this->id,
+            'v' => app(CharacterPreview::class)->version($this, true),
+        ]);
+    }
 }

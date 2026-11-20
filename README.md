@@ -170,7 +170,10 @@ personnage ne leur est substitué si ces assets manquent.
 
 L'accueil et les cartes de personnages du Studio utilisent des aperçus WebP
 transparents (1400 pixels maximum), générés depuis les médias de personnages
-du Studio. Les originaux restent inchangés et utilisés en jeu. Les GIF restent
+du Studio. En jeu, les sprites et portraits utilisent une version WebP distincte
+de meilleure définition (2400 pixels maximum, qualité 90), sans recadrage :
+transparence, marges et proportions restent conservées pour le placement en scène.
+Les originaux restent inchangés dans le Studio. Les GIF restent
 inchangés pour préserver leur animation. Les aperçus sont versionnés après
 modification du média et mis en cache dans `backend/storage/app/character-previews` ;
 le cache navigateur du Studio est privé. Les illustrations ne passent pas par
@@ -180,6 +183,8 @@ est servi sans mise en cache.
 Après déploiement, exécuter `php artisan studio:warm-character-previews`
 depuis le dossier de l'application Laravel (`backend` localement, `/app` dans
 le conteneur) pour préparer les médias existants avant leur première visite.
+Cette commande prépare aussi les sprites de jeu ; la relancer après activation
+de ce format, même si les aperçus de l'accueil ont déjà été générés.
 La commande signale les fichiers manquants ou erreurs et peut être relancée.
 Sans cette préparation, le premier affichage attend la génération ; les aperçus
 sont ensuite réutilisés tant que leur cache serveur est conservé. Le stockage

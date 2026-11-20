@@ -12,7 +12,7 @@ class WarmCharacterPreviews extends Command
 {
     protected $signature = 'studio:warm-character-previews';
 
-    protected $description = 'Prépare les aperçus des images de personnages de la médiathèque.';
+    protected $description = 'Prépare les aperçus et les sprites de jeu des personnages de la médiathèque.';
 
     public function handle(CharacterPreview $previews): int
     {
@@ -24,6 +24,7 @@ class WarmCharacterPreviews extends Command
                         throw new \RuntimeException('Fichier introuvable.');
                     }
                     $previews->path($asset);
+                    $previews->path($asset, true);
                 } catch (Throwable $exception) {
                     $failed = true;
                     $this->error("Média {$asset->id} : {$exception->getMessage()}");
