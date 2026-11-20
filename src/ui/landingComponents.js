@@ -105,7 +105,7 @@ export function creerTransitionConcept() {
 export function creerCartePersonnage(personnage, action) {
   const carte = creer("article", "entree-personnage");
   const portrait = creer("div", "entree-portrait");
-  portrait.append(creerImage(personnage.sprite, "", personnage.name));
+  portrait.append(creerImage(personnage.spritePreview || personnage.sprite, "", personnage.name));
   const sceau = creer("span", "entree-personnage-coeur");
   sceau.setAttribute("aria-hidden", "true");
   sceau.append(icone("coeur"));

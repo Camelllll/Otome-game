@@ -109,7 +109,7 @@ export function creerSectionConcept({ onChoix, onRencontres, onUnivers }) {
     cadres.forEach(({ id, nom, image }) => {
       const personnage = donnees?.crushs?.find((p) => p.id === id);
       if (personnage?.sprite) {
-        image.replaceChildren(creerImage(personnage.sprite, "", nom));
+        image.replaceChildren(creerImage(personnage.spritePreview || personnage.sprite, "", nom));
       } else {
         console.warn(`Portrait de ${nom} indisponible pour la section Concept.`);
         image.replaceChildren(creer("p", "entree-concept-portrait-statut", `Portrait de ${nom} momentanément indisponible.`));

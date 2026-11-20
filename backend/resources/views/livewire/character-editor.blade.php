@@ -197,7 +197,7 @@
                                     <button type="button" class="pf-file {{ $fichierActifId === $fichier->id ? 'pf-file-on' : '' }}"
                                             wire:click="choisirImage({{ $fichier->id }})" wire:key="fichier-{{ $fichier->id }}"
                                             aria-pressed="{{ $fichierActifId === $fichier->id ? 'true' : 'false' }}">
-                                        <img src="{{ $fichier->url() }}" alt="" loading="lazy">
+                                        <img src="{{ $fichier->previewUrl() }}" alt="" loading="lazy" decoding="async">
                                         <span>{{ $fichier->label }}</span>
                                     </button>
                                 @endforeach
@@ -298,7 +298,7 @@
                     <article class="pf-card {{ $editingId === $perso->id && $panelOuvert ? 'pf-card-on' : '' }}" wire:key="char-{{ $perso->id }}">
                         <div class="pf-art">
                             @if($sprite)
-                                <img src="{{ $sprite }}" alt="Portrait de {{ $perso->name }}" loading="lazy">
+                                <img src="{{ $sprite }}" alt="Portrait de {{ $perso->name }}" loading="lazy" decoding="async">
                             @else
                                 <span class="pf-initial" aria-hidden="true">{{ mb_strtoupper(mb_substr($perso->name, 0, 1)) }}</span>
                             @endif

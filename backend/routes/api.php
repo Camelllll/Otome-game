@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\GameContentController;
 use App\Http\Controllers\Api\IllustrationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SaveController;
+use App\Http\Controllers\CharacterPreviewController;
 use Illuminate\Support\Facades\Route;
 
 // Contenu public (lecture seule).
@@ -13,6 +14,7 @@ Route::middleware('throttle:120,1')->group(function () {
     Route::get('/characters', [GameContentController::class, 'characters']);
     Route::get('/backgrounds', [GameContentController::class, 'backgrounds']);
     Route::get('/media/{id}/file', [GameContentController::class, 'characterMedia'])->whereNumber('id')->name('game.character-media');
+    Route::get('/media/{id}/preview', [CharacterPreviewController::class, 'public'])->whereNumber('id')->name('game.character-preview');
     Route::get('/episodes', [GameContentController::class, 'episodes']);
     Route::get('/episodes/{slug}/thumbnail', [GameContentController::class, 'episodeThumbnail'])->where('slug', '[A-Za-z0-9_-]+')->name('game.episode-thumbnail');
     Route::get('/episodes/{slug}', [GameContentController::class, 'episode'])->where('slug', '[A-Za-z0-9_-]+');

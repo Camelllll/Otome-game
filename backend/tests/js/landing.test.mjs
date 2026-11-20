@@ -179,6 +179,33 @@ test('landing keeps the game preview and seven cards, with Isaac and Aaron in th
     assert.equal(trouver('#entree-email').focused, true);
 });
 
+test('landing uses lightweight character previews and loads the excerpt only near the viewport', async t => {
+    let observer;
+    const original = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = class {
+        constructor(callback) { this.callback = callback; observer = this; }
+        observe(element) { this.element = element; }
+        disconnect() { this.disconnected = true; }
+    };
+    t.after(() => {
+        if (original === undefined) delete globalThis.IntersectionObserver;
+        else globalThis.IntersectionObserver = original;
+    });
+    const donnees = structuredClone(characters);
+    donnees.crushs.find(p => p.id === 'isaac').spritePreview = 'isaac-preview.webp';
+    const { trouver, appels } = monter(t, {}, undefined, url => Response.json(
+        url.endsWith('/characters') ? donnees : url.endsWith('/backgrounds') ? [] : episode
+    ));
+    await terminerChargement();
+    assert.equal(trouver('.entree-casting').querySelector('img').src, 'isaac-preview.webp');
+    assert.ok(!appels.some(a => a.url.endsWith('/episodes/episode1')));
+    observer.callback([{ isIntersecting: true }]);
+    await terminerChargement();
+    assert.equal(observer.disconnected, true);
+    assert.ok(trouver('.ecran-dialogue'));
+    assert.equal(appels.filter(a => a.url.endsWith('/episodes/episode1')).length, 1);
+});
+
 test('carousel arrows, progress and keyboard reach Sasha without scrolling the page vertically', async t => {
     const { trouver } = monter(t);
     await terminerChargement();

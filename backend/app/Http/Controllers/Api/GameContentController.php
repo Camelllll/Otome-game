@@ -62,8 +62,7 @@ class GameContentController extends Controller
         return mb_strtolower(basename($this->canonicalPath($path)));
     }
 
-    /** Remplace un chemin statique par l'URL du média de la médiathèque correspondant, s'il existe. */
-    private function mediaUrl(string $path, Collection $assets, ?Collection $byName = null): string
+    private function findMedia(string $path, Collection $assets, ?Collection $byName = null): ?MediaAsset
     {
         $asset = $assets->get(hash('sha256', $this->canonicalPath($path)));
         if (! $asset && preg_match('#/(?:api/(?:media|illustrations)|studio/media)/(\d+)/file(?:\?|$)#', $path, $match)) {
@@ -72,6 +71,14 @@ class GameContentController extends Controller
         if (! $asset && $byName !== null && $path !== '') {
             $asset = $byName->get($this->fileNameKey($path));
         }
+
+        return $asset;
+    }
+
+    /** Remplace un chemin statique par l'URL du média de la médiathèque correspondant, s'il existe. */
+    private function mediaUrl(string $path, Collection $assets, ?Collection $byName = null): string
+    {
+        $asset = $this->findMedia($path, $assets, $byName);
         if (! $asset) {
             return $path;
         }
@@ -87,7 +94,13 @@ class GameContentController extends Controller
         }
         $data['name'] = $character->name;
         if (isset($data['sprite']) && is_string($data['sprite'])) {
-            $data['sprite'] = $this->mediaUrl($data['sprite'], $assets);
+            $sprite = $data['sprite'];
+            $asset = $this->findMedia($sprite, $assets);
+            $data['sprite'] = $this->mediaUrl($sprite, $assets);
+            unset($data['spritePreview']);
+            if ($asset) {
+                $data['spritePreview'] = $asset->previewUrl(true);
+            }
         }
         if (isset($data['portraits']) && is_array($data['portraits'])) {
             foreach ($data['portraits'] as $name => $path) {
@@ -107,7 +120,7 @@ class GameContentController extends Controller
             ->where('category', 'characters')
             ->where('is_archived', false)
             ->whereNotNull('source_key')
-            ->get(['id', 'category', 'source_key', 'updated_at'])
+            ->get(['id', 'category', 'source_key', 'file_path', 'updated_at'])
             ->keyBy('source_key');
 
         return response()->json([

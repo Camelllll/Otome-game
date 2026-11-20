@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CharacterPreview;
 use Illuminate\Database\Eloquent\Model;
 
 class MediaAsset extends Model
@@ -34,5 +35,13 @@ class MediaAsset extends Model
     public function url(): string
     {
         return route('studio.media.file', $this);
+    }
+
+    public function previewUrl(bool $public = false): string
+    {
+        return route($public ? 'game.character-preview' : 'studio.media.preview', [
+            $public ? 'id' : 'mediaAsset' => $this->id,
+            'v' => app(CharacterPreview::class)->version($this),
+        ]);
     }
 }

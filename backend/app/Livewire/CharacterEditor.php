@@ -69,7 +69,8 @@ class CharacterEditor extends Component
         $spriteUrls = [];
         foreach ($characters as $perso) {
             $sprite = $perso->data['sprite'] ?? null;
-            $url = is_string($sprite) ? $this->urlPourChemin($sprite, $parCle) : null;
+            $asset = is_string($sprite) ? $this->assetPourChemin($sprite, $parCle) : null;
+            $url = $asset ? $asset->previewUrl() : (is_string($sprite) ? $this->urlPourChemin($sprite, $parCle) : null);
             // Repli : une fiche dont le sprite n'est pas reconnu garde souvent une URL absolue dans portraits.default.
             $portrait = $perso->data['portraits']['default'] ?? null;
             if ($url === null && is_string($portrait) && str_starts_with($portrait, 'http')) {

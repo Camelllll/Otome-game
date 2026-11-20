@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Character;
 use App\Models\MediaAsset;
+use App\Models\User;
+use App\Services\CharacterPreview;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -43,8 +45,11 @@ class CharacterMediaApiTest extends TestCase
         $response = $this->getJson('/api/characters')->assertOk();
 
         $this->assertStringContainsString("/api/media/{$asset->id}/file", $response->json('crushs.0.sprite'));
+        $this->assertStringContainsString("/api/media/{$asset->id}/preview?v=", $response->json('crushs.0.spritePreview'));
         $this->assertSame($response->json('crushs.0.sprite'), $response->json('crushs.0.portraits.default'));
         $this->assertSame('assets/autre.png', $response->json('crushs.0.portraits.autre'));
+        Character::query()->update(['data' => json_encode(['id' => 'liam', 'sprite' => $asset->url()])]);
+        $this->assertStringContainsString("/api/media/{$asset->id}/preview?v=", $this->getJson('/api/characters')->json('crushs.0.spritePreview'));
         $this->get("/api/media/{$asset->id}/file")->assertOk();
     }
 
@@ -83,5 +88,63 @@ class CharacterMediaApiTest extends TestCase
             ->assertJsonPath('0.id', $decor->id)
             ->assertJsonPath('0.sourcePath', $source);
         $this->assertStringContainsString("/api/media/{$decor->id}/file?v=", $response->json('0.image'));
+    }
+
+    public function test_character_previews_are_scaled_cached_and_replaced_without_changing_originals(): void
+    {
+        Storage::fake('studio');
+        $asset = $this->makeAsset('characters', 'characters/example.png');
+        $source = Storage::disk('studio')->path($asset->file_path);
+        $image = imagecreatetruecolor(1600, 3200);
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+        imagefill($image, 0, 0, imagecolorallocatealpha($image, 255, 0, 0, 127));
+        imagepng($image, $source);
+        $previews = app(CharacterPreview::class);
+        $paths = [];
+        try {
+            $response = $this->get("/api/media/{$asset->id}/preview")->assertOk()
+                ->assertHeader('Content-Type', 'image/webp');
+            $paths[] = $response->baseResponse->getFile()->getPathname();
+            $this->assertSame([700, 1400], array_slice(getimagesize($paths[0]), 0, 2));
+            $this->assertSame(127, (imagecolorat(imagecreatefromwebp($paths[0]), 0, 0) >> 24) & 0x7f);
+            $this->assertSame([1600, 3200], array_slice(getimagesize($source), 0, 2));
+            $this->get("/api/media/{$asset->id}/preview", ['If-None-Match' => $response->headers->get('ETag')])->assertStatus(304);
+
+            $this->get($asset->previewUrl())->assertRedirect('/login');
+            $this->actingAs(User::factory()->create(['is_admin' => true]))->get($asset->previewUrl())
+                ->assertOk()->assertHeader('Cache-Control', 'max-age=86400, private');
+            $oldUrl = $asset->previewUrl();
+            Storage::disk('studio')->put('characters/replacement.png', file_get_contents($source));
+            $asset->update(['file_path' => 'characters/replacement.png']);
+            $this->assertNotSame($oldUrl, $asset->previewUrl());
+            $paths[] = $previews->path($asset);
+            $this->assertNotSame($paths[0], $paths[1]);
+            $asset->update(['is_archived' => true]);
+            $this->get("/api/media/{$asset->id}/preview")->assertNotFound();
+        } finally {
+            foreach ($paths as $path) {
+                if (is_file($path)) unlink($path);
+            }
+        }
+    }
+
+    public function test_preview_does_not_expose_illustrations(): void
+    {
+        Storage::fake('studio');
+        $asset = $this->makeAsset('illustrations', 'illustrations/private.png');
+        $this->get("/api/media/{$asset->id}/preview")->assertNotFound();
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->get($asset->previewUrl())->assertNotFound();
+    }
+
+    public function test_failed_preview_is_logged_and_original_is_not_cached(): void
+    {
+        Storage::fake('studio');
+        $asset = $this->makeAsset('characters', 'characters/broken.png');
+        \Illuminate\Support\Facades\Log::shouldReceive('warning')->once();
+        $this->get("/api/media/{$asset->id}/preview")->assertOk()
+            ->assertHeader('Content-Type', 'image/png')
+            ->assertHeader('Cache-Control', 'no-store, private');
     }
 }

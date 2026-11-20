@@ -343,23 +343,44 @@ export function lancerEcranConnexion(conteneurRacine, { onConnecte }) {
     carrousel.afficherPersonnages(crushs);
     const vedettes = ["isaac", "aaron"].map((id) => avecSprite.find((p) => p.id === id));
     if (vedettes.every(Boolean)) {
-      vedettes.forEach((p) => casting.append(creerImage(p.sprite, "entree-casting-personnage", p.name, true)));
+      vedettes.forEach((p) => casting.append(creerImage(p.spritePreview || p.sprite, "entree-casting-personnage", p.name, true)));
     } else {
       console.warn("Les sprites d'Isaac et Aaron sont nécessaires au casting de l'accueil.");
       casting.append(creer("p", "entree-casting-statut", "Les portraits d'Isaac et Aaron sont momentanément indisponibles."));
     }
     casting.hidden = false;
     afficherPortraits(donnees);
-    return getEpisode("episode1").then((episode) => {
-      if (!page.isConnected) return;
-      let nettoyer;
-      function rejouer() {
-        nettoyer?.();
-        const moteur = creerMoteurExtrait(episode, donnees);
-        nettoyer = lancerEcranDialogue(scene, moteur, { onFinEpisode: rejouer });
-      }
-      rejouer();
-    });
+    function chargerExtrait() {
+      getEpisode("episode1").then((episode) => {
+        if (!page.isConnected) return;
+        let nettoyer;
+        function rejouer() {
+          nettoyer?.();
+          const moteur = creerMoteurExtrait(episode, donnees);
+          nettoyer = lancerEcranDialogue(scene, moteur, { onFinEpisode: rejouer });
+        }
+        rejouer();
+      }).catch((erreur) => {
+        console.warn("Extrait de l'accueil indisponible.", erreur);
+        if (page.isConnected) {
+          statutExtrait.textContent = "L'extrait est momentanément indisponible. Retrouve l'histoire dans le jeu.";
+          scene.replaceChildren(statutExtrait);
+        }
+      });
+    }
+    if ("IntersectionObserver" in globalThis) {
+      const observationExtrait = new IntersectionObserver((entrees) => {
+        if (!page.isConnected) {
+          observationExtrait.disconnect();
+        } else if (entrees.some((entree) => entree.isIntersecting)) {
+          observationExtrait.disconnect();
+          chargerExtrait();
+        }
+      }, { root: defilement, rootMargin: "600px" });
+      observationExtrait.observe(scene);
+    } else {
+      chargerExtrait();
+    }
   }).catch((erreur) => {
     console.warn("Contenu de l'accueil indisponible.", erreur);
     if (!page.isConnected) return;

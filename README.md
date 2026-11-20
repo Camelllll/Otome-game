@@ -168,6 +168,26 @@ identifiant dans `/api/characters`, qui fournit leurs sprites versionnés depuis
 la médiathèque. Leur ordre ne dépend pas de celui du catalogue, et aucun autre
 personnage ne leur est substitué si ces assets manquent.
 
+L'accueil et les cartes de personnages du Studio utilisent des aperçus WebP
+transparents (1400 pixels maximum), générés depuis les médias de personnages
+du Studio. Les originaux restent inchangés et utilisés en jeu. Les GIF restent
+inchangés pour préserver leur animation. Les aperçus sont versionnés après
+modification du média et mis en cache dans `backend/storage/app/character-previews` ;
+le cache navigateur du Studio est privé. Les illustrations ne passent pas par
+ces routes. En cas d'échec de génération, l'erreur est journalisée et l'original
+est servi sans mise en cache.
+
+Après déploiement, exécuter `php artisan studio:warm-character-previews`
+depuis le dossier de l'application Laravel (`backend` localement, `/app` dans
+le conteneur) pour préparer les médias existants avant leur première visite.
+La commande signale les fichiers manquants ou erreurs et peut être relancée.
+Sans cette préparation, le premier affichage attend la génération ; les aperçus
+sont ensuite réutilisés tant que leur cache serveur est conservé. Le stockage
+de ce cache doit être persistant si l'on souhaite éviter sa régénération après
+redéploiement. PHP nécessite GD avec WebP (inclus dans l'image Docker).
+L'extrait jouable est chargé à l'approche de sa section pour ne pas concurrencer
+les portraits visibles à l'ouverture.
+
 La section Concept, dans `src/ui/conceptSection.js`, alterne avec le Hero et les
 Personnages bordeaux : fond crème `#FFF8F2` et ivoire `#FFF0E4`, titres bordeaux
 et cerise, trois fonctionnalités verticales et deux portraits encadrés. Camel et Stella

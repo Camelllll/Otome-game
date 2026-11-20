@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EpisodeStudioController;
+use App\Http\Controllers\CharacterPreviewController;
 use App\Http\Controllers\SessionController;
 use App\Http\Middleware\RequireAdmin;
 use App\Livewire\CharacterEditor;
@@ -33,6 +34,7 @@ Route::middleware(['auth', RequireAdmin::class])->prefix('studio')->name('studio
             'Cache-Control' => 'private, no-store',
         ]);
     })->name('media.file');
+    Route::get('/media/{mediaAsset}/preview', [CharacterPreviewController::class, 'studio'])->name('media.preview');
     Route::post('/episode-flow/save', [EpisodeStudioController::class, 'save'])->name('flow.save');
     Route::post('/episode-flow/create', [EpisodeStudioController::class, 'create'])->name('flow.create');
     Route::post('/episode-flow/import', [EpisodeStudioController::class, 'import'])->name('flow.import');
