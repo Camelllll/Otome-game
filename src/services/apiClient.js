@@ -1,7 +1,10 @@
 // Client HTTP de l'API Laravel (backend/). Authentification par jeton Bearer (Sanctum).
 // L'URL de l'API peut être remplacée avant le chargement du jeu :
 //   <script>window.OTOME_API_URL = "https://mon-domaine.fr/api";</script>
-const URL_PAR_DEFAUT = "http://127.0.0.1:8001/api";
+const origine = globalThis.location;
+const URL_PAR_DEFAUT = origine && /^https?:$/.test(origine.protocol) && !["127.0.0.1", "localhost", "[::1]"].includes(origine.hostname)
+  ? new URL("/api", origine.origin).href
+  : "http://127.0.0.1:8001/api";
 const CLE_JETON = "otome_api_token";
 
 export const API_URL = String(globalThis.OTOME_API_URL || URL_PAR_DEFAUT).replace(/\/+$/, "");

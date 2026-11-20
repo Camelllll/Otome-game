@@ -27,6 +27,14 @@ Lors du premier paramétrage sur ce Mac, les dépendances, la base et le fichier
 
 Sur Railway, définir `APP_URL` avec l'adresse publique complète en `https://` dans les variables du service Laravel. Le Studio génère alors ses liens, formulaires et URL CSS/JS en HTTPS, même si le proxy communique avec Laravel en HTTP. Le Studio local garde son URL en HTTP.
 
+## Déploiement Railway : jeu et Studio sur le même domaine
+
+1. Sur le service Laravel existant, régler **Root Directory** sur `/` et choisir **Dockerfile** comme builder. Le [Dockerfile](../Dockerfile) est à la racine du dépôt. Retirer toute commande de démarrage personnalisée issue de Railpack ; la commande de l'image applique les migrations et démarre FrankenPHP.
+2. Garder les variables du service (`APP_KEY`, `APP_URL` en HTTPS, `APP_ENV=production`, `APP_DEBUG=false`, `DB_CONNECTION=mysql` et les références MySQL). Garder le domaine existant, avec le port cible **80** s'il est demandé, et le volume médias sur `/app/storage/app/studio-media` s'il est déjà monté. Le stockage MySQL reste sur son propre service.
+3. Vérifier `/` (jeu), `/api/episodes` (API), `/studio` (connexion Studio) et `/up` (vérification de santé). Le jeu appelle l’API du même domaine. En local, le serveur de développement séparé continue d’utiliser l’API sur `127.0.0.1:8001`.
+
+Le build ne copie dans le dossier public que les fichiers du jeu autorisés par [la liste du serveur local](../scripts/public-game.php), en plus des assets du Studio. Il ne transfère ni la base ni la médiathèque. Ne pas importer le contenu complet sur le domaine public avant de restreindre l’accès aux épisodes et fonctionnalités hors démo.
+
 ## Import des épisodes
 
 ```sh
