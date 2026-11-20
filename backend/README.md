@@ -4,7 +4,7 @@ Back-office Laravel 12, Livewire 3 et Tailwind 4, avec une base MariaDB. Le jeu 
 
 ## Démarrage local
 
-Prérequis : PHP 8.2+ avec PDO MySQL, Composer, Node.js et MariaDB.
+Prérequis : PHP 8.4.1 ou supérieur (dans la série 8.x) avec PDO MySQL, Composer, Node.js et MariaDB.
 
 ```sh
 cd backend
