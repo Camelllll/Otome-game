@@ -87,7 +87,7 @@ L'onglet **Médiathèque** regroupe les décors (thèmes de scène), illustratio
 
 - Images : JPG, PNG, WebP, GIF ; audio : MP3, WAV, OGG, M4A. Maximum : **100 Mo par fichier** (102 400 Ko), partagé par l'application et les envois temporaires Livewire.
 - Utiliser `composer studio` (ou `composer dev`) pour démarrer en local : PHP est configuré pour ce processus avec `upload_max_filesize=100M`, `post_max_size=110M`, `memory_limit=512M` et des délais de 600 secondes. Le PHP global du Mac n'est pas modifié. `php artisan serve` seul conserve les limites du PHP système.
-- En production, configurer également les limites du serveur HTTP et de PHP pour autoriser un fichier de 100 Mo avec sa surcharge multipart. La médiathèque affiche les limites PHP réellement actives.
+- L'image de production configure les mêmes limites PHP dans `deploy/php.ini`. Tout serveur HTTP ou proxy ajouté devant l'application doit également accepter 110 Mo par requête pour laisser place à la surcharge multipart. La médiathèque affiche les limites PHP réellement actives.
 - Stockage dans `storage/app/studio-media`, sur le disque Laravel `studio`. Sauvegarder ce dossier **avec** la base MariaDB. Aucun lien symbolique public n'est nécessaire.
 - Les fichiers de la médiathèque restent servis par une route administrateur ; les éléments actifs du Dressing disposent aussi d'une route API publique pour le jeu.
 - Les URL restent stables lors d'un remplacement. Cela modifie le rendu de tous les épisodes référençant ce média, y compris les versions publiées ; les documents narratifs ne sont pas modifiés.

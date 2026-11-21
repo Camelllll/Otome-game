@@ -156,7 +156,7 @@
                         <button type="button" class="text-button" wire:click="$set('spriteUpload', null)">Annuler l'import</button>
                     @endif
                     @error('spriteUpload')<p class="pf-hint" style="color: #be123c;">{{ $message }}</p>@enderror
-                    <p class="pf-hint">JPG, PNG, WebP ou GIF.</p>
+                    <p class="pf-hint">JPG, PNG, WebP ou GIF. Maximum : {{ \App\Models\MediaAsset::MAX_UPLOAD_KB / 1024 }} Mo.</p>
                 </div>
             </aside>
 

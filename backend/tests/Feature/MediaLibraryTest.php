@@ -133,6 +133,17 @@ class MediaLibraryTest extends TestCase
         );
     }
 
+    public function test_production_php_limits_allow_the_maximum_upload_with_multipart_overhead(): void
+    {
+        $settings = parse_ini_file(base_path('../deploy/php.ini'));
+
+        $this->assertIsArray($settings);
+        $this->assertArrayHasKey('upload_max_filesize', $settings);
+        $this->assertArrayHasKey('post_max_size', $settings);
+        $this->assertGreaterThanOrEqual(MediaAsset::MAX_UPLOAD_KB * 1024, ini_parse_quantity($settings['upload_max_filesize']));
+        $this->assertGreaterThanOrEqual(110 * 1024 * 1024, ini_parse_quantity($settings['post_max_size']));
+    }
+
     public function test_upload_rejects_one_kb_above_100_mb(): void
     {
         $this->actingAs($this->admin());

@@ -6,14 +6,41 @@ use App\Livewire\CharacterEditor;
 use App\Livewire\EpisodeEditor;
 use App\Models\Character;
 use App\Models\Episode;
+use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 class CharacterCatalogTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_character_sprite_upload_updates_the_media_library_and_game_catalog(): void
+    {
+        Storage::fake('studio');
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        $oldSprite = 'characters/old.png';
+        $character = Character::create(['slug' => 'nathan', 'name' => 'Nathan', 'data' => [
+            'id' => 'nathan', 'sprite' => $oldSprite, 'portraits' => ['default' => $oldSprite],
+        ]]);
+
+        Livewire::test(CharacterEditor::class)
+            ->call('editer', $character->id)
+            ->set('spriteUpload', UploadedFile::fake()->image('nathan.png')->size(3072))
+            ->call('sauvegarder')
+            ->assertHasNoErrors();
+
+        $asset = MediaAsset::firstOrFail();
+        Storage::disk('studio')->assertExists($asset->file_path);
+        $this->assertSame('characters', $asset->category);
+        $this->assertSame($asset->source_path, $character->fresh()->data['sprite']);
+        $this->assertSame($asset->source_path, $character->fresh()->data['portraits']['default']);
+        $this->getJson('/api/characters')->assertOk()
+            ->assertJsonPath('crushs.0.sprite', $asset->spriteUrl());
+    }
 
     public function test_game_uses_the_studio_name_without_changing_the_dialogue_identifier(): void
     {
