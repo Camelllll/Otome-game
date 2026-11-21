@@ -1,5 +1,6 @@
 import { creerCompteJoueur, connexionJoueur } from "../services/playerRepository.js";
 import { getCharacters, getEpisode, getBackgrounds } from "../services/gameRepository.js";
+import { urlMedia } from "../services/mediaDelivery.js";
 import { creerMoteurExtrait } from "../engine/episodePreview.js";
 import { lancerEcranDialogue } from "./dialogueScreen.js";
 import { creerSectionConcept } from "../ui/conceptSection.js";
@@ -343,7 +344,7 @@ export function lancerEcranConnexion(conteneurRacine, { onConnecte }) {
     carrousel.afficherPersonnages(crushs);
     const vedettes = ["isaac", "aaron"].map((id) => avecSprite.find((p) => p.id === id));
     if (vedettes.every(Boolean)) {
-      vedettes.forEach((p) => casting.append(creerImage(p.spritePreview || p.sprite, "entree-casting-personnage", p.name, true)));
+      vedettes.forEach((p) => casting.append(creerImage(urlMedia(p.sprite, { pleineResolution: true }), "entree-casting-personnage", p.name, true)));
     } else {
       console.warn("Les sprites d'Isaac et Aaron sont nécessaires au casting de l'accueil.");
       casting.append(creer("p", "entree-casting-statut", "Les portraits d'Isaac et Aaron sont momentanément indisponibles."));

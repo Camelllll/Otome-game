@@ -172,8 +172,10 @@ personnage ne leur est substitué si ces assets manquent.
 
 `MediaOptimizer` conserve les originaux du Studio et génère des variantes :
 
-- Personnages : WebP transparent, 1400 pixels maximum à l'accueil et 2400
-  en scène (qualité 90), sans recadrage ni changement de proportions.
+- Personnages : WebP transparent, 1400 pixels maximum pour les aperçus et 2400
+  en scène (qualité 90), sans recadrage ni changement de proportions. Les deux
+  grands portraits de l'accueil utilisent les sprites de scène, même en mode
+  économie de données, pour conserver leur netteté ; ils peuvent donc être plus lourds.
 - Décors et illustrations : WebP, 2560 pixels maximum ; 1600 en mode compact.
 - Miniatures : 640 pixels maximum dans la médiathèque et les collections.
 - Dressing : WebP **sans perte**, mêmes dimensions et mêmes pixels visibles
@@ -388,8 +390,13 @@ Les anciens calques de démonstration (910 × 1727) ne sont pas compatibles.
 Tenues ouvre la vue en pied ; Cheveux, Peau, Yeux, Sourcils et Lèvres cadrent
 automatiquement la zone correspondante. Les contrôles permettent d'agrandir,
 réduire, rétablir le cadrage de la catégorie ou retrouver la vue en pied.
-Les transitions respectent `prefers-reduced-motion`. Sur mobile, la scène et
-les catégories restent visibles pendant la consultation du catalogue.
+Les transitions respectent la réduction des animations du jeu et du système.
+Le dressing réorganise ses colonnes selon la largeur disponible et la taille
+du texte ; sur petit écran, la scène et les catégories défilent avec la page
+pour ne pas masquer le catalogue ou le focus clavier.
+Le menu **Accessibilité** propose une taille de texte jusqu'à 200 %. Pour
+vérifier le dressing, ouvrir ce menu puis essayer les tailles et les modes
+de contraste, avec la touche Tab et les flèches pour les onglets du catalogue.
 
 Les catégories vides n'affichent aucun article fictif.
 La qualité maximale du zoom reste limitée par la résolution des PNG existants.

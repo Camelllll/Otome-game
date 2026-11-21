@@ -31,6 +31,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
 
   const decor = document.createElement("img");
   decor.className = "decor";
+  decor.alt = "";
   decor.decoding = "async";
   decor.fetchPriority = "high";
   let erreurDecor = false;
@@ -50,6 +51,7 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
     cadre.className = "cadre-personnage";
     const sprite = document.createElement("img");
     sprite.className = "sprite-personnage";
+    sprite.alt = "";
     sprite.crossOrigin = "anonymous";
     sprite.decoding = "async";
     sprite.fetchPriority = "high";
@@ -106,6 +108,13 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
   const zoneBulle = document.createElement("div");
   zoneBulle.className = "zone-bulle";
   scene.appendChild(zoneBulle);
+
+  const annonceDialogue = document.createElement("div");
+  annonceDialogue.className = "annonce-dialogue";
+  annonceDialogue.setAttribute("role", "status");
+  annonceDialogue.setAttribute("aria-live", "polite");
+  annonceDialogue.setAttribute("aria-atomic", "true");
+  scene.appendChild(annonceDialogue);
 
   // Deux emplacements indépendants pour gérer le cas de deux personnages présents en même temps (un à gauche, un à droite).
   const lovometreGauche = document.createElement("div");
@@ -638,6 +647,11 @@ export function lancerEcranDialogue(conteneurRacine, moteur, { onFinEpisode, onR
           };
         }
       });
+      annonceDialogue.textContent = [
+        zoneBulle.querySelector(".nom-bulle-personnage")?.textContent,
+        zoneBulle.querySelector(".texte-bulle-personnage")?.textContent,
+        zoneBarre.querySelector(".texte-dialogue")?.textContent,
+      ].filter(Boolean).join(" ");
     }
 
     // Le personnage, les jauges et les CG disposent uniquement de l'espace au-dessus de la barre.

@@ -118,6 +118,19 @@ test('les petits cœurs SVG sont nettoyés en fin de vol et respectent la réduc
     assert.equal(conteneur.children.length, 1);
 });
 
+test('les préférences du jeu empêchent la création de particules', t => {
+    const { conteneur } = monter(t);
+    const scene = new Element('div');
+    conteneur.className = 'lovometre';
+    scene.appendChild(conteneur);
+    afficherLovometre(conteneur, { name: 'Liam', gauges: { amour: 50 } });
+    for (const dataset of [{ a11yMotion: 'reduce' }, { a11yHearts: 'off' }, { a11yHearts: 'reduced' }]) {
+        globalThis.document.documentElement = { dataset };
+        animerGainLovo(scene, 10);
+        assert.equal(conteneur.children.length, 1);
+    }
+});
+
 test('les autres barres de jauge gardent leur échelle centrée à zéro', t => {
     monter(t);
     for (const [score, largeur] of [[-100, 0], [0, 50], [100, 100]]) {
@@ -139,6 +152,7 @@ test('le carnet conserve les scores signés, centre le neutre et aligne les jalo
             return this.zones.get(selector);
         }
         querySelectorAll() { return []; }
+        contains() { return false; }
         addEventListener() {}
         focus() {}
     }

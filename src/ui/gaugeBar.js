@@ -126,7 +126,10 @@ export function afficherLovometre(conteneur, personnage) {
 }
 
 function animerCoeurs(scene, variation, perte) {
-  if (globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  const a11y = document.documentElement?.dataset;
+  if (a11y?.a11yMotion === "reduce" || a11y?.a11yHearts === "off"
+      || a11y?.a11yHearts === "reduced"
+      || globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
   const conteneur = scene.querySelector(".lovometre.visible");
   const hud = conteneur && huds.get(conteneur);
   if (!hud) return;

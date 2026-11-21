@@ -15,8 +15,10 @@ import { aUneApparenceEquipee, resoudreCalques } from "./engine/appearance.js";
 import { listerFichesCarnet } from "./engine/carnet.js";
 import { normaliserNomJoueur } from "./engine/playerName.js";
 import { demanderConfirmation } from "./ui/gameModal.js";
+import { initialiserA11y } from "./ui/accessibilite.js";
 
 const conteneurJeu = document.getElementById("jeu");
+initialiserA11y();
 let restaurationHistorique = true;
 let indexHistorique = history.state?.campusIndex ?? 0;
 let ignorerRetour = false;

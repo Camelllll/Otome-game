@@ -8,6 +8,9 @@ export function afficherBullePersonnage(conteneur, affichage, cote = "droite") {
 
   const bulle = document.createElement("div");
   bulle.className = `bulle-personnage cote-${cote}`;
+  bulle.tabIndex = 0;
+  bulle.setAttribute("role", "region");
+  bulle.setAttribute("aria-label", `Réplique de ${affichage.speakerName}`);
 
   const nom = document.createElement("span");
   nom.className = "nom-bulle-personnage";
@@ -38,6 +41,7 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
   } else if (affichage.playerAvatar) {
     const avatar = document.createElement("img");
     avatar.src = affichage.playerAvatar;
+    avatar.alt = "";
     avatar.className = "avatar-joueur";
     barre.appendChild(avatar);
   }
@@ -68,13 +72,23 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
       bouton.addEventListener("click", () => callbacks.onChoix(option.index));
       listeChoix.appendChild(bouton);
     }
+    // Flèches haut / bas (et gauche / droite) : déplacent le focus entre les choix. Entrée et Espace valident (bouton natif).
+    listeChoix.addEventListener("keydown", (event) => {
+      const sens = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : event.key === "ArrowUp" || event.key === "ArrowLeft" ? -1 : 0;
+      if (sens === 0) return;
+      const boutons = [...listeChoix.querySelectorAll("button")];
+      const index = boutons.indexOf(document.activeElement);
+      if (index === -1) return;
+      event.preventDefault();
+      boutons[(index + sens + boutons.length) % boutons.length].focus();
+    });
     contenu.appendChild(listeChoix);
   } else {
     // Toute la barre de dialogue devient la commande de progression : plus immersive qu'un bouton isolé.
     barre.classList.add("dialogue-cliquable");
     barre.tabIndex = 0;
     barre.setAttribute("role", "button");
-    barre.setAttribute("aria-label", "Passer au dialogue suivant");
+    barre.setAttribute("aria-label", [contenu.textContent.trim(), "Passer au dialogue suivant"].filter(Boolean).join(". "));
     const avancer = () => callbacks.onSuivant();
     barre.addEventListener("click", avancer);
     barre.addEventListener("keydown", (event) => {
@@ -89,6 +103,14 @@ export function afficherBarreNarration(conteneur, affichage, callbacks) {
 
   barre.appendChild(contenu);
   conteneur.appendChild(barre);
+
+  // Le focus suit l'histoire : Entrée / Espace continuent sans avoir à tabuler jusqu'à la barre.
+  // On ne le prend pas si le joueur est dans un menu ou une fenêtre ouverte (focus hors de la scène).
+  const focusLibre = !document.activeElement || document.activeElement === document.body || conteneur.contains(document.activeElement);
+  if (focusLibre) {
+    const cible = affichage.type === "choice" ? barre.querySelector(".bouton-choix") : barre;
+    cible?.focus({ preventScroll: true });
+  }
 }
 
 // Écran de fin d'épisode : remplace la barre de dialogue par un panneau centré avec un bouton stylisé.

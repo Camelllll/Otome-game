@@ -130,17 +130,21 @@ export function lancerEcranDressing(
       return false;
     }
     if (!tenueModifiee()) return true;
+    const focusInitial = document.activeElement;
+    let sortieConfirmee = false;
     definirOccupe(true);
     try {
-      return Boolean(await demanderConfirmation({
+      sortieConfirmee = Boolean(await demanderConfirmation({
         titre: "Quitter sans valider ta tenue ?",
         message: "Tes modifications de tenue seront abandonnées. Les achats déjà enregistrés restent dans ta garde-robe.",
         confirmer: "Abandonner la tenue",
         annuler: "Rester dans le dressing",
         avertissement: true,
       }));
+      return sortieConfirmee;
     } finally {
       definirOccupe(false);
+      if (!sortieConfirmee && focusInitial?.isConnected) focusInitial.focus();
     }
   });
   const prevenirFermeture = event => {
@@ -177,7 +181,9 @@ export function lancerEcranDressing(
     retour.addEventListener("click", () => { if (!occupe) onRetour(); });
     entete.appendChild(retour);
   }
-  entete.appendChild(creer("p", "dressing-signature", "L’atelier des possibles"));
+  const introduction = creer("div", "dressing-introduction");
+  introduction.append(creer("span", "dressing-surtitre", "L’atelier des possibles"), creer("h1", "dressing-titre", "Mon dressing"));
+  entete.appendChild(introduction);
   const enteteDroite = creer("div", "dressing-entete-droite");
   if (PA_ACTIFS && Number.isFinite(sauvegarde.actionPoints)) {
     const pa = creer("span", "dressing-ressource");
@@ -231,8 +237,6 @@ export function lancerEcranDressing(
   // --- Barre de catégories (gauche) ------------------------------------------
   const nav = creer("nav", "dressing-nav");
   nav.setAttribute("aria-label", "Catégories du dressing");
-  const introduction = creer("div", "dressing-introduction");
-  introduction.append(creer("span", "dressing-surtitre", "Un style, une histoire"), creer("h1", "dressing-titre", "Mon dressing"), creer("p", "", "Révèle toutes tes facettes."));
   const boutonsCategories = categories.map((categorie, index) => {
     const bouton = creer("button", "dressing-categorie");
     bouton.type = "button";
@@ -241,6 +245,7 @@ export function lancerEcranDressing(
     pastille.appendChild(icone(categorie.icone));
     bouton.append(pastille, creer("span", "dressing-categorie-nom", categorie.label));
     bouton.addEventListener("click", () => activerCategorie(index));
+    bouton.addEventListener("focus", () => bouton.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" }));
     nav.appendChild(bouton);
     return bouton;
   });
@@ -339,13 +344,11 @@ export function lancerEcranDressing(
   panneau.append(tete, titrePanneau, panneauSousCategories, liste);
 
   function ouvrirPanneau() {
-    panneau.scrollIntoView({ behavior: reduireMouvement ? "auto" : "smooth", block: "nearest" });
-    document.getElementById(`dressing-mode-${mode}`)?.focus({ preventScroll: true });
+    document.getElementById(`dressing-mode-${mode}`)?.focus();
   }
 
   function fermerPanneau() {
-    stage.scrollIntoView({ behavior: reduireMouvement ? "auto" : "smooth" });
-    boutonOuvrir.focus({ preventScroll: true });
+    controlesZoom.querySelector("button")?.focus();
   }
 
   boutonOuvrir.addEventListener("click", ouvrirPanneau);
@@ -419,11 +422,13 @@ export function lancerEcranDressing(
     const pied = creer("div", "dressing-carte-pied");
     if (verrou) {
       carte.classList.add("verrouille");
-      visuel.disabled = true;
+      visuel.setAttribute("aria-disabled", "true");
       visuel.title = verrou;
       visuel.setAttribute("aria-label", `${element.label} (verrouillé : ${verrou})`);
       visuel.appendChild(icone("cadenas", "dressing-cadenas"));
       const etat = creer("p", "dressing-etat dressing-etat-verrou");
+      etat.id = `dressing-verrou-${categorie}-${String(element.id).replace(/[^\w-]/g, "_")}`;
+      visuel.setAttribute("aria-describedby", etat.id);
       etat.append(icone("cadenas"), creer("span", "", verrou));
       pied.appendChild(etat);
     } else if (possede) {
@@ -436,15 +441,29 @@ export function lancerEcranDressing(
     } else {
       visuel.setAttribute("aria-label", `Essayer ${element.label}`);
       visuel.addEventListener("click", () => essayer(categorie, element));
+      const monnaieInsuffisante = prix > Number(sauvegarde?.currency || 0);
+      const idManque = `dressing-manque-${categorie}-${String(element.id).replace(/[^\w-]/g, "_")}`;
       const vente = creer("div", "dressing-vente");
       const etiquettePrix = creer("span", "dressing-prix");
-      etiquettePrix.append(icone("piece"), creer("span", "", formaterMontant(prix)), creer("span", "dressing-masque", ` ${NOM_MONNAIE}`));
+      etiquettePrix.append(icone("piece"), creer("span", "dressing-montant", formaterMontant(prix)), creer("span", "dressing-masque", ` ${NOM_MONNAIE}`));
       const boutonAcheter = creer("button", "dressing-acheter", "Acheter");
       boutonAcheter.type = "button";
       boutonAcheter.setAttribute("aria-label", `Acheter ${element.label} pour ${formaterMontant(prix)} ${NOM_MONNAIE}`);
+      if (monnaieInsuffisante) {
+        // Reste focusable : le clic affiche le message de refus existant (refuserAchat).
+        boutonAcheter.classList.add("dressing-acheter-indisponible");
+        boutonAcheter.setAttribute("aria-disabled", "true");
+        boutonAcheter.setAttribute("aria-describedby", idManque);
+      }
       boutonAcheter.addEventListener("click", () => acheterElement(categorie, element, carte));
       vente.append(etiquettePrix, boutonAcheter);
       pied.appendChild(vente);
+      if (monnaieInsuffisante) {
+        const manque = creer("p", "dressing-etat dressing-etat-manque");
+        manque.id = idManque;
+        manque.append(icone("aucun"), creer("span", "", "Pas assez de monnaie"));
+        pied.appendChild(manque);
+      }
     }
 
     carte.append(visuel, creer("span", "dressing-carte-nom", element.label), pied);
@@ -517,8 +536,6 @@ export function lancerEcranDressing(
   actions.append(statut, boutons);
   bas.append(rangee, actions);
 
-  const reduireMouvement = Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
-
   // --- Utilitaires d'interface -----------------------------------------------
   function afficherStatut(message, erreur = false) {
     statut.textContent = message;
@@ -569,6 +586,7 @@ export function lancerEcranDressing(
       puce.addEventListener("click", () => {
         sectionsActives.set(categorie.id, section.id);
         rendrePanneau();
+        panneauSousCategories.querySelectorAll("button")[categorie.sections.indexOf(section)]?.focus();
       });
       panneauSousCategories.appendChild(puce);
     }
@@ -716,10 +734,13 @@ export function lancerEcranDressing(
 
   async function acheterElement(categorie, element, carte) {
     if (occupe) return;
+    const focusAchat = carte.contains(document.activeElement) ? document.activeElement : null;
     const resultat = acheter(element, sauvegarde);
     if (!resultat.ok) {
       if (resultat.raison === "deja-possede") {
         rendrePanneau();
+        if (focusAchat) cartesPanneau.find((candidate) => candidate.dataset.cle === cleInventaire(element))
+          ?.querySelector(".dressing-carte-visuel")?.focus();
       } else {
         refuserAchat(resultat, carte);
       }
@@ -738,8 +759,10 @@ export function lancerEcranDressing(
       return;
     } finally {
       definirOccupe(false);
+      if (focusAchat && document.activeElement === document.body) focusAchat.focus();
     }
 
+    const restaurerFocus = document.activeElement === focusAchat;
     const cle = cleInventaire(element);
     nouveaux.add(cle);
     essai = null;
@@ -751,7 +774,10 @@ export function lancerEcranDressing(
     rendrePanneau();
     rafraichirApercu(true);
     const nouvelleCarte = cartesPanneau.find((candidate) => candidate.dataset.cle === cle);
-    if (nouvelleCarte) animer(nouvelleCarte, "illumine", 1400);
+    if (nouvelleCarte) {
+      if (restaurerFocus) nouvelleCarte.querySelector(".dressing-carte-visuel")?.focus();
+      animer(nouvelleCarte, "illumine", 1400);
+    }
   }
 
   boutonReinitialiser.addEventListener("click", () => {
@@ -785,7 +811,7 @@ export function lancerEcranDressing(
   });
 
   // --- Assemblage ----------------------------------------------------------------
-  ecran.append(entete, introduction, nav, stage, panneau, bas);
+  ecran.append(entete, nav, stage, panneau, bas);
 
   conteneurRacine.innerHTML = "";
   conteneurRacine.appendChild(ecran);

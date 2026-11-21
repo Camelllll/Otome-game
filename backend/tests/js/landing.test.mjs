@@ -179,9 +179,11 @@ test('landing keeps the game preview and seven cards, with Isaac and Aaron in th
     assert.equal(trouver('#entree-email').focused, true);
 });
 
-test('landing uses lightweight character previews and loads the excerpt only near the viewport', async t => {
+test('landing uses full-resolution hero sprites while other portraits stay lightweight and the excerpt loads near the viewport', async t => {
     let observer;
     const original = globalThis.IntersectionObserver;
+    const navigatorOriginal = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { connection: { saveData: true } } });
     globalThis.IntersectionObserver = class {
         constructor(callback) { this.callback = callback; observer = this; }
         observe(element) { this.element = element; }
@@ -190,14 +192,24 @@ test('landing uses lightweight character previews and loads the excerpt only nea
     t.after(() => {
         if (original === undefined) delete globalThis.IntersectionObserver;
         else globalThis.IntersectionObserver = original;
+        if (navigatorOriginal) Object.defineProperty(globalThis, 'navigator', navigatorOriginal);
+        else delete globalThis.navigator;
     });
     const donnees = structuredClone(characters);
-    donnees.crushs.find(p => p.id === 'isaac').spritePreview = 'isaac-preview.webp';
+    for (const [id, mediaId] of [['isaac', 1], ['aaron', 2]]) {
+        const personnage = donnees.crushs.find(p => p.id === id);
+        personnage.sprite = `https://game.test/api/media/${mediaId}/sprite?v=abc`;
+        personnage.spritePreview = `https://game.test/api/media/${mediaId}/preview?v=abc`;
+    }
     const { trouver, appels } = monter(t, {}, undefined, url => Response.json(
         url.endsWith('/characters') ? donnees : url.endsWith('/backgrounds') ? [] : episode
     ));
     await terminerChargement();
-    assert.equal(trouver('.entree-casting').querySelector('img').src, 'isaac-preview.webp');
+    assert.deepEqual(trouver('.entree-casting').all().filter(e => e.tagName === 'img').map(e => e.src), [
+        'https://game.test/api/media/1/sprite?v=abc&size=display',
+        'https://game.test/api/media/2/sprite?v=abc&size=display',
+    ]);
+    assert.equal(trouver('.entree-personnage').querySelector('img').src, 'https://game.test/api/media/1/preview?v=abc&size=compact');
     assert.ok(!appels.some(a => a.url.endsWith('/episodes/episode1')));
     observer.callback([{ isIntersecting: true }]);
     await terminerChargement();
@@ -528,6 +540,7 @@ function routeur(hash, joueur) {
     const sauvegarde = { playerName: 'Pommette', currentEpisode: 'episode2', currentNode: null, slot: 3, revision: 1 };
     const contexte = vm.createContext({
         document: { getElementById: () => ({}) },
+        initialiserA11y() {},
         sessionStorage: { getItem: () => null, setItem() {} },
         location, history,
         window: { addEventListener: (nom, action) => { ecouteurs[nom] = action; } },

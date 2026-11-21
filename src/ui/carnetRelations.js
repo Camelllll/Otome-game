@@ -213,7 +213,7 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
   element.innerHTML = `
     <div class="carnet" role="dialog" aria-modal="true" aria-label="Carnet de relations : les personnages">
       <header class="carnet-entete">
-        <button class="carnet-retour" type="button">${ICONES.retour}<span>Retour</span></button>
+        <button class="carnet-retour" type="button" aria-label="Retour">${ICONES.retour}<span>Retour</span></button>
         <div class="carnet-titres">
           <p class="carnet-surtitre">${ICONES.livre}Carnet de relations</p>
           <h2>Les personnages</h2>
@@ -243,6 +243,8 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
   let ouvert = false;
   let listeAffichee = [];
   let souvenirsAffiches = [];
+  let focusAvantOuverture = null;
+  let indexSouvenirOuvert = null;
 
   const fichesDe = (categorie) => fiches.filter((personnage) => (personnage.categorieCarnet === "crush" ? "crush" : "autre") === categorie);
 
@@ -331,12 +333,18 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
   }
 
   function rendre() {
+    const actif = document.activeElement;
+    const selecteurFocus = zoneOnglets.contains(actif) ? `[data-onglet="${actif.dataset.onglet}"]`
+      : zoneGrille.contains(actif) ? `[data-index="${actif.dataset.index}"]`
+      : zoneSouvenirs.contains(actif) ? `[data-souvenir="${actif.dataset.souvenir}"]`
+      : null;
     const contexte = lireContexte();
     assurerSelection(contexte);
     rendreOnglets(contexte);
     rendreGalerie(contexte);
     rendreFiche(contexte);
     rendreSouvenirs(contexte);
+    if (selecteurFocus) element.querySelector(selecteurFocus)?.focus({ preventScroll: true });
   }
 
   function nomsAssocies(illustration, contexte) {
@@ -347,11 +355,12 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
     });
   }
 
-  function ouvrirLightbox(illustration) {
+  function ouvrirLightbox(illustration, index) {
+    indexSouvenirOuvert = index;
     const contexte = lireContexte();
     const autres = nomsAssocies(illustration, contexte);
     lightbox.innerHTML = `
-      <figure class="carnet-lightbox-cadre">
+      <figure class="carnet-lightbox-cadre" role="dialog" aria-modal="true" aria-label="Illustration : ${esc(illustration.title)}">
         <button type="button" class="carnet-lightbox-fermer" aria-label="Fermer l’illustration">${ICONES.croix}</button>
         <img alt="${esc(illustration.title)}">
         <figcaption>
@@ -369,17 +378,41 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
   }
 
   function fermerLightbox() {
+    const etaitOuverte = !lightbox.hidden;
     lightbox.hidden = true;
     lightbox.innerHTML = "";
+    if (etaitOuverte) zoneSouvenirs.querySelector(`[data-souvenir="${indexSouvenirOuvert}"]`)?.focus();
+    indexSouvenirOuvert = null;
   }
 
   function surTouche(evenement) {
-    if (evenement.key !== "Escape") return;
-    if (!lightbox.hidden) fermerLightbox();
-    else fermer();
+    if (evenement.key === "Escape") {
+      evenement.preventDefault();
+      evenement.stopPropagation();
+      if (!lightbox.hidden) fermerLightbox();
+      else fermer();
+    } else if (evenement.key === "Tab") {
+      const zone = lightbox.hidden ? element.querySelector(".carnet") : lightbox;
+      const boutons = [...zone.querySelectorAll("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])")]
+        .filter((bouton) => bouton.getClientRects().length && (lightbox.hidden ? !lightbox.contains(bouton) : true));
+      if (!boutons.length) return;
+      const premier = boutons[0];
+      const dernier = boutons[boutons.length - 1];
+      if (!zone.contains(document.activeElement) || (lightbox.hidden && lightbox.contains(document.activeElement))) {
+        evenement.preventDefault();
+        (evenement.shiftKey ? dernier : premier).focus();
+      } else if (evenement.shiftKey && document.activeElement === premier) {
+        evenement.preventDefault();
+        dernier.focus();
+      } else if (!evenement.shiftKey && document.activeElement === dernier) {
+        evenement.preventDefault();
+        premier.focus();
+      }
+    }
   }
 
   function ouvrir() {
+    focusAvantOuverture = document.activeElement;
     ouvert = true;
     rendre();
     element.classList.add("visible");
@@ -397,6 +430,8 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
     fermerLightbox();
     element.classList.remove("visible");
     document.removeEventListener("keydown", surTouche);
+    focusAvantOuverture?.focus();
+    focusAvantOuverture = null;
   }
 
   element.addEventListener("click", (evenement) => {
@@ -427,7 +462,7 @@ export function creerCarnet({ fiches = [], getInfosPersonnage, getSauvegarde } =
     const souvenir = cible.closest("[data-souvenir]");
     if (souvenir) {
       const illustration = souvenirsAffiches[Number(souvenir.dataset.souvenir)];
-      if (illustration) ouvrirLightbox(illustration);
+      if (illustration) ouvrirLightbox(illustration, Number(souvenir.dataset.souvenir));
     }
   });
 

@@ -5,12 +5,13 @@ export function connexionEconome() {
     || (typeof connexion?.downlink === "number" && connexion.downlink < 1.5));
 }
 
-export function urlMedia(source, { miniature = false } = {}) {
-  if (typeof source !== "string" || (!miniature && !connexionEconome())) return source;
+export function urlMedia(source, { miniature = false, pleineResolution = false } = {}) {
+  if (typeof source !== "string" || (!miniature && !pleineResolution && !connexionEconome())) return source;
   if (!/^(?:https?:\/\/[^/]+)?\/api\/(?:media|illustrations)\/\d+\//.test(source)) return source;
   const url = new URL(source, globalThis.location?.href || "http://localhost/");
   if (!/^\/api\/(?:media\/\d+\/(?:file|sprite|preview)|illustrations\/\d+\/file)$/.test(url.pathname)) return source;
-  if (miniature || !url.searchParams.has("size")) url.searchParams.set("size", miniature ? "thumbnail" : "compact");
+  if (pleineResolution) url.searchParams.set("size", "display");
+  else if (miniature || !url.searchParams.has("size")) url.searchParams.set("size", miniature ? "thumbnail" : "compact");
   return url.href;
 }
 

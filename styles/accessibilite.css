@@ -1,0 +1,278 @@
+/* Accessibilité : les réglages sont posés par src/ui/accessibilite.js sur <html> (data-a11y-*). */
+
+:root {
+  --ui-focus: #1a1a1a;
+  --ui-focus-width: 3px;
+}
+
+/* Taille du texte : toutes les tailles en rem suivent la racine, qui vaut 100 % × réglage. */
+html {
+  font-size: calc(100% * var(--ui-text-scale, 1));
+}
+
+/* Épaisseur du texte : elle augmente avec la taille. Les éléments qui fixent leur propre graisse ne changent pas. */
+html[data-a11y-text="plus"] {
+  font-weight: 500;
+}
+
+html[data-a11y-text="xl"] {
+  font-weight: 600;
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: var(--ui-focus-width) solid var(--ui-focus);
+  outline-offset: 3px;
+}
+
+/* Contraste renforcé : texte plus foncé, bordures plus visibles. */
+html[data-a11y-contrast="enhanced"] {
+  --texte-fonce: #1a0408;
+  --texte-doux: #3d121a;
+  --texte-clair: #5c2a33;
+  --rouge-pomme: #4d0001;
+  --ui-focus: #000000;
+}
+
+html[data-a11y-contrast="enhanced"] .bulle-personnage,
+html[data-a11y-contrast="enhanced"] .barre-narration,
+html[data-a11y-contrast="enhanced"] .bouton-choix,
+html[data-a11y-contrast="enhanced"] .panneau-menu,
+html[data-a11y-contrast="enhanced"] .modale-jeu {
+  border-color: #3d121a;
+}
+
+/* Contraste élevé : fonds blancs, texte noir, bordures épaisses. */
+html[data-a11y-contrast="high"] {
+  --texte-fonce: #000000;
+  --texte-doux: #000000;
+  --texte-clair: #222222;
+  --rouge-pomme: #000000;
+  --ui-focus: #000000;
+  --creme: #ffffff;
+  --rose-poudre: #ffffff;
+  --rose-pastel: #ffffff;
+}
+
+html[data-a11y-contrast="high"] .bulle-personnage,
+html[data-a11y-contrast="high"] .barre-narration,
+html[data-a11y-contrast="high"] .bouton-choix,
+html[data-a11y-contrast="high"] .panneau-menu,
+html[data-a11y-contrast="high"] .modale-jeu {
+  background: #ffffff;
+  color: #000000;
+  border: 3px solid #000000;
+  box-shadow: none;
+}
+
+html[data-a11y-contrast="high"] .bouton-choix:hover,
+html[data-a11y-contrast="high"] .bouton-choix:focus-visible {
+  background: #ffe14d;
+  color: #000000;
+}
+
+/* Fonds opaques : pas de flou derrière les textes. */
+html[data-a11y-transparency="opaque"] .bulle-personnage,
+html[data-a11y-transparency="opaque"] .barre-narration,
+html[data-a11y-transparency="opaque"] .panneau-menu {
+  backdrop-filter: none;
+}
+
+/* Lecture confortable : interligne, espacements et zones cliquables plus grands. */
+html[data-a11y-comfort="on"] .texte-bulle-personnage,
+html[data-a11y-comfort="on"] .texte-modale-jeu {
+  line-height: 1.7;
+}
+
+html[data-a11y-comfort="on"] .liste-choix {
+  gap: 1rem;
+}
+
+html[data-a11y-comfort="on"] .bouton-choix {
+  min-height: 3rem;
+  padding: 1rem 1.4rem;
+}
+
+html[data-a11y-comfort="on"] .option-menu {
+  min-height: 2.75rem;
+  padding: 0.95rem 1.1rem;
+}
+
+/* Mouvement réduit : !important nécessaire, car plusieurs fichiers animent les mêmes éléments. */
+html[data-a11y-motion="reduce"] *,
+html[data-a11y-motion="reduce"] *::before,
+html[data-a11y-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Dialogue : les cartes de choix grandissent avec le texte, et la barre reste dans la moitié haute de l'écran. */
+html .bouton-choix {
+  height: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+html .bouton-choix:focus-visible,
+html .dialogue-cliquable:focus-visible {
+  outline: 4px solid var(--ui-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px #ffffff;
+}
+
+html .liste-choix {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.annonce-dialogue {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.bulle-personnage:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+html[data-a11y-text="xl"] .barre-narration {
+  max-height: 48vh;
+  overflow-y: auto;
+  padding: 1rem;
+  align-items: flex-start;
+}
+html[data-a11y-text="xl"] .avatar-joueur {
+  display: block;
+  position: sticky;
+  top: 0;
+  left: auto;
+  bottom: auto;
+  width: clamp(64px, 22vw, 240px);
+  height: auto;
+  aspect-ratio: 535 / 355;
+}
+html[data-a11y-text="xl"] .contenu-narration { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  html[data-a11y-text="xl"] .barre-narration { flex-direction: column; gap: 0.5rem; }
+  html[data-a11y-text="xl"] .avatar-joueur { position: relative; }
+  html[data-a11y-text="xl"] .contenu-narration { width: 100%; flex: none; }
+}
+html[data-a11y-text="xl"] .bulle-personnage {
+  max-height: max(3rem, calc(100% - var(--hauteur-barre, 0px) - 12px));
+  overflow-wrap: anywhere;
+}
+.lovometre-nom { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
+html[data-a11y-transparency="opaque"] .lovometre-cadre { background: #fff; backdrop-filter: none; }
+html[data-a11y-contrast="high"] .lovometre-cadre {
+  --lovo-bordeaux: #000;
+  --lovo-bordure: #000;
+  background: #fff;
+  border: 2px solid #000;
+}
+
+/* Cœurs du lovomètre. */
+html[data-a11y-hearts="reduced"] .lovo-particules,
+html[data-a11y-hearts="off"] .lovo-particules {
+  display: none;
+}
+
+html[data-a11y-hearts="off"] .lovometre-coeur {
+  animation: none;
+}
+
+/* Effets lumineux et scintillements. */
+html[data-a11y-glow="off"] .voile-illustration[data-rarete="legendary"] .illustration-cg,
+html[data-a11y-glow="off"] .badge-rarete.rarete-legendary {
+  animation: none;
+}
+
+/* Boutons du panneau d'accessibilité : zones cliquables d'au moins 44 px. */
+html .a11y-btn-step,
+html .a11y-btn-fermer {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+/* Lecture confortable : espace plus grand entre les paragraphes des dialogues et des fiches. */
+html[data-a11y-comfort="on"] .texte-bulle-personnage p + p,
+html[data-a11y-comfort="on"] .texte-modale-jeu p + p {
+  margin-top: 0.9em;
+}
+
+/* Panneau d'accessibilité : à 175 % ou 200 %, le sous-panneau défile au lieu de sortir de l'écran. */
+.panneau-a11y {
+  min-width: 0;
+  max-width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.panneau-menu {
+  min-width: 0;
+  width: min(20rem, calc(100vw - 1rem));
+  max-height: calc(100dvh - 5rem);
+  overflow-y: auto;
+}
+
+.a11y-reglage-controles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.a11y-valeur {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  overflow-wrap: anywhere;
+}
+
+html .a11y-btn-step { min-width: 44px; }
+
+/* Bouton à bascule (lecture confortable) : l'état est lu dans aria-pressed et dans le texte. */
+.a11y-bascule {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.9rem;
+  border: 2px solid var(--rouge-pomme);
+  border-radius: 12px;
+  background: var(--creme);
+  color: var(--texte-fonce);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.a11y-bascule[aria-pressed="true"] {
+  background: var(--rouge-pomme);
+  color: var(--creme);
+}
+
+.a11y-bascule:focus-visible {
+  outline: var(--ui-focus-width) solid var(--ui-focus);
+  outline-offset: 3px;
+}
+
+/* Écran de jeu, mode « Fonds opaques » : narration et bulles pleinement opaques, sans flou. */
+html[data-a11y-transparency="opaque"] .barre-narration,
+html[data-a11y-transparency="opaque"] .bulle-personnage {
+  background: #ffffff;
+  backdrop-filter: none;
+}
+
+/* Écran de jeu : les bulles et la narration restent au-dessus du décor. */
+html .bulle-personnage,
+html .barre-narration {
+  z-index: 2;
+}
+
+/* Réduction des animations de dialogue (réglage « Réduire les animations »). */
+html[data-a11y-motion="reduce"] .bulle-personnage {
+  animation: none;
+}

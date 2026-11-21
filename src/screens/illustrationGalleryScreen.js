@@ -38,8 +38,7 @@ function informationsIllustration(illustration, titre, detaillees = false) {
   return informations;
 }
 
-export function ouvrirIllustration(src, titre, illustration) {
-  const focus = document.activeElement;
+export function ouvrirIllustration(src, titre, illustration, focus = document.activeElement) {
   const dialogue = element("dialog", "pda-visionneuse");
   dialogue.setAttribute("aria-label", titre);
   const fermer = element("button", "", "Fermer ×");
@@ -86,12 +85,13 @@ function creerCarteIllustration(illustration, index) {
   image.addEventListener("error", () => { erreur.textContent = "Cette illustration n’a pas pu être affichée."; agrandir.disabled = true; });
   agrandir.append(image);
   agrandir.addEventListener("click", async () => {
+    const focusInitial = document.activeElement;
     agrandir.disabled = true;
     agrandir.setAttribute("aria-busy", "true");
     erreur.textContent = "Chargement de l’illustration…";
     try {
       const src = await chargerImagePrivee(illustration.path);
-      if (carte.isConnected) ouvrirIllustration(src, titre, illustration);
+      if (carte.isConnected) ouvrirIllustration(src, titre, illustration, focusInitial);
       erreur.textContent = "";
     } catch (cause) {
       erreur.textContent = cause.message;
@@ -109,6 +109,9 @@ export function creerCollectionIllustrations(illustrations, { signal } = {}) {
   const collection = element("div", "pda-collection-pagination");
   const grille = element("div", "pda-collection");
   grille.id = "pda-grille-illustrations";
+  grille.tabIndex = 0;
+  grille.setAttribute("role", "region");
+  grille.setAttribute("aria-label", "Illustrations de la collection");
   collection.append(grille);
   if (!illustrations.length) {
     const vide = element("p", "pda-notice", "Ta collection commence ici. Les illustrations apparaîtront après leur découverte dans l’histoire.");
@@ -132,11 +135,14 @@ export function creerCollectionIllustrations(illustrations, { signal } = {}) {
   compteur.setAttribute("aria-live", "polite");
   compteur.setAttribute("aria-atomic", "true");
   const afficher = () => {
+    const focusPagination = document.activeElement;
     const { page, totalPages, debut, elements } = paginerIllustrations(illustrations, capacite, ancre);
     ancre = debut;
     grille.replaceChildren(...elements.map((illustration, index) => creerCarteIllustration(illustration, debut + index)));
     precedent.disabled = page === 0;
     suivant.disabled = page + 1 >= totalPages;
+    if (focusPagination === precedent && precedent.disabled && !suivant.disabled) suivant.focus();
+    if (focusPagination === suivant && suivant.disabled && !precedent.disabled) precedent.focus();
     compteur.replaceChildren(element("span", "", `${debut + 1}–${debut + elements.length} sur ${illustrations.length}`),
       element("span", "", `Page ${page + 1} / ${totalPages}`));
   };
@@ -150,7 +156,7 @@ export function creerCollectionIllustrations(illustrations, { signal } = {}) {
     const colonnes = width >= 440 && height >= 330 ? 2 : 1;
     const lignes = Math.max(1, Math.min(2, Math.floor((height - 50) / 280)));
     grille.style.gridTemplateColumns = `repeat(${colonnes}, minmax(0, 1fr))`;
-    grille.style.gridTemplateRows = `repeat(${lignes}, minmax(0, 1fr))`;
+    grille.style.gridTemplateRows = `repeat(${lignes}, minmax(min-content, 1fr))`;
     collection.classList.toggle("pda-collection-compacte", height < 300);
     collection.classList.toggle("pda-collection-basse", height < 200);
     if (capacite !== colonnes * lignes) {

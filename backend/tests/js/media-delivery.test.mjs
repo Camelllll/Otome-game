@@ -29,6 +29,8 @@ test('slow connections use compact media without changing narrative text, extern
     assert.equal(adapted.custom, original.custom);
     assert.equal(original.sprite, 'https://game.test/api/media/8/sprite?v=def');
     assert.equal(urlMedia('blob:private-image'), 'blob:private-image');
+    assert.equal(urlMedia(adapted.sprite, { pleineResolution: true }), 'https://game.test/api/media/8/sprite?v=def&size=display');
+    assert.equal(urlMedia('assets/personnage.png', { pleineResolution: true }), 'assets/personnage.png');
 });
 
 test('save-data and limited bandwidth select compact images, absent hints keep full quality', t => {

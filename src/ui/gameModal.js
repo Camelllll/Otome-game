@@ -40,6 +40,24 @@ function attendreReponse(voile, { valeurConfirmation = true, lireValeur, focusIn
     const confirmer = () => fermer(lireValeur ? lireValeur() : valeurConfirmation);
     const gererClavier = (event) => {
       if (event.key === "Escape") fermer(null);
+      if (event.key === "Tab") {
+        const elements = [...voile.querySelectorAll("button, input, select, textarea, a[href]")].filter(
+          (el) => !el.disabled,
+        );
+        if (elements.length === 0) return;
+        const premier = elements[0];
+        const dernier = elements[elements.length - 1];
+        if (!voile.contains(document.activeElement)) {
+          event.preventDefault();
+          premier.focus();
+        } else if (event.shiftKey && document.activeElement === premier) {
+          event.preventDefault();
+          dernier.focus();
+        } else if (!event.shiftKey && document.activeElement === dernier) {
+          event.preventDefault();
+          premier.focus();
+        }
+      }
       if (event.key === "Enter" && lireValeur && event.target?.classList?.contains("champ-modale-jeu")) {
         event.preventDefault();
         confirmer();

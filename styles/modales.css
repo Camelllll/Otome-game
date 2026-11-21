@@ -1,3 +1,18 @@
+.voile-modale-jeu {
+  display: flex;
+  overflow-y: auto;
+}
+
+.modale-jeu {
+  margin: auto;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+
+.actions-modale-jeu { flex-wrap: wrap; }
+.bouton-modale { max-width: 100%; overflow-wrap: anywhere; }
+
 .modale-avertissement {
   background: rgba(27, 4, 12, .58);
   backdrop-filter: none;
@@ -59,6 +74,20 @@
 .modale-avertissement button:focus-visible {
   outline: 3px solid #fff8f1;
   outline-offset: 3px;
+}
+
+html[data-a11y-contrast="high"] .modale-avertissement :is(h2, .texte-modale-jeu, .surtitre-modale-jeu, .icone-avertissement, .fermer-modale-jeu, .bouton-modale.secondaire) {
+  color: #000;
+}
+html[data-a11y-contrast="high"] .modale-avertissement .bouton-modale {
+  border: 2px solid #000;
+}
+html[data-a11y-contrast="high"] .modale-avertissement .bouton-modale.principal {
+  color: #fff;
+  background: #000;
+}
+html[data-a11y-contrast="high"] .modale-avertissement button:focus-visible {
+  outline-color: #000;
 }
 
 @media (max-width: 420px) {
