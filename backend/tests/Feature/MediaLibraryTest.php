@@ -318,4 +318,52 @@ class MediaLibraryTest extends TestCase
         $this->assertSame('Test modifié', $illustration->fresh()->title);
         $this->assertSame('cg-episode1-test', $illustration->fresh()->slug);
     }
+
+    public function test_new_rarities_can_be_saved_when_creating_and_editing_an_illustration(): void
+    {
+        $this->actingAs($this->admin());
+        $this->character('sasha', 'Sasha');
+        $asset = $this->asset('illustrations');
+
+        Livewire::test(Illustrations::class, ['assetId' => $asset->id])
+            ->set('title', 'Une équipe')
+            ->set('characterIds', ['sasha'])
+            ->set('rarity', 'uncommon')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $illustration = Illustration::firstOrFail();
+        $this->assertSame('uncommon', $illustration->rarity);
+
+        Livewire::test(Illustrations::class, ['assetId' => $asset->id])
+            ->set('rarity', 'epic')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame('epic', $illustration->fresh()->rarity);
+        $this->assertDatabaseCount('illustrations', 1);
+    }
+
+    public function test_rarity_migration_preserves_legacy_values_and_prevents_loss_on_rollback(): void
+    {
+        $migration = require database_path('migrations/2026_11_21_000001_expand_illustration_rarities.php');
+        $migration->down();
+
+        $illustration = Illustration::create([
+            'slug' => 'legacy', 'title' => 'Ancienne illustration', 'character_ids' => ['sasha'],
+            'rarity' => 'ultra_rare',
+        ]);
+
+        $migration->up();
+        $this->assertSame('ultra_rare', $illustration->fresh()->rarity);
+
+        $illustration->update(['rarity' => 'epic']);
+        try {
+            $migration->down();
+            $this->fail('La migration ne doit pas supprimer une rareté utilisée.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('uncommon ou epic', $exception->getMessage());
+        }
+        $this->assertSame('epic', $illustration->fresh()->rarity);
+    }
 }
